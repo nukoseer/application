@@ -1,0 +1,185 @@
+#include <windows.h>
+#include "types.h"
+#include "utils.h"
+#include "memory.h"
+#include "os_events.h"
+#include "win32.h"
+
+#define WINDOW_CLASS_NAME ("application_window_class")
+
+typedef struct Win32Window
+{
+    HWND handle;
+    HDC device_context;
+    int width;
+    int height;
+} Win32Window;
+
+static HINSTANCE win32_instance;
+static Win32Window* win32_window;
+static MemoryArena* win32_memory_arena;
+static OSEventList* win32_event_list;
+static MemoryArena* win32_event_arena;
+    
+static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
+{
+    OSEvent* event = 0;
+    MemoryArena* event_arena = 0;
+    OSEventList* event_list = 0;
+    OSEventList proc_event_list = { 0 }; // NOTE: Windows can call window_proc whenever it needs.
+
+    if (!win32_event_arena)
+    {
+        win32_event_list = &proc_event_list;
+        win32_event_arena = win32_memory_arena;
+    }
+
+    event_list = win32_event_list;
+    event_arena = win32_event_arena;
+
+    TemporaryMemory temporary_memory = begin_temporary_memory(event_arena);
+    
+    switch (message)
+    {
+        case WM_CLOSE:
+        case WM_QUIT:
+        case WM_DESTROY:
+        {
+            event = push_struct(event_arena, OSEvent);
+            event->type = OS_EVENT_TYPE_WINDOW_CLOSE;
+            // PostQuitMessage(0);
+        }
+        break;
+    }
+
+    if (event)
+    {
+        os_event_push_back(event_list, event);
+    }
+
+    end_temporary_memory(temporary_memory);
+    
+    return DefWindowProc(handle, message, wparam, lparam);
+}
+
+void* win32_open_window(const char* title, int width, int height)
+{
+    if (!win32_window)
+    {
+        win32_window = push_struct(win32_memory_arena, Win32Window);
+    }
+    
+    win32_window->width = width;
+    win32_window->height = height;
+
+    DWORD style = WS_OVERLAPPEDWINDOW;
+    DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
+
+    win32_window->handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, title, style, CW_USEDEFAULT, CW_USEDEFAULT, win32_window->width, win32_window->height, 0, 0, win32_instance, 0);
+    ASSERT(win32_window->handle);
+    win32_window->device_context = GetDC(win32_window->handle);
+    SetWindowLongPtr(win32_window->handle, GWLP_USERDATA, (LONG_PTR)win32_window);
+    ShowWindow(win32_window->handle, SW_SHOW);
+
+    return win32_window;
+}
+
+void win32_close_window(void* window_pointer)
+{
+    Win32Window* window = (Win32Window*)window_pointer;
+    
+    ASSERT(window);
+
+    if (window->device_context)
+    {
+        ReleaseDC(window->handle, window->device_context);
+    }
+
+    if (window->handle)
+    {
+        DestroyWindow(window->handle);
+    }
+}
+
+void* win32_get_handle_from_window(const void* window_pointer)
+{
+    HWND result = 0;
+    Win32Window* window = (Win32Window*)window_pointer;
+    
+    ASSERT(window);
+
+    if (window)
+    {
+        result = window->handle;
+    }
+    
+    return result;
+}
+
+void* win32_get_window_from_handle(const void* handle_pointer)
+{
+    HWND handle = (HWND)handle_pointer;
+    
+    ASSERT(handle);
+    
+    Win32Window* window = (Win32Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
+
+    ASSERT(window);
+
+    return window;
+}
+
+void win32_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
+{
+    MSG message;
+    
+    win32_event_list = event_list;
+    win32_event_arena = event_arena;
+    
+    while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
+    {
+        TranslateMessage(&message);
+        DispatchMessage(&message);
+    }
+
+    win32_event_list = 0;
+    win32_event_arena = 0;
+}
+
+void win32_start(void* instance_pointer)
+{
+    win32_instance = (HINSTANCE)instance_pointer;
+    win32_memory_arena = allocate_memory_arena(1024 * 1024);
+
+    WNDCLASSEX window_class =
+    {
+        .cbSize = sizeof(window_class),
+        .style = CS_HREDRAW | CS_VREDRAW,
+        .lpfnWndProc = window_proc,
+        .hInstance = win32_instance,
+        .lpszClassName = WINDOW_CLASS_NAME,
+    };
+    
+    ATOM atom = RegisterClassEx(&window_class);
+    ASSERT(atom);
+
+    win32_open_window("Application Window", 640, 480);
+
+    OSEventList event_list = { 0 };
+    MemoryArena* event_arena = allocate_memory_arena(1024 * 2);
+    b32 quit = FALSE;
+    while (!quit)
+    {
+        win32_get_event_list(&event_list, event_arena);
+        for (OSEvent* event = event_list.first; event != 0; event = event->next)
+        {
+            if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
+            {
+                quit = TRUE;
+                break;
+            }
+        }
+    }
+
+    release_memory_arena(win32_memory_arena);
+}
