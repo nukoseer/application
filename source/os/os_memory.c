@@ -1,14 +1,14 @@
+#include "utils.h"
 #include "types.h"
 #include "os_memory.h"
 
-// NOTE: win32_memory functions must be matched with these types.
-typedef void* (*OSAllocateMemory)(u64 size);
-typedef void (*OSReleaseMemory)(void* memory);
+typedef void* OSAllocateMemory(u64 size);
+typedef void  OSReleaseMemory(void* memory);
 
 typedef struct OSMemory
 {
-    OSAllocateMemory allocate;
-    OSReleaseMemory release;
+    OSAllocateMemory* allocate;
+    OSReleaseMemory* release;
 } OSMemory;
 
 #ifdef WIN32
@@ -16,22 +16,24 @@ typedef struct OSMemory
 
 static OSMemory os_memory =
 {
-    .allocate = win32_allocate_memory,
-    .release = win32_release_memory,
+    .allocate = &win32_memory_allocate,
+    .release = &win32_memory_release,
 };
 
 #else
 #error WIN32 must be defined.
 #endif
 
-void* os_allocate_memory(u64 size)
+void* os_memory_allocate(u64 size)
 {
+    ASSERT(os_memory.allocate);
     void* result = os_memory.allocate(size);
 
     return result;
 }
 
-void os_release_memory(void* memory)
+void os_memory_release(void* memory)
 {
+    ASSERT(os_memory.release);
     os_memory.release(memory);
 }

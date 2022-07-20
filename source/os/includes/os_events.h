@@ -113,13 +113,17 @@ inline void os_event_insert(OSEventList* event_list, OSEvent* prev, OSEvent* eve
             event_list->first = event;
         }
     }
-    else if (prev->next)
+    else
     {
-        prev->next->prev = event;
+        if (prev->next)
+        {
+            prev->next->prev = event;
+        }
+         
         event->next = prev->next;
         event->prev = prev;
         prev->next = event;
-
+         
         if (prev == event_list->last)
         {
             event_list->last = event;

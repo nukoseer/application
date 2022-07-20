@@ -5,7 +5,7 @@
 
 MemoryArena* allocate_memory_arena(u64 max_size)
 {
-    MemoryArena* memory_arena = (MemoryArena*)os_allocate_memory(max_size);
+    MemoryArena* memory_arena = (MemoryArena*)os_memory_allocate(max_size);
 
     memory_arena->memory = (u8*)memory_arena + sizeof(MemoryArena);
     memory_arena->used_size = 0;
@@ -16,7 +16,7 @@ MemoryArena* allocate_memory_arena(u64 max_size)
 
 void release_memory_arena(MemoryArena* memory_arena)
 {
-    os_release_memory(memory_arena);
+    os_memory_release(memory_arena);
 }
 
 TemporaryMemory begin_temporary_memory(MemoryArena* memory_arena)

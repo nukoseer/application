@@ -5,7 +5,10 @@ pushd build
 
 call vcvarsall.bat x64
 
-set common_compiler_flags=/TC /Od /MT /Zi /FC /nologo /W4 /WX /DWIN32 /fsanitize=address
+set win32_defines=/DWIN32 /DWIN32_LEAN_AND_MEAN
+
+set common_compiler_flags=/TC /Od /MT /Zi /FC /nologo /W4 /WX %win32_defines% /fsanitize=address
+
 REM /clang:-pedantic /clang:-std=c89
 
 set compiler=clang-cl
@@ -29,7 +32,7 @@ set all_includes=%common_includes% %win32_includes% %os_includes%
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %all_includes% /c /Fo ..\source\os\os_memory.c
 
-%compiler% %common_compiler_flags% %clang_compiler_flags% %all_includes% /c /Fo ..\source\os\os.c
+%compiler% %common_compiler_flags% %clang_compiler_flags% %all_includes% /c /Fo ..\source\os\os_window.c
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %all_includes% /c /Fo ..\source\win32\win32_memory.c
 
@@ -37,6 +40,6 @@ set all_includes=%common_includes% %win32_includes% %os_includes%
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %all_includes% /c /Fo ..\source\win32\win32_main.c
 
-%linker% /debug memory.obj os_memory.obj os.obj win32_memory.obj win32.obj win32_main.obj /out:win32_main.exe user32.lib /wholearchive:clang_rt.asan-x86_64.lib
+%linker% /debug memory.obj os_memory.obj os_window.obj win32_memory.obj win32.obj win32_main.obj /out:win32_main.exe user32.lib /wholearchive:clang_rt.asan-x86_64.lib
 
 popd

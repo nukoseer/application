@@ -18,7 +18,7 @@
 //     return system_info.dwPageSize;
 // }
 
-void* win32_allocate_memory(u64 size)
+void* win32_memory_allocate(u64 size)
 {
     void* result = 0;
 
@@ -28,7 +28,7 @@ void* win32_allocate_memory(u64 size)
     return result;
 }
 
-void win32_release_memory(void* memory)
+void win32_memory_release(void* memory)
 {
     b32 result = VirtualFree(memory, 0, MEM_RELEASE);
     ASSERT(result);
