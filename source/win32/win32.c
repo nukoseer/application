@@ -1,9 +1,11 @@
 #include <windows.h>
+#include <stdio.h> // TODO: Probably we won't need this.
 #include "types.h"
 #include "utils.h"
 #include "memory.h"
 #include "os_events.h"
 #include "os_window.h"
+#include "os_timer.h"
 #include "win32.h"
 
 #define WINDOW_CLASS_NAME ("application_window_class")
@@ -193,6 +195,9 @@ void win32_start(void* instance_pointer)
     b32 quit = FALSE;
     while (!quit)
     {
+        OSTimerHandle os_timer_handle = os_timer_begin();
+        
+        Sleep(16);
         // win32_get_event_list(&event_list, event_arena);
         OSEventList event_list = os_get_events();
 
@@ -205,6 +210,12 @@ void win32_start(void* instance_pointer)
                 break;
             }
         }
+
+        f64 milliseconds = os_timer_end(os_timer_handle);
+        char timer_buffer[64] = { 0 };
+        
+        sprintf(timer_buffer, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
+        OutputDebugString(timer_buffer);
     }
 
     release_memory_arena(win32_memory_arena);
