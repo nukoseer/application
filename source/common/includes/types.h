@@ -1,4 +1,4 @@
-#ifndef _H_TYPES_H_
+#ifndef H_TYPES_H
 
 #include <stdint.h>
 
@@ -22,7 +22,7 @@ typedef double   f64;
 #define TRUE     (1)
 #define FALSE    (0)
 
-#define _H_TYPES_H_
+#define H_TYPES_H
 #endif
 
 

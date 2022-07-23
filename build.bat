@@ -7,7 +7,7 @@ call vcvarsall.bat x64
 
 set win32_defines=/DWIN32 /DWIN32_LEAN_AND_MEAN
 
-set common_compiler_flags=/TC /Od /MT /Zi /FC /nologo /W4 /WX %win32_defines% /fsanitize=address
+set common_compiler_flags=/TC /Od /MT /Zi /FC /nologo /Wall %win32_defines% /fsanitize=address
 
 REM /clang:-pedantic /clang:-std=c89
 
@@ -15,7 +15,7 @@ set compiler=clang-cl
 
 if %compiler%==clang-cl (
    set linker=lld-link
-   set clang_compiler_flags=/clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fno-omit-frame-pointer
+   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fno-omit-frame-pointer
 ) else (
      if %compiler%==cl (
      	set linker=link

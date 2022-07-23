@@ -1,4 +1,4 @@
-#ifndef _H_MEMORY_H_
+#ifndef H_MEMORY_H
 
 #define push_array(memory_arena, count, type) (push_size(memory_arena, ((count) * sizeof(type))))
 #define push_struct(memory_arena, type) ((type*)(push_size(memory_arena, sizeof(type))))
@@ -26,5 +26,5 @@ void* push_size(MemoryArena* memory_arena, u64 size);
 void* push_size_zero(MemoryArena* memory_arena, u64 size);
 void memory_zero(void* memory, u64 size);
 
-#define _H_MEMORY_H_
+#define H_MEMORY_H
 #endif

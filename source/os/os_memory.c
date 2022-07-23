@@ -26,8 +26,10 @@ static OSMemory os_memory =
 
 void* os_memory_allocate(u64 size)
 {
+    void* result;
+    
     ASSERT(os_memory.allocate);
-    void* result = os_memory.allocate(size);
+    result = os_memory.allocate(size);
 
     return result;
 }

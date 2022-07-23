@@ -52,7 +52,7 @@ static OSTimerTick* find_empty_timer_tick(OSTimerHandle* os_timer_handle)
         }
     }
 
-    ASSERT(found_timer_handle != INVALID_TIMER_HANDLE)
+    ASSERT(found_timer_handle != INVALID_TIMER_HANDLE);
     ASSERT(found_timer_tick && found_timer_tick->tick == 0);
 
     *os_timer_handle = found_timer_handle;
@@ -63,23 +63,27 @@ static OSTimerTick* find_empty_timer_tick(OSTimerHandle* os_timer_handle)
 f64 os_timer_ticks_to_milliseconds(i64 tick)
 {
     i64 frequency = os_timer_get_frequency();
-    f64 ticks = (f64)tick / (frequency / 1000.0);
+    f64 ticks = (f64)tick / ((f64)frequency / 1000.0);
     
     return ticks;
 }
 
 i64 os_timer_get_tick(void)
 {
+    i64 tick = 0;
+
     ASSERT(os_timer.get_tick);
-    i64 tick = os_timer.get_tick();
+    tick = os_timer.get_tick();
 
     return tick;
 }
 
 i64 os_timer_get_frequency(void)
 {
+    i64 frequency = 0;
+
     ASSERT(os_timer.get_frequency);
-    i64 frequency = os_timer.get_frequency();
+    frequency = os_timer.get_frequency();
 
     return frequency;
 }
@@ -97,11 +101,15 @@ OSTimerHandle os_timer_begin(void)
 
 f64 os_timer_end(OSTimerHandle os_timer_handle)
 {
-    ASSERT(os_timer_handle != INVALID_TIMER_HANDLE && os_timer_handle < MAX_TIMER_COUNT);
-    OSTimerTick* os_timer_tick = os_timer_ticks + os_timer_handle;
-    i64 elapsed_ticks = os_timer_get_tick() - os_timer_tick->tick;
-    f64 elapsed_seconds = os_timer_ticks_to_milliseconds(elapsed_ticks);
+    OSTimerTick* os_timer_tick = 0;
+    i64 elapsed_ticks = 0;
+    f64 elapsed_seconds = 0;
     
+    ASSERT(os_timer_handle != INVALID_TIMER_HANDLE && os_timer_handle < MAX_TIMER_COUNT);
+    
+    os_timer_tick = os_timer_ticks + os_timer_handle;
+    elapsed_ticks = os_timer_get_tick() - os_timer_tick->tick;
+    elapsed_seconds = os_timer_ticks_to_milliseconds(elapsed_ticks);
     os_timer_tick->tick = 0;
     
     return elapsed_seconds;

@@ -1,4 +1,4 @@
-#include <windows.h>
+#include <Windows.h>
 #include "types.h"
 #include "utils.h"
 #include "win32_memory.h"

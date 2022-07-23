@@ -1,4 +1,4 @@
-#include <windows.h>
+#include <Windows.h>
 #include "types.h"
 #include "memory.h"
 #include "os_events.h"

@@ -1,4 +1,4 @@
-#include <windows.h>
+#include <Windows.h>
 #include <stdio.h> // TODO: Probably we won't need this.
 #include "types.h"
 #include "utils.h"
@@ -81,17 +81,19 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
 
 void* win32_window_open(const char* title, int width, int height)
 {
+    HWND handle = 0;
+    HDC device_context = 0;
+    DWORD style = WS_OVERLAPPEDWINDOW;
+    DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
+    
     if (!win32_window)
     {
         win32_window = push_struct_zero(win32_memory_arena, Win32Window);
     }
     
-    DWORD style = WS_OVERLAPPEDWINDOW;
-    DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
-
-    HWND handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, title, style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, win32_instance, 0);
+    handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, title, style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, win32_instance, 0);
     ASSERT(handle);
-    HDC device_context = GetDC(handle);
+    device_context = GetDC(handle);
     ASSERT(device_context);
 
     win32_window->handle = handle;
@@ -122,7 +124,7 @@ void win32_window_close(void* window_pointer)
     }
 }
 
-void* win32_get_handle_from_window(const void* window_pointer)
+void* win32_get_handle_from_window(void* window_pointer)
 {
     HWND result = 0;
     Win32Window* window = (Win32Window*)window_pointer;
@@ -137,13 +139,14 @@ void* win32_get_handle_from_window(const void* window_pointer)
     return result;
 }
 
-void* win32_get_window_from_handle(const void* handle_pointer)
+void* win32_get_window_from_handle(void* handle_pointer)
 {
     HWND handle = (HWND)handle_pointer;
+    Win32Window* window = 0;
     
     ASSERT(handle);
     
-    Win32Window* window = (Win32Window*)GetWindowLongPtr(handle, GWLP_USERDATA);
+    window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
 
     ASSERT(window);
 
@@ -169,9 +172,6 @@ void win32_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
 
 void win32_start(void* instance_pointer)
 {
-    win32_instance = (HINSTANCE)instance_pointer;
-    win32_memory_arena = allocate_memory_arena(1024 * 1024);
-
     WNDCLASSEX window_class =
     {
         .cbSize = sizeof(window_class),
@@ -180,26 +180,32 @@ void win32_start(void* instance_pointer)
         .hInstance = win32_instance,
         .lpszClassName = WINDOW_CLASS_NAME,
     };
-    
-    ATOM atom = RegisterClassEx(&window_class);
+    ATOM atom = 0;
+    OSHandle os_handle = 0;
+    b32 quit = FALSE;
+
+    atom = RegisterClassEx(&window_class);
     ASSERT(atom);
+    
+    win32_instance = (HINSTANCE)instance_pointer;
+    win32_memory_arena = allocate_memory_arena(1024 * 1024);
 
     os_init();
 
-    OSHandle os_handle = os_window_open("Application Window", 640, 480);
+    os_handle = os_window_open("Application Window", 640, 480);
     
     // win32_window_open("Application Window", 640, 480);
 
     // OSEventList event_list = { 0 };
     // MemoryArena* event_arena = allocate_memory_arena(1024 * 2);
-    b32 quit = FALSE;
+    quit = FALSE;
     while (!quit)
     {
         OSTimerHandle os_timer_handle = os_timer_begin();
-        
-        Sleep(16);
         // win32_get_event_list(&event_list, event_arena);
         OSEventList event_list = os_get_events();
+
+        Sleep(16);
 
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
@@ -211,11 +217,13 @@ void win32_start(void* instance_pointer)
             }
         }
 
-        f64 milliseconds = os_timer_end(os_timer_handle);
-        char timer_buffer[64] = { 0 };
+        {
+            f64 milliseconds = os_timer_end(os_timer_handle);
+            char timer_buffer[64] = { 0 };
         
-        sprintf(timer_buffer, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-        OutputDebugString(timer_buffer);
+            sprintf(timer_buffer, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
+            OutputDebugString(timer_buffer);
+        }
     }
 
     release_memory_arena(win32_memory_arena);

@@ -1,4 +1,4 @@
-#ifndef _H_OS_TIMER_H_
+#ifndef H_OS_TIMER_H
 
 typedef u32 OSTimerHandle;
 
@@ -8,7 +8,7 @@ f64 os_timer_ticks_to_milliseconds(i64 tick);
 OSTimerHandle os_timer_begin(void);
 f64 os_timer_end(OSTimerHandle os_timer_handle);
 
-#define _H_OS_TIMER_H_
+#define H_OS_TIMER_H
 #endif
 
     

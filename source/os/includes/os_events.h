@@ -1,4 +1,4 @@
-#ifndef _H_OS_EVENTS_H_
+#ifndef H_OS_EVENTS_H
 
 typedef enum OSKey
 {
@@ -143,5 +143,5 @@ inline void os_event_push_front(OSEventList* event_list, OSEvent* event)
     os_event_insert(event_list, 0, event);
 }
 
-#define _H_OS_EVENTS_H_
+#define H_OS_EVENTS_H
 #endif

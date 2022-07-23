@@ -36,8 +36,10 @@ void end_temporary_memory(TemporaryMemory temporary_memory)
 
 void* push_size(MemoryArena* memory_arena, u64 size)
 {
+    void* result = 0;
+    
     ASSERT(memory_arena->used_size + size <= memory_arena->max_size);
-    void* result = (u8*)memory_arena->memory + memory_arena->used_size;
+    result = (u8*)memory_arena->memory + memory_arena->used_size;
     
     memory_arena->used_size += size;
 

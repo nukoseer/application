@@ -1,7 +1,7 @@
-#ifndef _H_UTILS_H_
+#ifndef H_UTILS_H
 
-#define ASSERT(x) if (!(x)) { volatile int unused = *(volatile int*)0; (void)unused; }
+#define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
 
-#define _H_UTILS_H_
+#define H_UTILS_H
 #endif
 

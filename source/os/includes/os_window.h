@@ -1,4 +1,4 @@
-#ifndef _H_OS_H_
+#ifndef H_OS_WINDOW_H
 
 typedef u64 OSHandle;
 
@@ -7,5 +7,5 @@ void os_window_close(OSHandle os_handle);
 OSEventList os_get_events(void);
 void os_init(void);
 
-#define _H_OS_H_
+#define H_OS_WINDOW_H
 #endif

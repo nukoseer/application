@@ -6,8 +6,8 @@
 
 typedef void* OSOpenWindow(const char* title, i32 width, i32 height);
 typedef void  OSCloseWindow(void* window_pointer);
-typedef void* OSGetHandleFromWindow(const void* window_pointer);
-typedef void* OSGetWindowFromHandle(const void* handle_pointer);
+typedef void* OSGetHandleFromWindow(void* window_pointer);
+typedef void* OSGetWindowFromHandle(void* handle_pointer);
 typedef void  OSGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 
 typedef struct OSWindow
@@ -39,9 +39,11 @@ static MemoryArena* os_event_arena;
 
 static OSHandle get_handle_from_window(void* window)
 {
-    ASSERT(os_window.get_handle_from_window);
     OSHandle os_handle = 0;
-    void* handle = os_window.get_handle_from_window(window);
+    void* handle = 0;
+
+    ASSERT(os_window.get_handle_from_window);
+    handle = os_window.get_handle_from_window(window);
 
     ASSERT(handle);
     
@@ -91,10 +93,12 @@ OSEventList os_get_events(void)
 
 OSHandle os_window_open(const char* title, i32 width, i32 height)
 {
+    void* window = 0;
+    OSHandle os_handle = 0;
+    
     ASSERT(os_window.open);
-    void* window = os_window.open(title, width, height);
-    OSHandle os_handle = get_handle_from_window(window);
-
+    window = os_window.open(title, width, height);
+    os_handle = get_handle_from_window(window);
     ASSERT(os_handle);
     
     return os_handle;
@@ -106,7 +110,6 @@ void os_window_close(OSHandle os_handle)
     void* handle = (void*)os_handle;
 
     ASSERT(os_window.close);
-
     window = get_window_from_handle(handle);
     os_window.close(window);
 }
