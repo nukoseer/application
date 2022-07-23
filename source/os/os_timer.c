@@ -19,8 +19,8 @@ typedef struct OSTimer
 
 static OSTimer os_timer =
 {
-    .get_tick = win32_timer_get_tick,
-    .get_frequency = win32_timer_get_frequency,
+    .get_tick = &win32_timer_get_tick,
+    .get_frequency = &win32_timer_get_frequency,
 };
 
 #else

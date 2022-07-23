@@ -46,10 +46,8 @@ void* push_size(MemoryArena* memory_arena, u64 size)
 
 void* push_size_zero(MemoryArena* memory_arena, u64 size)
 {
-    ASSERT(memory_arena->used_size + size <= memory_arena->max_size);
-    void* result = (u8*)memory_arena->memory + memory_arena->used_size;
+    void* result = push_size(memory_arena, size);
     
-    memory_arena->used_size += size;
     memory_zero(result, size);
 
     return result;
