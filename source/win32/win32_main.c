@@ -9,9 +9,9 @@ int WinMain(HINSTANCE instance,
             LPSTR cmd_line,
             int show_cmd)
 {
-    (void)prev_instance; (void)cmd_line; (void)show_cmd;
+    (void)instance; (void)prev_instance; (void)cmd_line; (void)show_cmd;
     
-    win32_start(instance);
+    win32_start();
 
     return 0;
 }

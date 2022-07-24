@@ -88,7 +88,6 @@ i64 os_timer_get_frequency(void)
     return frequency;
 }
 
-
 OSTimerHandle os_timer_begin(void)
 {
     OSTimerHandle os_timer_handle = INVALID_TIMER_HANDLE;
