@@ -1,11 +1,8 @@
 #include <Windows.h>
-#include <stdio.h> // TODO: Probably we won't need this.
 #include "types.h"
 #include "utils.h"
 #include "memory.h"
-#include "os_events.h"
-#include "os_window.h"
-#include "os_timer.h"
+#include "os.h"
 #include "win32.h"
 
 #define WINDOW_CLASS_NAME ("application_window_class")
@@ -23,7 +20,8 @@ static Win32Window* win32_window;
 static MemoryArena* win32_memory_arena;
 static OSEventList* win32_event_list;
 static MemoryArena* win32_event_arena;
-    
+static b32 win32_should_quit;
+
 static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
 {
     LRESULT result = 0;
@@ -49,7 +47,6 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         {
             event = push_struct(event_arena, OSEvent);
             event->type = OS_EVENT_TYPE_WINDOW_CLOSE;
-            // PostQuitMessage(0);
         }
         break;
 
@@ -60,10 +57,18 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         }
         break;
 
+        // case WM_QUIT:
+        // {
+        //     win32_should_quit = TRUE;
+        //     result = DefWindowProc(handle, message, wparam, lparam);
+        // }
+        // break;
+        
         default:
         {
             result = DefWindowProc(handle, message, wparam, lparam);
         }
+        break;
     }
 
     if (event)
@@ -176,7 +181,7 @@ void* win32_get_window_from_handle(void* handle_pointer)
     return window;
 }
 
-void win32_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
+void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
 {
     MSG message;
     
@@ -193,46 +198,61 @@ void win32_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
     win32_event_arena = 0;
 }
 
-void win32_start(void)
+b32 win32_quit(void)
 {
-    OSHandle os_handle = 0;
-    b32 quit = FALSE;
-
-    win32_memory_arena = allocate_memory_arena(1024 * 1024);
-
-    os_init();
-    os_handle = os_window_open("Application Window", 640, 480);
-    
-    // win32_window_open("Application Window", 640, 480);
-
-    // OSEventList event_list = { 0 };
-    // MemoryArena* event_arena = allocate_memory_arena(1024 * 2);
-    while (!quit)
-    {
-        OSTimerHandle os_timer_handle = os_timer_begin();
-        // win32_get_event_list(&event_list, event_arena);
-        OSEventList event_list = os_get_events();
-
-        Sleep(16);
-
-        for (OSEvent* event = event_list.first; event != 0; event = event->next)
-        {
-            if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
-            {
-                quit = TRUE;
-                os_window_close(os_handle);
-                break;
-            }
-        }
-
-        {
-            f64 milliseconds = os_timer_end(os_timer_handle);
-            char timer_buffer[64] = { 0 };
-        
-            sprintf(timer_buffer, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-            OutputDebugString(timer_buffer);
-        }
-    }
-
-    release_memory_arena(win32_memory_arena);
+    return win32_should_quit == TRUE;
 }
+
+void win32_destroy(void)
+{
+    release_memory_arena(win32_memory_arena);    
+}
+
+void win32_init(void)
+{
+    win32_memory_arena = allocate_memory_arena(1024 * 1024);
+}
+
+// void win32_start(void)
+// {
+//     OSHandle os_handle = 0;
+//     b32 quit = FALSE;
+
+//     win32_memory_arena = allocate_memory_arena(1024 * 1024);
+
+//     os_init();
+//     os_handle = os_window_open("Application Window", 640, 480);
+    
+//     // win32_window_open("Application Window", 640, 480);
+
+//     // OSEventList event_list = { 0 };
+//     // MemoryArena* event_arena = allocate_memory_arena(1024 * 2);
+//     while (!quit)
+//     {
+//         OSTimerHandle os_timer_handle = os_timer_begin();
+//         // win32_get_event_list(&event_list, event_arena);
+//         OSEventList event_list = os_window_get_events();
+
+//         Sleep(16);
+
+//         for (OSEvent* event = event_list.first; event != 0; event = event->next)
+//         {
+//             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
+//             {
+//                 quit = TRUE;
+//                 os_window_close(os_handle);
+//                 break;
+//             }
+//         }
+
+//         {
+//             f64 milliseconds = os_timer_end(os_timer_handle);
+//             char timer_buffer[64] = { 0 };
+        
+//             sprintf(timer_buffer, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
+//             OutputDebugString(timer_buffer);
+//         }
+//     }
+
+//     release_memory_arena(win32_memory_arena);
+// }

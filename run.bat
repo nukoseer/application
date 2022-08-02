@@ -2,6 +2,6 @@
 
 pushd build
 
-call win32_main.exe
+call application.exe
 
 popd

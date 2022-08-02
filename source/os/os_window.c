@@ -8,7 +8,7 @@ typedef void* OSOpenWindow(const char* title, i32 width, i32 height);
 typedef void  OSCloseWindow(void* window_pointer);
 typedef void* OSGetHandleFromWindow(void* window_pointer);
 typedef void* OSGetWindowFromHandle(void* handle_pointer);
-typedef void  OSGetEventList(OSEventList* event_list, MemoryArena* event_arena);
+typedef void  OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 
 typedef struct OSWindow
 {
@@ -16,7 +16,7 @@ typedef struct OSWindow
     OSCloseWindow* close;
     OSGetHandleFromWindow* get_handle_from_window;
     OSGetWindowFromHandle* get_window_from_handle;
-    OSGetEventList* get_event_list;
+    OSWindowGetEventList* get_event_list;
 } OSWindow;
 
 #ifdef WIN32
@@ -28,7 +28,7 @@ static OSWindow os_window =
     .close = &win32_window_close,
     .get_handle_from_window = &win32_get_handle_from_window,
     .get_window_from_handle = &win32_get_window_from_handle,
-    .get_event_list = &win32_get_event_list,
+    .get_event_list = &win32_window_get_event_list,
 };
 
 #else
@@ -70,7 +70,7 @@ static void* get_window_from_handle(void* handle)
     return window;
 }
 
-OSEventList os_get_events(void)
+OSEventList os_window_get_events(void)
 {
     static OSEventList os_event_list;
     static TemporaryMemory os_temporary_memory;
@@ -114,7 +114,7 @@ void os_window_close(OSHandle os_handle)
     os_window.close(window);
 }
 
-void os_init(void)
+void os_window_init(void)
 {
     if (!os_event_arena)
     {
