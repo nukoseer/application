@@ -85,6 +85,7 @@ struct OSEvent
     OSEventType type;
     OSEventModifier modifier;
     OSKey key;
+    u32 padding;
 };
 
 typedef struct OSEventList

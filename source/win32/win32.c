@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "types.h"
 #include "utils.h"
-#include "memory.h"
+#include "mem.h"
 #include "os.h"
 #include "win32.h"
 
@@ -152,7 +152,7 @@ void win32_window_close(void* window_pointer)
     }
 }
 
-void* win32_get_handle_from_window(void* window_pointer)
+void* win32_window_get_handle_from(void* window_pointer)
 {
     HWND result = 0;
     Win32Window* window = (Win32Window*)window_pointer;
@@ -167,7 +167,7 @@ void* win32_get_handle_from_window(void* window_pointer)
     return result;
 }
 
-void* win32_get_window_from_handle(void* handle_pointer)
+void* win32_window_get_window_from(void* handle_pointer)
 {
     HWND handle = (HWND)handle_pointer;
     Win32Window* window = 0;

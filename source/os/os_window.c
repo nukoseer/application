@@ -1,21 +1,21 @@
 #include "types.h"
 #include "utils.h"
-#include "memory.h"
+#include "mem.h"
 #include "os_events.h"
 #include "os_window.h"
 
-typedef void* OSOpenWindow(const char* title, i32 width, i32 height);
-typedef void  OSCloseWindow(void* window_pointer);
-typedef void* OSGetHandleFromWindow(void* window_pointer);
-typedef void* OSGetWindowFromHandle(void* handle_pointer);
+typedef void* OSWindowOpen(const char* title, i32 width, i32 height);
+typedef void  OSWindowClose(void* window_pointer);
+typedef void* OSWindowGetHandleFrom(void* window_pointer);
+typedef void* OSWindowGetWindowFrom(void* handle_pointer);
 typedef void  OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 
 typedef struct OSWindow
 {
-    OSOpenWindow* open;
-    OSCloseWindow* close;
-    OSGetHandleFromWindow* get_handle_from_window;
-    OSGetWindowFromHandle* get_window_from_handle;
+    OSWindowOpen* open;
+    OSWindowClose* close;
+    OSWindowGetHandleFrom* get_handle_from_window;
+    OSWindowGetWindowFrom* get_window_from_handle;
     OSWindowGetEventList* get_event_list;
 } OSWindow;
 
@@ -26,8 +26,8 @@ static OSWindow os_window =
 {
     .open = &win32_window_open,
     .close = &win32_window_close,
-    .get_handle_from_window = &win32_get_handle_from_window,
-    .get_window_from_handle = &win32_get_window_from_handle,
+    .get_handle_from_window = &win32_window_get_handle_from,
+    .get_window_from_handle = &win32_window_get_window_from,
     .get_event_list = &win32_window_get_event_list,
 };
 

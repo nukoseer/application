@@ -8,23 +8,23 @@
 typedef struct MemoryArena
 {
     void* memory;
-    u64 max_size;
-    u64 used_size;
+    memory_size max_size;
+    memory_size used_size;
 } MemoryArena;
 
 typedef struct TemporaryMemory
 {
     MemoryArena* memory_arena;
-    u64 initial_size;
+    memory_size initial_size;
 } TemporaryMemory;
 
-MemoryArena* allocate_memory_arena(u64 max_size);
+MemoryArena* allocate_memory_arena(memory_size max_size);
 void release_memory_arena(MemoryArena* memory_arena);
 TemporaryMemory begin_temporary_memory(MemoryArena* memory_arena);
 void end_temporary_memory(TemporaryMemory temporary_memory);
-void* push_size(MemoryArena* memory_arena, u64 size);
-void* push_size_zero(MemoryArena* memory_arena, u64 size);
-void memory_zero(void* memory, u64 size);
+void* push_size(MemoryArena* memory_arena, memory_size size);
+void* push_size_zero(MemoryArena* memory_arena, memory_size size);
+void memory_zero(void* memory, memory_size size);
 
 #define H_MEMORY_H
 #endif

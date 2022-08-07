@@ -1,9 +1,9 @@
 #include "types.h"
 #include "utils.h"
 #include "os_memory.h"
-#include "memory.h"
+#include "mem.h"
 
-MemoryArena* allocate_memory_arena(u64 max_size)
+MemoryArena* allocate_memory_arena(memory_size max_size)
 {
     MemoryArena* memory_arena = (MemoryArena*)os_memory_allocate(max_size);
 
@@ -34,7 +34,7 @@ void end_temporary_memory(TemporaryMemory temporary_memory)
     temporary_memory.memory_arena->used_size = temporary_memory.initial_size;
 }
 
-void* push_size(MemoryArena* memory_arena, u64 size)
+void* push_size(MemoryArena* memory_arena, memory_size size)
 {
     void* result = 0;
     
@@ -46,7 +46,7 @@ void* push_size(MemoryArena* memory_arena, u64 size)
     return result;
 }
 
-void* push_size_zero(MemoryArena* memory_arena, u64 size)
+void* push_size_zero(MemoryArena* memory_arena, memory_size size)
 {
     void* result = push_size(memory_arena, size);
     
@@ -56,7 +56,7 @@ void* push_size_zero(MemoryArena* memory_arena, u64 size)
 }
 
 // NOTE: We can use memset.
-void memory_zero(void* memory, u64 size)
+void memory_zero(void* memory, memory_size size)
 {
     u8* pointer = (u8*)memory;
     

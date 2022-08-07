@@ -2,7 +2,7 @@
 
 #include "os_events.h"
 
-typedef u64 OSHandle;
+typedef memory_size OSHandle;
 
 OSHandle os_window_open(const char* title, i32 width, i32 height);
 void os_window_close(OSHandle os_handle);

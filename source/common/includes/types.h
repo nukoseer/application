@@ -17,6 +17,8 @@ typedef int32_t  b32; // NOTE: For bool.
 typedef float    f32;
 typedef double   f64;
 
+typedef size_t   memory_size;
+
 #undef TRUE
 #undef FALSE
 #define TRUE     (1)
