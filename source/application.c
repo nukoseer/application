@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "os.h"
 
 static void stretchy_buffer_test(void)

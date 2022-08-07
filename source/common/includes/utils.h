@@ -17,7 +17,7 @@ typedef struct BufferHeader
 {
     memory_size len;
     memory_size cap;
-    u8 buf[]; // NOTE: MSVC does not support zero sized arrays.
+    u8 buf[]; // NOTE: MSVC supports flexible array members as a compiler extension.
 } BufferHeader;
 
 // NOTE: Internal macros.
@@ -31,7 +31,7 @@ typedef struct BufferHeader
 #define BUFFER_LENGTH(buff) BUFF__LENGTH(buff)
 #define BUFFER_CAPACITY(buff) BUFF__CAPACITY(buff)
 #define BUFFER_PUSH(buff, x) (BUFF__GROW(buff, 1), (buff)[BUFF__BASE(buff)->len++] = (x))
-#define BUFFER_FREE(buff) ((buff) ? (free(BUFF__BASE(buff)), (buff) = NULL) : 0)
+#define BUFFER_FREE(buff) ((buff) ? (os_memory_heap_release(BUFF__BASE(buff)), (buff) = NULL) : 0)
 
 inline void* buffer_grow(void* buffer, memory_size new_capacity, memory_size element_size)
 {
