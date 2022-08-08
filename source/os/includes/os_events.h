@@ -95,54 +95,5 @@ typedef struct OSEventList
     u64 count;
 } OSEventList;
 
-inline void os_event_insert(OSEventList* event_list, OSEvent* prev, OSEvent* event)
-{
-    if (!event_list->first)
-    {
-        event_list->first = event_list->last = event;
-        event->next = 0;
-        event->prev = 0;
-    }
-    else if (!prev)
-    {
-        event->prev = 0;
-        event->next = event_list->first;
-
-        if (event_list->first)
-        {
-            event_list->first->prev = event;
-            event_list->first = event;
-        }
-    }
-    else
-    {
-        if (prev->next)
-        {
-            prev->next->prev = event;
-        }
-         
-        event->next = prev->next;
-        event->prev = prev;
-        prev->next = event;
-         
-        if (prev == event_list->last)
-        {
-            event_list->last = event;
-        }
-    }
-
-    ++event_list->count;
-}
-
-inline void os_event_push_back(OSEventList* event_list, OSEvent* event)
-{
-    os_event_insert(event_list, event_list->last, event);
-}
-
-inline void os_event_push_front(OSEventList* event_list, OSEvent* event)
-{
-    os_event_insert(event_list, 0, event);
-}
-
 #define H_OS_EVENTS_H
 #endif

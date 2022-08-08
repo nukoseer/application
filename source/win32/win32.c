@@ -57,6 +57,13 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         }
         break;
 
+        case WM_KEYUP:
+        {
+            event = push_struct(event_arena, OSEvent);
+            event->type = OS_EVENT_TYPE_RELEASE;
+        }
+        break;
+
         // case WM_QUIT:
         // {
         //     win32_should_quit = TRUE;
@@ -73,7 +80,8 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
 
     if (event)
     {
-        os_event_push_back(event_list, event);
+        DLL_PUSH_BACK(event_list->first, event_list->last, event);
+        ++event_list->count;
     }
 
     if (temporary_memory.initial_size)

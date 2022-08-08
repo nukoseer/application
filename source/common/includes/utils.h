@@ -3,6 +3,9 @@
 #include <types.h>
 #include "os_memory.h"
 
+//////////////////////////////////
+// NOTE: General helper macros. //
+//////////////////////////////////
 #define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
@@ -12,12 +15,14 @@
 #define MEGABYTES(n) (KILOBYTES(n) << 10)
 #define GIGABYTES(n) (MEGABYTES(n) << 10)
 
-// NOTE: Stretchy buffer implementation.
+///////////////////////////////////////////////////
+// NOTE: Start - stretchy buffer implementation. //
+///////////////////////////////////////////////////
 typedef struct BufferHeader
 {
     memory_size len;
     memory_size cap;
-    u8 buf[]; // NOTE: MSVC supports flexible array members as a compiler extension.
+    u8 buf[]; // NOTE: MSVC supports flexible array members as a compiler extension. But, normally it is in the C99 standard?.
 } BufferHeader;
 
 // NOTE: Internal macros.
@@ -55,7 +60,62 @@ inline void* buffer_grow(void* buffer, memory_size new_capacity, memory_size ele
 
     return buffer_header->buf;
 }
-// NOTE: End of stretcy buffer implementation.
+////////////////////////////////////////////////
+// NOTE: End - stretcy buffer implementation. //
+////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+// NOTE: Start - generic doubly linked list (DLL) macro implementation. //
+//////////////////////////////////////////////////////////////////////////
+// TODO: More tests.
+#define DLL_INSERT(f, l, p, e)                                                           \
+(!(f) ? (((f) = (l) = (e)), ((e)->next = (e)->prev = 0)) :                               \
+(!(p) ? ((e)->prev = 0, (e)->next = (f), (f) ? ((f)->prev = (e), ((f) = (e))) : 0) :     \
+((p)->next ? (p)->next->prev = (e) : 0, ((e)->next = (p)->next, (e)->prev = (p), (p)->next = (e)), ((p == l) ? ((l) = (e)) : 0))))
+
+#define DLL_PUSH_BACK(first, last, element) DLL_INSERT(first, last, last, element)
+#define DLL_PUSH_FRONT(first, last, element) DLL_INSERT(T, first, last, 0, element)
+
+// NOTE: Function version of DLL_INSERT macro. (f=first, l=last, p=prev, e=element)
+// void DLL_INSERT(T** first, T** last, T* prev, T* element)       \
+// {                                                               \
+//     if (!(*first))                                              \
+//     {                                                           \
+//         *first = *last = element;                               \
+//         element->next = 0;                                      \
+//         element->prev = 0;                                      \
+//     }                                                           \
+//     else if (!prev)                                             \
+//     {                                                           \
+//         element->prev = 0;                                      \
+//         element->next = *first;                                 \
+//                                                                 \
+//         if (*first)                                             \
+//         {                                                       \
+//             (*first)->prev = element;                           \
+//             *first = element;                                   \
+//         }                                                       \
+//     }                                                           \
+//     else                                                        \
+//     {                                                           \
+//         if (prev->next)                                         \
+//         {                                                       \
+//             prev->next->prev = element;                         \
+//         }                                                       \
+//                                                                 \
+//         element->next = prev->next;                             \
+//         element->prev = prev;                                   \
+//         prev->next = element;                                   \
+//                                                                 \
+//         if (prev == *last)                                      \
+//         {                                                       \
+//             *last = element;                                    \
+//         }                                                       \
+//     }                                                           \
+// }
+////////////////////////////////////////////////////////////////////////
+// NOTE: End - generic doubly linked list (DLL) macro implementation. //
+////////////////////////////////////////////////////////////////////////
 
 #define H_UTILS_H
 #endif
