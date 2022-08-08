@@ -25,6 +25,8 @@ typedef struct BufferHeader
     u8 buf[]; // NOTE: MSVC supports flexible array members as a compiler extension. But, normally it is in the C99 standard?.
 } BufferHeader;
 
+// TODO: Maybe we should change function macros to lower-case?
+
 // NOTE: Internal macros.
 #define BUFF__BASE(buff) ((BufferHeader*)(void*)((u8*)(buff) - OFFSETOF(BufferHeader, buf)))
 #define BUFF__LENGTH(buff) ((buff) ? BUFF__BASE(buff)->len : 0)
@@ -68,13 +70,13 @@ inline void* buffer_grow(void* buffer, memory_size new_capacity, memory_size ele
 // NOTE: Start - generic doubly linked list (DLL) macro implementation. //
 //////////////////////////////////////////////////////////////////////////
 // TODO: More tests.
-#define DLL_INSERT(f, l, p, e)                                                           \
+#define DLL_INSERT(f, l, p, e, prev, next)                                               \
 (!(f) ? (((f) = (l) = (e)), ((e)->next = (e)->prev = 0)) :                               \
 (!(p) ? ((e)->prev = 0, (e)->next = (f), (f) ? ((f)->prev = (e), ((f) = (e))) : 0) :     \
 ((p)->next ? (p)->next->prev = (e) : 0, ((e)->next = (p)->next, (e)->prev = (p), (p)->next = (e)), ((p == l) ? ((l) = (e)) : 0))))
 
-#define DLL_PUSH_BACK(first, last, element) DLL_INSERT(first, last, last, element)
-#define DLL_PUSH_FRONT(first, last, element) DLL_INSERT(T, first, last, 0, element)
+#define DLL_PUSH_BACK(first, last, element) DLL_INSERT(first, last, last, element, prev, next)
+#define DLL_PUSH_FRONT(first, last, element) DLL_INSERT(last, first, first, element, next, prev)
 
 // NOTE: Function version of DLL_INSERT macro. (f=first, l=last, p=prev, e=element)
 // void DLL_INSERT(T** first, T** last, T* prev, T* element)       \

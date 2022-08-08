@@ -5,7 +5,7 @@
 
 MemoryArena* allocate_memory_arena(memory_size max_size)
 {
-    MemoryArena* memory_arena = (MemoryArena*)os_memory_allocate(max_size);
+    MemoryArena* memory_arena = (MemoryArena*)os_memory_allocate(max_size + sizeof(MemoryArena));
 
     memory_arena->memory = (u8*)memory_arena + sizeof(MemoryArena);
     memory_arena->used_size = 0;
