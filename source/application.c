@@ -106,7 +106,7 @@ static void application(void)
     os_handle2 = os_window_open("Application Window2", 640, 480);
     
     UNUSED_VARIABLE(os_handle);
-    UNUSED_VARIABLE(os_handle2)
+    UNUSED_VARIABLE(os_handle2);
 
     while (!os_quit())
     {
