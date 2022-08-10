@@ -1,9 +1,9 @@
 #ifndef H_MEMORY_H
 
-#define push_array(memory_arena, count, type) (push_size(memory_arena, ((count) * sizeof(type))))
-#define push_struct(memory_arena, type) ((type*)(push_size(memory_arena, sizeof(type))))
-#define push_array_zero(memory_arena, count, type) (push_size_zero(memory_arena, ((count) * sizeof(type))))
-#define push_struct_zero(memory_arena, type) ((type*)(push_size_zero(memory_arena, sizeof(type))))
+#define PUSH_ARRAY(memory_arena, count, type) (push_size(memory_arena, ((count) * sizeof(type))))
+#define PUSH_STRUCT(memory_arena, type) ((type*)(push_size(memory_arena, sizeof(type))))
+#define PUSH_ARRAY_ZERO(memory_arena, count, type) (push_size_zero(memory_arena, ((count) * sizeof(type))))
+#define PUSH_STRUCT_ZERO(memory_arena, type) ((type*)(push_size_zero(memory_arena, sizeof(type))))
 
 typedef struct MemoryArena
 {

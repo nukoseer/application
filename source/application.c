@@ -48,7 +48,7 @@ static void doubly_linked_list_test(void)
 
         for (i = 0; i < count; ++i)
         {
-            Number* number = push_struct(arena, Number);
+            Number* number = PUSH_STRUCT(arena, Number);
             number->i = i;
         
             DLL_PUSH_BACK(number_list.first, number_list.last, number);
@@ -74,7 +74,7 @@ static void doubly_linked_list_test(void)
 
         for (i = 0; i < count; ++i)
         {
-            Number* number = push_struct(arena, Number);
+            Number* number = PUSH_STRUCT(arena, Number);
             number->i = i;
         
             DLL_PUSH_FRONT(number_list.first, number_list.last, number);

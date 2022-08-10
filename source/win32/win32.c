@@ -45,21 +45,21 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
     {
         case WM_CLOSE:
         {
-            event = push_struct(event_arena, OSEvent);
+            event = PUSH_STRUCT(event_arena, OSEvent);
             event->type = OS_EVENT_TYPE_WINDOW_CLOSE;
         }
         break;
 
         case WM_KEYDOWN:
         {
-            event = push_struct(event_arena, OSEvent);
+            event = PUSH_STRUCT(event_arena, OSEvent);
             event->type = OS_EVENT_TYPE_PRESS;
         }
         break;
 
         case WM_KEYUP:
         {
-            event = push_struct(event_arena, OSEvent);
+            event = PUSH_STRUCT(event_arena, OSEvent);
             event->type = OS_EVENT_TYPE_RELEASE;
         }
         break;
@@ -123,7 +123,7 @@ void* win32_window_open(const char* title, int width, int height)
         register_window_class();
 
     if (!win32_window)
-        win32_window = push_struct_zero(win32_memory_arena, Win32Window);
+        win32_window = PUSH_STRUCT_ZERO(win32_memory_arena, Win32Window);
 
     ASSERT(win32_instance && win32_window);
 

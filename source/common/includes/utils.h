@@ -25,14 +25,12 @@ typedef struct BufferHeader
     u8 buf[]; // NOTE: MSVC supports flexible array members as a compiler extension. But, normally it is in the C99 standard?.
 } BufferHeader;
 
-// TODO: Maybe we should change function macros to lower-case?
-
 // NOTE: Internal macros.
 #define BUFF__BASE(buff) ((BufferHeader*)(void*)((u8*)(buff) - OFFSETOF(BufferHeader, buf)))
 #define BUFF__LENGTH(buff) ((buff) ? BUFF__BASE(buff)->len : 0)
 #define BUFF__CAPACITY(buff) ((buff) ? BUFF__BASE(buff)->cap : 0)
 #define BUFF__SHOULD_GROW(buff, n) (BUFF__LENGTH(buff) + (n) <= BUFF__CAPACITY(buff))
-#define BUFF__GROW(buff, n) (BUFF__SHOULD_GROW(buff, n) ? 0 : ((buff) = buffer_grow(buff, (n) + BUFF__LENGTH(buff), sizeof(*(buff)))))
+#define BUFF__GROW(buff, n) (BUFF__SHOULD_GROW(buff, n) ? 0 : ((buff) = buffer__grow(buff, (n) + BUFF__LENGTH(buff), sizeof(*(buff)))))
 
 // NOTE: User macros.
 #define BUFFER_LENGTH(buff) BUFF__LENGTH(buff)
@@ -40,7 +38,7 @@ typedef struct BufferHeader
 #define BUFFER_PUSH(buff, x) (BUFF__GROW(buff, 1), (buff)[BUFF__BASE(buff)->len++] = (x))
 #define BUFFER_FREE(buff) ((buff) ? (os_memory_heap_release(BUFF__BASE(buff)), (buff) = NULL) : 0)
 
-inline void* buffer_grow(void* buffer, memory_size new_capacity, memory_size element_size)
+inline void* buffer__grow(void* buffer, memory_size new_capacity, memory_size element_size)
 {
     memory_size capacity = MAX(1 + BUFFER_CAPACITY(buffer) * 2, new_capacity);
     memory_size size = capacity * element_size + OFFSETOF(BufferHeader, buf);
