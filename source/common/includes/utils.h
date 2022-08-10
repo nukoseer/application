@@ -7,6 +7,7 @@
 // NOTE: General helper macros. //
 //////////////////////////////////
 #define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
+#define UNUSED_VARIABLE(x) ((void)x)
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #define OFFSETOF(T, m) ((size_t)(&(((T*)0)->m)))

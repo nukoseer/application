@@ -15,8 +15,8 @@ typedef struct Win32Window
     int height;
 } Win32Window;
 
+static u32 win32_window_count;
 static HINSTANCE win32_instance;
-static Win32Window* win32_window;
 static MemoryArena* win32_memory_arena;
 static OSEventList* win32_event_list;
 static MemoryArena* win32_event_arena;
@@ -80,6 +80,9 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
 
     if (event)
     {
+        Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
+        event->window = (OSHandle)window->handle;
+
         DLL_PUSH_BACK(event_list->first, event_list->last, event);
         ++event_list->count;
     }
@@ -114,16 +117,18 @@ static void register_window_class(void)
 
 void* win32_window_open(const char* title, int width, int height)
 {
+    static Win32Window* win32_window;
     HWND handle = 0;
     HDC device_context = 0;
     DWORD style = WS_OVERLAPPEDWINDOW;
     DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
-
+    
     if (!win32_instance)
         register_window_class();
 
-    if (!win32_window)
-        win32_window = PUSH_STRUCT_ZERO(win32_memory_arena, Win32Window);
+    // TODO: Probably we should use arenas or/and stretchy buffer for multiple windows.
+    win32_window = PUSH_STRUCT_ZERO(win32_memory_arena, Win32Window);
+    ++win32_window_count;
 
     ASSERT(win32_instance && win32_window);
 
@@ -139,7 +144,7 @@ void* win32_window_open(const char* title, int width, int height)
     
     SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)win32_window);
     ShowWindow(handle, SW_SHOW);
-
+    
     return win32_window;
 }
 
@@ -157,6 +162,12 @@ void win32_window_close(void* window_pointer)
     if (window->handle)
     {
         DestroyWindow(window->handle);
+        --win32_window_count;
+
+        if (!win32_window_count)
+        {
+            win32_should_quit = TRUE;
+        }
     }
 }
 

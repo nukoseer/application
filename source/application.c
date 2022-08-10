@@ -98,13 +98,17 @@ static void doubly_linked_list_test(void)
 
 static void application(void)
 {
-    b32 quit = FALSE;
     OSHandle os_handle = 0;
+    OSHandle os_handle2 = 0;
 
     os_init();
     os_handle = os_window_open("Application Window", 640, 480);
+    os_handle2 = os_window_open("Application Window2", 640, 480);
+    
+    UNUSED_VARIABLE(os_handle);
+    UNUSED_VARIABLE(os_handle2)
 
-    while (!quit) //!os_quit()
+    while (!os_quit())
     {
         OSTimerHandle os_timer_handle = os_timer_begin();
         OSEventList event_list = os_window_get_events();
@@ -115,15 +119,13 @@ static void application(void)
         {
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
             {
-                os_window_close(os_handle);
-                quit = TRUE;
-                break;
+                os_window_close(event->window);
             }
         }
 
         {
             f64 milliseconds = os_timer_end(os_timer_handle);
-            (void)milliseconds;
+            UNUSED_VARIABLE(milliseconds);
 
             // printf("%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
         }

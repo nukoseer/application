@@ -1,7 +1,6 @@
 #include "types.h"
 #include "utils.h"
 #include "mem.h"
-#include "os_events.h"
 #include "os_window.h"
 
 typedef void* OSWindowOpen(const char* title, i32 width, i32 height);
