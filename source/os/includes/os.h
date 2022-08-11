@@ -6,7 +6,7 @@
 #include "os_memory.h"
 #include "os_timer.h"
 
-b32 os_quit(void);
+b32 os_should_quit(void);
 void os_destroy(void);
 void os_init(void);
 

@@ -108,7 +108,7 @@ static void application(void)
     UNUSED_VARIABLE(os_handle);
     UNUSED_VARIABLE(os_handle2);
 
-    while (!os_quit())
+    while (!os_should_quit())
     {
         OSTimerHandle os_timer_handle = os_timer_begin();
         OSEventList event_list = os_window_get_events();

@@ -13,14 +13,14 @@ typedef void OSDestroy(void);
 
 typedef struct OS
 {
-    OSQuit* quit;
+    OSQuit* should_quit;
     OSDestroy* destroy;
     OSInit* init;
 } OS;
 
 static OS os =
 {
-    .quit = &win32_quit,
+    .should_quit = &win32_should_quit,
     .destroy = &win32_destroy,
     .init = &win32_init,
 };
@@ -29,12 +29,12 @@ static OS os =
 #error WIN32 must be defined.
 #endif
 
-b32 os_quit(void)
+b32 os_should_quit(void)
 {
     b32 quit = FALSE;
 
-    ASSERT(os.quit);
-    quit = os.quit();
+    ASSERT(os.should_quit);
+    quit = os.should_quit();
 
     return quit;
 }

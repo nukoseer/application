@@ -4,6 +4,7 @@
 #define PUSH_STRUCT(memory_arena, type) ((type*)(push_size(memory_arena, sizeof(type))))
 #define PUSH_ARRAY_ZERO(memory_arena, count, type) (push_size_zero(memory_arena, ((count) * sizeof(type))))
 #define PUSH_STRUCT_ZERO(memory_arena, type) ((type*)(push_size_zero(memory_arena, sizeof(type))))
+#define STRUCT_ZERO(memory, type) (memory_zero(memory, sizeof(type)))
 
 typedef struct MemoryArena
 {
