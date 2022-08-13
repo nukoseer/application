@@ -28,7 +28,7 @@ static void doubly_linked_list_test(void)
     {
         struct Number_* prev;
         struct Number_* next;
-        u32 i;
+        u64 i;
     } Number;
     typedef struct NumberList_
     {

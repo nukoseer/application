@@ -19,8 +19,9 @@ if %compiler%==clang-cl (
      if %compiler%==cl (
      	set linker=link
 	set ar=lib
-	set common_compiler_flags=%common_compiler_flags% 
+	set common_compiler_flags=%common_compiler_flags% /wd4200 /wd5045
 	REM /wd4200 MSVC does not support Flexible Array Members
+	REM /wd5045 Spectre mitigation (?) warning
      )
 )
 
