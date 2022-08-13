@@ -1,6 +1,6 @@
 #ifndef H_OS_WINDOW_H
 
-typedef memory_size OSWindowHandle;
+typedef uptr OSWindowHandle;
 
 typedef enum OSKey
 {

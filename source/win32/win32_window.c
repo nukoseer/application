@@ -117,7 +117,7 @@ static HINSTANCE register_window_class(void)
     return instance;
 }
 
-void* win32_window_open(const char* title, int width, int height)
+uptr win32_window_open(const char* title, int width, int height)
 {
     static HINSTANCE win32_instance = 0;
     Win32Window* win32_window = NULL;
@@ -158,10 +158,10 @@ void* win32_window_open(const char* title, int width, int height)
 
     ++win32_window_count;
 
-    return win32_window;
+    return (uptr)win32_window;
 }
 
-void win32_window_close(void* window_pointer)
+void win32_window_close(uptr window_pointer)
 {
     Win32Window* window = (Win32Window*)window_pointer;
 
@@ -189,7 +189,7 @@ void win32_window_close(void* window_pointer)
     }
 }
 
-void* win32_window_get_handle_from(void* window_pointer)
+uptr win32_window_get_handle_from(uptr window_pointer)
 {
     HWND result = 0;
     Win32Window* window = (Win32Window*)window_pointer;
@@ -201,10 +201,10 @@ void* win32_window_get_handle_from(void* window_pointer)
         result = window->handle;
     }
 
-    return result;
+    return (uptr)result;
 }
 
-void* win32_window_get_window_from(void* handle_pointer)
+uptr win32_window_get_window_from(uptr handle_pointer)
 {
     HWND handle = (HWND)handle_pointer;
     Win32Window* window = 0;
@@ -215,7 +215,7 @@ void* win32_window_get_window_from(void* handle_pointer)
 
     ASSERT(window);
 
-    return window;
+    return (uptr)window;
 }
 
 void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_arena)

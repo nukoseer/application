@@ -3,10 +3,10 @@
 #include "mem.h"
 #include "os_window.h"
 
-typedef void* OSWindowOpen(const char* title, i32 width, i32 height);
-typedef void  OSWindowClose(void* window_pointer);
-typedef void* OSWindowGetHandleFrom(void* window_pointer);
-typedef void* OSWindowGetWindowFrom(void* handle_pointer);
+typedef uptr OSWindowOpen(const char* title, i32 width, i32 height);
+typedef void  OSWindowClose(uptr window_pointer);
+typedef uptr OSWindowGetHandleFrom(uptr window_pointer);
+typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
 typedef void  OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 
 typedef struct OSWindow
@@ -36,10 +36,10 @@ static OSWindow os_window =
 
 static MemoryArena* os_event_arena;
 
-static OSWindowHandle get_handle_from_window(void* window)
+static OSWindowHandle get_handle_from_window(uptr window)
 {
     OSWindowHandle os_window_handle = 0;
-    void* window_handle = 0;
+    uptr window_handle = 0;
 
     ASSERT(os_window.get_handle_from_window);
     window_handle = os_window.get_handle_from_window(window);
@@ -54,9 +54,9 @@ static OSWindowHandle get_handle_from_window(void* window)
     return os_window_handle;
 }
 
-static void* get_window_from_handle(void* handle)
+static uptr get_window_from_handle(uptr handle)
 {
-    void* window = 0;
+    uptr window = 0;
 
     ASSERT(handle);
 
@@ -92,7 +92,7 @@ OSEventList os_window_get_events(void)
 
 OSWindowHandle os_window_open(const char* title, i32 width, i32 height)
 {
-    void* window = 0;
+    uptr window = 0;
     OSWindowHandle os_window_handle = 0;
     
     ASSERT(os_window.open);
@@ -105,8 +105,8 @@ OSWindowHandle os_window_open(const char* title, i32 width, i32 height)
 
 void os_window_close(OSWindowHandle os_window_handle)
 {
-    void* window = 0;
-    void* handle = (void*)os_window_handle;
+    uptr window = 0;
+    uptr handle = os_window_handle;
 
     ASSERT(os_window.close);
     window = get_window_from_handle(handle);
