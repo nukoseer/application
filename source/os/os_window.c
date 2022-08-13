@@ -19,7 +19,7 @@ typedef struct OSWindow
 } OSWindow;
 
 #ifdef WIN32
-#include "win32.h"
+#include "win32_window.h"
 
 static OSWindow os_window =
 {
@@ -36,22 +36,22 @@ static OSWindow os_window =
 
 static MemoryArena* os_event_arena;
 
-static OSHandle get_handle_from_window(void* window)
+static OSWindowHandle get_handle_from_window(void* window)
 {
-    OSHandle os_handle = 0;
-    void* handle = 0;
+    OSWindowHandle os_window_handle = 0;
+    void* window_handle = 0;
 
     ASSERT(os_window.get_handle_from_window);
-    handle = os_window.get_handle_from_window(window);
+    window_handle = os_window.get_handle_from_window(window);
 
-    ASSERT(handle);
+    ASSERT(window_handle);
     
-    if (handle)
+    if (window_handle)
     {
-        os_handle = (OSHandle)handle;
+        os_window_handle = (OSWindowHandle)window_handle;
     }
 
-    return os_handle;
+    return os_window_handle;
 }
 
 static void* get_window_from_handle(void* handle)
@@ -90,23 +90,23 @@ OSEventList os_window_get_events(void)
     return os_event_list;
 }
 
-OSHandle os_window_open(const char* title, i32 width, i32 height)
+OSWindowHandle os_window_open(const char* title, i32 width, i32 height)
 {
     void* window = 0;
-    OSHandle os_handle = 0;
+    OSWindowHandle os_window_handle = 0;
     
     ASSERT(os_window.open);
     window = os_window.open(title, width, height);
-    os_handle = get_handle_from_window(window);
-    ASSERT(os_handle);
+    os_window_handle = get_handle_from_window(window);
+    ASSERT(os_window_handle);
     
-    return os_handle;
+    return os_window_handle;
 }
 
-void os_window_close(OSHandle os_handle)
+void os_window_close(OSWindowHandle os_window_handle)
 {
     void* window = 0;
-    void* handle = (void*)os_handle;
+    void* handle = (void*)os_window_handle;
 
     ASSERT(os_window.close);
     window = get_window_from_handle(handle);
@@ -117,6 +117,6 @@ void os_window_init(void)
 {
     if (!os_event_arena)
     {
-        os_event_arena = allocate_memory_arena(1024 * 1024);
+        os_event_arena = allocate_memory_arena(KILOBYTES(1));
     }
 }

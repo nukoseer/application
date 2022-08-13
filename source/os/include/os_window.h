@@ -1,6 +1,6 @@
 #ifndef H_OS_WINDOW_H
 
-typedef memory_size OSHandle;
+typedef memory_size OSWindowHandle;
 
 typedef enum OSKey
 {
@@ -82,7 +82,7 @@ typedef enum OSEventModifier
 typedef struct OSEvent OSEvent;
 struct OSEvent
 {
-    OSHandle window;
+    OSWindowHandle window_handle;
     OSEvent* next;
     OSEvent* prev;
     OSEventType type;
@@ -99,8 +99,8 @@ typedef struct OSEventList
     u64 count;
 } OSEventList;
 
-OSHandle os_window_open(const char* title, i32 width, i32 height);
-void os_window_close(OSHandle os_handle);
+OSWindowHandle os_window_open(const char* title, i32 width, i32 height);
+void os_window_close(OSWindowHandle os_window_handle);
 OSEventList os_window_get_events(void);
 void os_window_init(void);
 
