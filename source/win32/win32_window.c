@@ -235,6 +235,20 @@ void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_are
     win32_window_event_arena = 0;
 }
 
+void win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)
+{
+    Win32Window* window = (Win32Window*)window_pointer;
+    RECT rect = { 0 };
+
+    if (GetWindowRect(window->handle, &rect))
+    {
+        *x = rect.left;
+        *y = rect.top;
+        *width = rect.right - rect.left;
+        *height = rect.bottom - rect.top;
+    }
+}
+
 u32 win32_window_get_window_count(void)
 {
     return win32_window_count;

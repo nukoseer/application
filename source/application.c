@@ -6,10 +6,14 @@ static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
     OSWindowHandle os_window_handle2 = 0;
+    i32 x, y, width, height = 0;
 
     os_init();
     os_window_handle = os_window_open("Application Window", 640, 480);
     os_window_handle2 = os_window_open("Application Window2", 640, 480);
+
+    os_window_get_position(os_window_handle, &x, &y, &width, &height);
+    printf("x: %d, y: %d, width: %d, height: %d\n", x, y, width, height);
     
     UNUSED_VARIABLE(os_window_handle);
     UNUSED_VARIABLE(os_window_handle2);
