@@ -3,12 +3,12 @@
 #include "os_memory.h"
 
 typedef void* OSMemoryReserve(memory_size size);
-typedef void  OSMemoryCommit(void* memory, memory_size size);
-typedef void  OSMemoryDecommit(void* memory, memory_size size);
-typedef void  OSMemoryRelease(void* memory);
+typedef void* OSMemoryCommit(void* memory, memory_size size);
+typedef b32   OSMemoryDecommit(void* memory, memory_size size);
+typedef b32   OSMemoryRelease(void* memory);
 typedef void* OSMemoryHeapAllocate(memory_size size);
 typedef void* OSMemoryHeapReallocate(void* memory, memory_size size);
-typedef void  OSMemoryHeapRelease(void* memory);
+typedef b32   OSMemoryHeapRelease(void* memory);
 
 typedef struct OSMemory
 {
@@ -49,16 +49,24 @@ void* os_memory_reserve(memory_size size)
     return result;
 }
 
-void os_memory_commit(void* memory, memory_size size)
+void* os_memory_commit(void* memory, memory_size size)
 {
+    void* result = NULL;
+    
     ASSERT(os_memory.commit);
-    os_memory.commit(memory, size);
+    result = os_memory.commit(memory, size);
+
+    return result;
 }
 
-void os_memory_decommit(void* memory, memory_size size)
+b32 os_memory_decommit(void* memory, memory_size size)
 {
+    b32 result = FALSE;
+    
     ASSERT(os_memory.decommit);
-    os_memory.decommit(memory, size);
+    result = os_memory.decommit(memory, size);
+
+    return result;
 }
 
 void* os_memory_allocate(memory_size size)
@@ -71,10 +79,14 @@ void* os_memory_allocate(memory_size size)
     return result;
 }
 
-void os_memory_release(void* memory)
+b32 os_memory_release(void* memory)
 {
+    b32 result = FALSE;
+    
     ASSERT(os_memory.release);
-    os_memory.release(memory);
+    result = os_memory.release(memory);
+
+    return result;
 }
 
 void* os_memory_heap_allocate(memory_size size)
@@ -97,8 +109,12 @@ void* os_memory_heap_reallocate(void* memory, memory_size size)
     return result;
 }
 
-void os_memory_heap_release(void* memory)
+b32 os_memory_heap_release(void* memory)
 {
+    b32 result = FALSE;
+    
     ASSERT(os_memory.heap_release);
     os_memory.heap_release(memory);
+
+    return result;
 }

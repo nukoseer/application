@@ -161,18 +161,19 @@ uptr win32_window_open(const char* title, int width, int height)
     return (uptr)win32_window;
 }
 
-void win32_window_close(uptr window_pointer)
+b32 win32_window_close(uptr window_pointer)
 {
     Win32Window* window = (Win32Window*)window_pointer;
+    b32 result = FALSE;
 
-    ASSERT(window);
+    ASSERT(window && window->device_context && window->handle);
 
     if (window->device_context)
     {
-        ReleaseDC(window->handle, window->device_context);
+        result = ReleaseDC(window->handle, window->device_context);
     }
 
-    if (window->handle)
+    if (result && window->handle)
     {
         Win32Window* temp = win32_window_free_list;
 
@@ -180,13 +181,15 @@ void win32_window_close(uptr window_pointer)
         win32_window_free_list->next = temp;
         --win32_window_count;
 
-        DestroyWindow(window->handle);
+        result = DestroyWindow(window->handle);
 
         if (!win32_window_count)
         {
             win32_quit = TRUE;
         }
     }
+
+    return !!result;
 }
 
 uptr win32_window_get_handle_from(uptr window_pointer)
@@ -194,12 +197,8 @@ uptr win32_window_get_handle_from(uptr window_pointer)
     HWND result = 0;
     Win32Window* window = (Win32Window*)window_pointer;
 
-    ASSERT(window);
-
-    if (window)
-    {
-        result = window->handle;
-    }
+    ASSERT(window && window->handle);
+    result = window->handle;
 
     return (uptr)result;
 }
@@ -210,9 +209,7 @@ uptr win32_window_get_window_from(uptr handle_pointer)
     Win32Window* window = 0;
 
     ASSERT(handle);
-
     window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
-
     ASSERT(window);
 
     return (uptr)window;
@@ -235,43 +232,37 @@ void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_are
     win32_window_event_arena = 0;
 }
 
-void win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)
+b32 win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)
 {
     Win32Window* window = (Win32Window*)window_pointer;
+    RECT rect = { 0 };
+    BOOL result = 0;
 
-    ASSERT(window);
-    
-    if (window)
+    ASSERT(window && window->handle);
+    result = GetWindowRect(window->handle, &rect);
+    ASSERT(result);
+
+    if (result)
     {
-        RECT rect = { 0 };
-        BOOL result = 0;
-
-        result = GetWindowRect(window->handle, &rect);
-        ASSERT(result);
-
-        if (result)
-        {
-            *x = rect.left;
-            *y = rect.top;
-            *width = rect.right - rect.left;
-            *height = rect.bottom - rect.top;
-        }    
+        *x = rect.left;
+        *y = rect.top;
+        *width = rect.right - rect.left;
+        *height = rect.bottom - rect.top;
     }
+
+    return !!result;
 }
 
-void win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 height)
+b32 win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 height)
 {
     Win32Window* window = (Win32Window*)window_pointer;
+    BOOL result = 0;
     
-    ASSERT(window);
-    
-    if (window)
-    {
-        BOOL result = 0;
+    ASSERT(window && window->handle);
+    result = SetWindowPos(window->handle, 0, x, y, width, height, SWP_SHOWWINDOW);
+    ASSERT(result);
 
-        result = SetWindowPos(window->handle, 0, x, y, width, height, SWP_SHOWWINDOW);
-        ASSERT(result);
-    }
+    return !!result;
 }
 
 u32 win32_window_get_window_count(void)

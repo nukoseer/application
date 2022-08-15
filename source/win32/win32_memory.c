@@ -34,7 +34,7 @@ void* win32_memory_reserve(memory_size size)
     return result;
 }
 
-void win32_memory_commit(void* memory, memory_size size)
+void* win32_memory_commit(void* memory, memory_size size)
 {
     void* result = NULL;
     memory_size snapped_size = 0;
@@ -47,18 +47,24 @@ void win32_memory_commit(void* memory, memory_size size)
 
     result = VirtualAlloc(memory, snapped_size, MEM_COMMIT, PAGE_READWRITE);
     ASSERT(result);
+
+    return result;
 }
 
-void win32_memory_decommit(void* memory, memory_size size)
+b32 win32_memory_decommit(void* memory, memory_size size)
 {
     b32 result = VirtualFree(memory, size, MEM_DECOMMIT);
     ASSERT(result);
+
+    return !!result;
 }
 
-void win32_memory_release(void* memory)
+b32 win32_memory_release(void* memory)
 {
     b32 result = VirtualFree(memory, 0, MEM_RELEASE);
     ASSERT(result);
+
+    return !!result;
 }
 
 void* win32_memory_heap_allocate(memory_size size)
@@ -81,10 +87,12 @@ void* win32_memory_heap_reallocate(void* memory, memory_size size)
     return result;
 }
 
-void win32_memory_heap_release(void* memory)
+b32 win32_memory_heap_release(void* memory)
 {
     b32 result = FALSE;
     
     result = HeapFree(GetProcessHeap(), 0, memory);
     ASSERT(result);
+
+    return !!result;
 }
