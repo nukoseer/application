@@ -9,6 +9,7 @@ typedef uptr OSWindowGetHandleFrom(uptr window_pointer);
 typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
 typedef void OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 typedef void OSWindowGetPosition(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
+typedef void OsWindowSetPosition(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
 
 typedef struct OSWindow
 {
@@ -18,6 +19,7 @@ typedef struct OSWindow
     OSWindowGetWindowFrom* get_window_from_handle;
     OSWindowGetEventList* get_event_list;
     OSWindowGetPosition* get_position;
+    OsWindowSetPosition* set_position;
 } OSWindow;
 
 #ifdef WIN32
@@ -31,6 +33,7 @@ static OSWindow os_window =
     .get_window_from_handle = &win32_window_get_window_from,
     .get_event_list = &win32_window_get_event_list,
     .get_position = &win32_window_get_position,
+    .set_position = &win32_window_set_position,
 };
 
 #else
@@ -102,6 +105,17 @@ void os_window_get_position(OSWindowHandle os_window_handle, i32* x, i32* y, i32
 
     ASSERT(os_window.get_position);
     os_window.get_position(window, x, y, width, height);
+}
+
+void os_window_set_position(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height)
+{
+    uptr window = 0;
+    uptr handle = os_window_handle;
+
+    window = get_window_from_handle(handle);
+
+    ASSERT(os_window.set_position);
+    os_window.set_position(window, x, y, width, height);
 }
 
 OSWindowHandle os_window_open(const char* title, i32 width, i32 height)
