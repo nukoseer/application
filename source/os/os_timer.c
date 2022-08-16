@@ -5,13 +5,15 @@
 #define INVALID_TIMER_HANDLE   0
 #define MAX_TIMER_COUNT        11
 
-typedef i64 OSTimerGetTick(void);
-typedef i64 OSTimerGetFrequency(void);
+typedef i64  OSTimerGetTick(void);
+typedef i64  OSTimerGetFrequency(void);
+typedef void OSTimerSleep(u32 milliseconds);
 
 typedef struct OSTimer
 {
     OSTimerGetTick* get_tick;
     OSTimerGetFrequency* get_frequency;
+    OSTimerSleep* sleep;
 } OSTimer;
 
 #ifdef WIN32
@@ -21,6 +23,7 @@ static OSTimer os_timer =
 {
     .get_tick = &win32_timer_get_tick,
     .get_frequency = &win32_timer_get_frequency,
+    .sleep = &win32_timer_sleep,
 };
 
 #else
@@ -112,4 +115,10 @@ f64 os_timer_end(OSTimerHandle os_timer_handle)
     os_timer_tick->tick = 0;
     
     return elapsed_seconds;
+}
+
+void os_timer_sleep(u32 milliseconds)
+{
+    ASSERT(os_timer.sleep);
+    os_timer.sleep(milliseconds);
 }

@@ -7,6 +7,7 @@ i64 os_timer_get_frequency(void);
 f64 os_timer_ticks_to_milliseconds(i64 tick);
 OSTimerHandle os_timer_begin(void);
 f64 os_timer_end(OSTimerHandle os_timer_handle);
+void os_timer_sleep(u32 milliseconds);
 
 #define H_OS_TIMER_H
 #endif

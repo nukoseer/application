@@ -24,7 +24,7 @@ static void application(void)
         OSTimerHandle os_timer_handle = os_timer_begin();
         OSEventList event_list = os_window_get_events();
 
-        Sleep(16);
+        os_timer_sleep(16);
 
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
@@ -40,7 +40,6 @@ static void application(void)
             // UNUSED_VARIABLE(milliseconds);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-
             os_window_set_title(os_window_handle, milliseconds_string);
 
         }

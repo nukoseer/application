@@ -31,3 +31,8 @@ i64 win32_timer_get_frequency(void)
 
     return (i64)frequency.QuadPart;
 }
+
+void win32_timer_sleep(u32 milliseconds)
+{
+    Sleep(milliseconds);
+}
