@@ -265,6 +265,18 @@ b32 win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 
     return !!result;
 }
 
+b32 win32_window_set_title(uptr window_pointer, const char* title)
+{
+    Win32Window* window = (Win32Window*)window_pointer;
+    BOOL result = 0;
+
+    ASSERT(window && window->handle);
+    result = SetWindowText(window->handle, title);
+    ASSERT(result);
+
+    return !!result;
+}
+
 u32 win32_window_get_window_count(void)
 {
     return win32_window_count;

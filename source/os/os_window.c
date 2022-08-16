@@ -10,6 +10,8 @@ typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
 typedef void OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 typedef b32  OSWindowGetPosition(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
 typedef b32  OsWindowSetPosition(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
+typedef b32  OsWindowSetPosition(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
+typedef b32  OSWindowSetTitle(uptr window_pointer, const char* title);
 
 typedef struct OSWindow
 {
@@ -20,6 +22,7 @@ typedef struct OSWindow
     OSWindowGetEventList* get_event_list;
     OSWindowGetPosition* get_position;
     OsWindowSetPosition* set_position;
+    OSWindowSetTitle* set_title;
 } OSWindow;
 
 #ifdef WIN32
@@ -34,6 +37,7 @@ static OSWindow os_window =
     .get_event_list = &win32_window_get_event_list,
     .get_position = &win32_window_get_position,
     .set_position = &win32_window_set_position,
+    .set_title = &win32_window_set_title,
 };
 
 #else
@@ -124,6 +128,23 @@ b32 os_window_set_position(OSWindowHandle os_window_handle, i32 x, i32 y, i32 wi
     {
         ASSERT(os_window.set_position);
         result = os_window.set_position(window, x, y, width, height);
+    }
+
+    return result;
+}
+
+b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title)
+{
+    b32 result = FALSE;
+    uptr window = 0;
+    uptr handle = os_window_handle;
+
+    window = get_window_from_handle(handle);
+
+    if (window)
+    {
+        ASSERT(os_window.set_title);
+        result = os_window.set_title(window, title);
     }
 
     return result;

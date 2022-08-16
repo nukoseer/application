@@ -99,11 +99,13 @@ typedef struct OSEventList
     u64 count;
 } OSEventList;
 
-OSWindowHandle os_window_open(const char* title, i32 width, i32 height);
-b32 os_window_close(OSWindowHandle os_window_handle);
+
 OSEventList os_window_get_events(void);
 b32 os_window_get_position(OSWindowHandle os_window_handle, i32* x, i32* y, i32* width, i32* height);
 b32 os_window_set_position(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height);
+b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title);
+OSWindowHandle os_window_open(const char* title, i32 width, i32 height);
+b32 os_window_close(OSWindowHandle os_window_handle);
 void os_window_init(void);
 
 #define H_OS_WINDOW_H

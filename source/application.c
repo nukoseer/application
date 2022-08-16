@@ -1,3 +1,4 @@
+#include <Windows.h>
 #include <stdio.h>
 #include "os.h"
 #include "test.h"
@@ -23,7 +24,7 @@ static void application(void)
         OSTimerHandle os_timer_handle = os_timer_begin();
         OSEventList event_list = os_window_get_events();
 
-        // sleep(16);
+        Sleep(16);
 
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
@@ -34,10 +35,14 @@ static void application(void)
         }
 
         {
+            char milliseconds_string[32] = { 0 };
             f64 milliseconds = os_timer_end(os_timer_handle);
-            UNUSED_VARIABLE(milliseconds);
+            // UNUSED_VARIABLE(milliseconds);
 
-            // printf("%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
+            sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
+
+            os_window_set_title(os_window_handle, milliseconds_string);
+
         }
     }
 
