@@ -1,4 +1,3 @@
-#include <Windows.h>
 #include <stdio.h>
 #include "os.h"
 #include "test.h"
