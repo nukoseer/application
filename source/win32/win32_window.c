@@ -99,22 +99,22 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
 
 static HINSTANCE register_window_class(void)
 {
-    HINSTANCE instance = 0;
     WNDCLASSEX window_class = { 0 };
     ATOM atom = 0;
-
-    instance = GetModuleHandle(0);
 
     window_class.cbSize = sizeof(window_class);
     window_class.style = CS_HREDRAW | CS_VREDRAW;
     window_class.lpfnWndProc = window_proc;
-    window_class.hInstance = instance;
+    window_class.hInstance = GetModuleHandle(0);
     window_class.lpszClassName = WINDOW_CLASS_NAME;
 
     atom = RegisterClassEx(&window_class);
     ASSERT(atom);
 
-    return instance;
+    if (!atom)
+        window_class.hInstance = 0;
+
+    return window_class.hInstance;
 }
 
 uptr win32_window_open(const char* title, int width, int height)
@@ -129,34 +129,37 @@ uptr win32_window_open(const char* title, int width, int height)
     if (!win32_instance)
         win32_instance = register_window_class();
 
-    if (win32_window_free_list)
+    if (win32_instance)
     {
-        win32_window = win32_window_free_list;
-        win32_window_free_list = win32_window_free_list->next;
+        if (win32_window_free_list)
+        {
+            win32_window = win32_window_free_list;
+            win32_window_free_list = win32_window_free_list->next;
+        }
+        else
+        {
+            win32_window = PUSH_STRUCT(win32_window_memory_arena, Win32Window);
+        }
+
+        STRUCT_ZERO(win32_window, Win32Window);
+
+        ASSERT(win32_instance && win32_window);
+
+        handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, title, style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, win32_instance, 0);
+        ASSERT(handle);
+        device_context = GetDC(handle);
+        ASSERT(device_context);
+
+        win32_window->handle = handle;
+        win32_window->device_context = device_context;
+        win32_window->width = width;
+        win32_window->height = height;
+
+        SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)win32_window);
+        ShowWindow(handle, SW_SHOW);
+
+        ++win32_window_count;
     }
-    else
-    {
-        win32_window = PUSH_STRUCT(win32_window_memory_arena, Win32Window);
-    }
-
-    STRUCT_ZERO(win32_window, Win32Window);
-
-    ASSERT(win32_instance && win32_window);
-
-    handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, title, style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, win32_instance, 0);
-    ASSERT(handle);
-    device_context = GetDC(handle);
-    ASSERT(device_context);
-
-    win32_window->handle = handle;
-    win32_window->device_context = device_context;
-    win32_window->width = width;
-    win32_window->height = height;
-
-    SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)win32_window);
-    ShowWindow(handle, SW_SHOW);
-
-    ++win32_window_count;
 
     return (uptr)win32_window;
 }
