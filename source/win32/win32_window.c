@@ -6,72 +6,114 @@
 #include "win32_window.h"
 
 #define WINDOW_CLASS_NAME ("application_window_class")
+#define MSG_WINDOW_OPEN   (WM_USER + 1)
+#define MSG_WINDOW_CLOSE  (MSG_WINDOW_OPEN + 1)
 
 typedef struct Win32Window Win32Window;
 typedef struct Win32Window
 {
+    HANDLE semaphore_handle;
     HWND handle;
     HDC device_context;
     int width;
     int height;
+    const char* title;
     Win32Window* next;
 } Win32Window;
 
+typedef struct ExWPARAM
+{
+    HWND handle;
+    WPARAM wparam;
+} ExWPARAM;
+
 static Win32Window* win32_window_free_list;
-static u32 win32_window_count;
 static MemoryArena* win32_window_memory_arena;
 static OSEventList* win32_window_event_list;
 static MemoryArena* win32_window_event_arena;
+static u32 win32_window_count;
+
+static DWORD main_thread_id;
+static DWORD window_thread_id;
+
 static b32 win32_quit;
+
+// NOTE: Main thread message loop.
+static void process_message(void)
+{
+    OSEvent* event = 0;
+    MemoryArena* event_arena = 0;
+    OSEventList* event_list = 0;
+    TemporaryMemory temporary_memory = { 0 };
+    MSG message = { 0 };
+
+    ASSERT(win32_window_event_arena && win32_window_event_list);
+
+    temporary_memory = begin_temporary_memory(win32_window_event_arena);
+    event_list = win32_window_event_list;
+    event_arena = win32_window_event_arena;
+
+    while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+    {
+        switch (message.message)
+        {
+            case WM_CLOSE:
+            {
+                event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
+                event->type = OS_EVENT_TYPE_WINDOW_CLOSE;
+            }
+            break;
+            case WM_KEYDOWN:
+            {
+                event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
+                event->type = OS_EVENT_TYPE_PRESS;
+            }
+            break;
+            case WM_KEYUP:
+            {
+                event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
+                event->type = OS_EVENT_TYPE_RELEASE;
+            }
+            break;
+        }
+
+        if (event)
+        {
+            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(((ExWPARAM*)&message.wParam)->handle, GWLP_USERDATA));
+
+            event->window_handle = (OSWindowHandle)window->handle;
+
+            DLL_PUSH_BACK(event_list->first, event_list->last, event);
+            ++event_list->count;
+        }
+    }
+
+    if (temporary_memory.initial_size)
+    {
+        end_temporary_memory(temporary_memory);
+    }
+
+}
 
 static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
 {
     LRESULT result = 0;
-    OSEvent* event = 0;
-    MemoryArena* event_arena = 0;
-    OSEventList* event_list = 0;
-    OSEventList proc_event_list = { 0 }; // NOTE: Windows can call window_proc whenever it needs.
-    TemporaryMemory temporary_memory = { 0 };
-
-    if (!win32_window_event_arena)
-    {
-        win32_window_event_list = &proc_event_list;
-        win32_window_event_arena = win32_window_memory_arena;
-        temporary_memory = begin_temporary_memory(win32_window_event_arena);
-    }
-
-    event_list = win32_window_event_list;
-    event_arena = win32_window_event_arena;
 
     switch (message)
     {
         case WM_CLOSE:
-        {
-            event = PUSH_STRUCT(event_arena, OSEvent);
-            event->type = OS_EVENT_TYPE_WINDOW_CLOSE;
-        }
-        break;
-
         case WM_KEYDOWN:
-        {
-            event = PUSH_STRUCT(event_arena, OSEvent);
-            event->type = OS_EVENT_TYPE_PRESS;
-        }
-        break;
-
         case WM_KEYUP:
         {
-            event = PUSH_STRUCT(event_arena, OSEvent);
-            event->type = OS_EVENT_TYPE_RELEASE;
+            ExWPARAM ex_wparam =
+            {
+                .handle = handle,    
+                .wparam = wparam,
+            };
+
+            PostThreadMessage(main_thread_id, message, *(WPARAM*)&ex_wparam, lparam);
         }
         break;
-
-        // case WM_QUIT:
-        // {
-        //     win32_should_quit = TRUE;
-        //     result = DefWindowProc(handle, message, wparam, lparam);
-        // }
-        // break;
 
         default:
         {
@@ -80,24 +122,91 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         break;
     }
 
-    if (event)
-    {
-        Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
-        event->window_handle = (OSWindowHandle)window->handle;
-
-        DLL_PUSH_BACK(event_list->first, event_list->last, event);
-        ++event_list->count;
-    }
-
-    if (temporary_memory.initial_size)
-    {
-        end_temporary_memory(temporary_memory);
-    }
-
     return result;
 }
 
-static HINSTANCE register_window_class(void)
+static void window_open(Win32Window* win32_window)
+{
+    HWND handle = 0;
+    HDC device_context = 0;
+    DWORD style = WS_OVERLAPPEDWINDOW;
+    DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
+
+    handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, win32_window->title, style, CW_USEDEFAULT, CW_USEDEFAULT, win32_window->width, win32_window->height, 0, 0, 0, 0);
+    ASSERT(handle);
+    device_context = GetDC(handle);
+    ASSERT(device_context);
+
+    win32_window->handle = handle;
+    win32_window->device_context = device_context;
+
+    SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)win32_window);
+    ShowWindow(handle, SW_SHOW);
+
+    ++win32_window_count;
+
+    ReleaseSemaphore(win32_window->semaphore_handle, 1, 0);
+}
+
+static void window_close(Win32Window* win32_window)
+{
+    BOOL result = DestroyWindow(win32_window->handle);
+
+    if (result)
+    {
+        Win32Window* temp = win32_window_free_list;
+
+        win32_window_free_list = win32_window;
+        win32_window_free_list->next = temp;
+        --win32_window_count;
+    }
+
+    ReleaseSemaphore(win32_window->semaphore_handle, 1, 0);
+}
+
+// NOTE: Actual window message loop that passes messages to main thread.
+static DWORD WINAPI window_thread_proc(LPVOID param)
+{
+    Win32Window* win32_window = (Win32Window*)param;
+
+    // NOTE: MSDN documentation:
+    // Because the system directs messages to individual windows in an application,
+    // a thread must create at least one window before starting its message loop.
+    window_open(win32_window);
+
+    {
+        MSG message;
+
+        while (GetMessage(&message, 0, 0, 0))
+        {
+            switch (message.message)
+            {
+                case MSG_WINDOW_OPEN:
+                {
+                    win32_window = (Win32Window*)message.wParam;
+                    window_open(win32_window);
+                }
+                break;
+                case MSG_WINDOW_CLOSE:
+                {
+                    win32_window = (Win32Window*)message.wParam;
+                    window_close(win32_window);    
+                }
+                break;
+                default:
+                {
+                    TranslateMessage(&message);
+                    DispatchMessage(&message);
+                }
+                break;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static void register_window_class(void)
 {
     WNDCLASSEX window_class = { 0 };
     ATOM atom = 0;
@@ -109,57 +218,46 @@ static HINSTANCE register_window_class(void)
     window_class.lpszClassName = WINDOW_CLASS_NAME;
 
     atom = RegisterClassEx(&window_class);
+    UNUSED_VARIABLE(atom);
     ASSERT(atom);
-
-    if (!atom)
-        window_class.hInstance = 0;
-
-    return window_class.hInstance;
 }
 
 uptr win32_window_open(const char* title, int width, int height)
 {
-    static HINSTANCE win32_instance = 0;
-    Win32Window* win32_window = NULL;
-    HWND handle = 0;
-    HDC device_context = 0;
-    DWORD style = WS_OVERLAPPEDWINDOW;
-    DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
+    static HANDLE semaphore_handle = 0;
+    static Win32Window* win32_window = 0;
 
-    if (!win32_instance)
-        win32_instance = register_window_class();
-
-    if (win32_instance)
+    if (win32_window_free_list)
     {
-        if (win32_window_free_list)
-        {
-            win32_window = win32_window_free_list;
-            win32_window_free_list = win32_window_free_list->next;
-        }
-        else
-        {
-            win32_window = PUSH_STRUCT(win32_window_memory_arena, Win32Window);
-        }
-
-        STRUCT_ZERO(win32_window, Win32Window);
-
-        ASSERT(win32_instance && win32_window);
-
-        handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, title, style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, win32_instance, 0);
-        ASSERT(handle);
-        device_context = GetDC(handle);
-        ASSERT(device_context);
-
-        win32_window->handle = handle;
-        win32_window->device_context = device_context;
-        win32_window->width = width;
-        win32_window->height = height;
-
-        SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)win32_window);
-        ShowWindow(handle, SW_SHOW);
-
-        ++win32_window_count;
+        win32_window = win32_window_free_list;
+        win32_window_free_list = win32_window_free_list->next;
     }
+    else
+    {
+        win32_window = PUSH_STRUCT(win32_window_memory_arena, Win32Window);
+    }
+    STRUCT_ZERO(win32_window, Win32Window);
+    ASSERT(win32_window);
+
+    win32_window->title = title;
+    win32_window->width = width;
+    win32_window->height = height;
+
+    if (!win32_window_count)
+    {
+        semaphore_handle = CreateSemaphoreEx(0, 0, 1, 0, 0, SEMAPHORE_ALL_ACCESS);
+        win32_window->semaphore_handle = semaphore_handle;
+        CloseHandle(CreateThread(0, 0, window_thread_proc, win32_window, 0, &window_thread_id));
+
+        ASSERT(window_thread_id && semaphore_handle);
+    }
+    else
+    {
+        win32_window->semaphore_handle = semaphore_handle;
+        PostThreadMessage(window_thread_id, MSG_WINDOW_OPEN, (WPARAM)win32_window, 0);
+    }
+
+    WaitForSingleObjectEx(win32_window->semaphore_handle, INFINITE, FALSE);
 
     return (uptr)win32_window;
 }
@@ -174,17 +272,21 @@ b32 win32_window_close(uptr window_pointer)
     if (window->device_context)
     {
         result = ReleaseDC(window->handle, window->device_context);
+        ASSERT(result);
     }
 
     if (result && window->handle)
     {
-        Win32Window* temp = win32_window_free_list;
+        u32 temp_window_count = win32_window_count;
 
-        win32_window_free_list = window;
-        win32_window_free_list->next = temp;
-        --win32_window_count;
+        PostThreadMessage(window_thread_id, MSG_WINDOW_CLOSE, (WPARAM)window, 0);
+        WaitForSingleObjectEx(window->semaphore_handle, INFINITE, FALSE);
 
-        result = DestroyWindow(window->handle);
+        if (temp_window_count <= win32_window_count)
+        {
+            result = FALSE;
+            ASSERT(result);
+        }
 
         if (!win32_window_count)
         {
@@ -220,16 +322,10 @@ uptr win32_window_get_window_from(uptr handle_pointer)
 
 void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
 {
-    MSG message;
-
     win32_window_event_list = event_list;
     win32_window_event_arena = event_arena;
 
-    while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
-    {
-        TranslateMessage(&message);
-        DispatchMessage(&message);
-    }
+    process_message();
 
     win32_window_event_list = 0;
     win32_window_event_arena = 0;
@@ -260,7 +356,7 @@ b32 win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 
 {
     Win32Window* window = (Win32Window*)window_pointer;
     BOOL result = 0;
-    
+
     ASSERT(window && window->handle);
     result = SetWindowPos(window->handle, 0, x, y, width, height, SWP_SHOWWINDOW);
     ASSERT(result);
@@ -292,5 +388,9 @@ void win32_window_destroy(void)
 
 void win32_window_init(void)
 {
+    register_window_class();
+    main_thread_id = GetCurrentThreadId();
     win32_window_memory_arena = allocate_memory_arena(KILOBYTES(1));
+
+    ASSERT(main_thread_id && win32_window_memory_arena);
 }
