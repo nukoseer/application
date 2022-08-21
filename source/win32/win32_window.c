@@ -222,6 +222,20 @@ static void register_window_class(void)
     ASSERT(atom);
 }
 
+static void set_process_dpi_aware(void)
+{
+    b32 result = 0;
+    
+    result = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+    
+    if (!result)
+    {
+        result = !!SetProcessDPIAware();
+    }
+
+    ASSERT(result);
+}
+
 uptr win32_window_open(const char* title, int width, int height)
 {
     static HANDLE semaphore_handle = 0;
@@ -389,6 +403,7 @@ void win32_window_destroy(void)
 void win32_window_init(void)
 {
     register_window_class();
+    set_process_dpi_aware();
     main_thread_id = GetCurrentThreadId();
     win32_window_memory_arena = allocate_memory_arena(KILOBYTES(1));
 

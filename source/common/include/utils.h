@@ -1,12 +1,17 @@
 #ifndef H_UTILS_H
 
-#include <types.h>
+#include "types.h"
 #include "os_memory.h"
 
 //////////////////////////////////
 // NOTE: General helper macros. //
 //////////////////////////////////
-#define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
+#if 1
+    #define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
+#else
+    #define ASSERT(x)
+#endif
+
 #define UNUSED_VARIABLE(x) ((void)(x))
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
