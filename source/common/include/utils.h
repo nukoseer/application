@@ -6,13 +6,15 @@
 //////////////////////////////////
 // NOTE: General helper macros. //
 //////////////////////////////////
-#if 1
+#if 0
     #define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
 #else
     #define ASSERT(x)
 #endif
 
 #define UNUSED_VARIABLE(x) ((void)(x))
+
+#define ARRAY_COUNT(x) (sizeof(x) / sizeof(*(x)))
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 #define OFFSETOF(T, m) ((size_t)(&(((T*)0)->m)))

@@ -31,6 +31,10 @@ static void application(void)
             {
                 os_window_close(event->window_handle);
             }
+            else if (event->type == OS_EVENT_TYPE_PRESS)
+            {
+                printf("handle: %llu, key: %d\n", event->window_handle, event->key);
+            }
         }
         os_window_get_position(os_window_handle, &x, &y, &width, &height);
         os_window_set_position(os_window_handle2, x + width, y, width, height);

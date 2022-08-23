@@ -10,7 +10,7 @@
 #define MSG_WINDOW_CLOSE  (MSG_WINDOW_OPEN + 1)
 
 typedef struct Win32Window Win32Window;
-typedef struct Win32Window
+struct Win32Window
 {
     HANDLE semaphore_handle;
     HWND handle;
@@ -19,14 +19,17 @@ typedef struct Win32Window
     int height;
     const char* title;
     Win32Window* next;
-} Win32Window;
+};
 
-typedef struct ExWPARAM
+typedef struct MPARAM MPARAM;
+struct MPARAM
 {
     HWND handle;
     WPARAM wparam;
-} ExWPARAM;
+    MPARAM* next;
+};
 
+static MPARAM* win32_window_message_free_list;
 static Win32Window* win32_window_free_list;
 static MemoryArena* win32_window_memory_arena;
 static OSEventList* win32_window_event_list;
@@ -37,6 +40,35 @@ static DWORD main_thread_id;
 static DWORD window_thread_id;
 
 static b32 win32_quit;
+
+static MPARAM* create_mparam(HWND handle, WPARAM wparam)
+{
+    MPARAM* mparam = 0;
+
+    if (win32_window_message_free_list)
+    {
+        mparam = win32_window_message_free_list;
+        win32_window_message_free_list = win32_window_message_free_list->next;
+    }
+    else
+    {
+        mparam = PUSH_STRUCT(win32_window_memory_arena, MPARAM);
+    }
+    STRUCT_ZERO(mparam, MPARAM);
+
+    mparam->handle = handle;
+    mparam->wparam = wparam;
+
+    return mparam;
+}
+
+static void free_mparam(MPARAM* mparam)
+{
+    MPARAM* temp = win32_window_message_free_list;
+    
+    win32_window_message_free_list = mparam;
+    win32_window_message_free_list->next = temp;
+}
 
 // NOTE: Main thread message loop.
 static void process_message(void)
@@ -55,6 +87,10 @@ static void process_message(void)
 
     while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
     {
+        MPARAM* mparam = (MPARAM*)message.wParam;
+        WPARAM wparam = mparam->wparam;
+        LPARAM lparam = message.lParam;
+
         switch (message.message)
         {
             case WM_CLOSE:
@@ -64,35 +100,77 @@ static void process_message(void)
             }
             break;
             case WM_KEYDOWN:
-            {
-                event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
-                event->type = OS_EVENT_TYPE_PRESS;
-            }
-            break;
             case WM_KEYUP:
             {
+                static OSKey key_map[256] = { 0 };
+                b32 is_down = !(lparam & (1U << 31));
+                OSEventType type = is_down ? OS_EVENT_TYPE_PRESS : OS_EVENT_TYPE_RELEASE;
+                OSKey key = OS_KEY_NULL;
+
+                if (!key_map[1])
+                {
+                    u32 i = 0;
+                    u32 j = 0;
+
+                    for (i = 'A', j = OS_KEY_A; i <= 'Z'; i += 1, j += 1)
+                    {
+                        key_map[i] = (OSKey)j;
+                    }
+
+                    for (i = '0', j = OS_KEY_0; i <= '9'; i += 1, j += 1)
+                    {
+                        key_map[i] = (OSKey)j;
+                    }
+
+                    for (i = VK_F1, j = OS_KEY_F1; i <= VK_F24; i += 1, j += 1)
+                    {
+                        key_map[i] = (OSKey)j;
+                    }
+
+                    key_map[VK_ESCAPE]  = OS_KEY_ESC;
+                    key_map[VK_TAB]     = OS_KEY_TAB;
+                    key_map[VK_SPACE]   = OS_KEY_SPACE;
+                    key_map[VK_RETURN]  = OS_KEY_ENTER;
+                    key_map[VK_CONTROL] = OS_KEY_CTRL;
+                    key_map[VK_SHIFT]   = OS_KEY_SHIFT;
+                    key_map[VK_MENU]    = OS_KEY_ALT;
+                    key_map[VK_UP]      = OS_KEY_UP;
+                    key_map[VK_LEFT]    = OS_KEY_LEFT;
+                    key_map[VK_DOWN]    = OS_KEY_DOWN;
+                    key_map[VK_RIGHT]   = OS_KEY_RIGHT;
+                }
+
+                if (wparam < ARRAY_COUNT(key_map))
+                {
+                    key = key_map[wparam];
+                }
+                
                 event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
-                event->type = OS_EVENT_TYPE_RELEASE;
+                event->key = key;
+                event->type = type;
+
+                
             }
             break;
         }
 
         if (event)
         {
-            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(((ExWPARAM*)&message.wParam)->handle, GWLP_USERDATA));
+            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(mparam->handle, GWLP_USERDATA));
 
             event->window_handle = (OSWindowHandle)window->handle;
 
             DLL_PUSH_BACK(event_list->first, event_list->last, event);
             ++event_list->count;
         }
+
+        free_mparam(mparam);
     }
 
     if (temporary_memory.initial_size)
     {
         end_temporary_memory(temporary_memory);
     }
-
 }
 
 static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
@@ -105,13 +183,9 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         case WM_KEYDOWN:
         case WM_KEYUP:
         {
-            ExWPARAM ex_wparam =
-            {
-                .handle = handle,    
-                .wparam = wparam,
-            };
+            MPARAM* mparam = create_mparam(handle, wparam);
 
-            PostThreadMessage(main_thread_id, message, *(WPARAM*)&ex_wparam, lparam);
+            PostThreadMessage(main_thread_id, message, (WPARAM)mparam, lparam);
         }
         break;
 
