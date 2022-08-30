@@ -29,45 +29,80 @@ struct MPARAM
     MPARAM* next;
 };
 
-static MPARAM* win32_window_message_free_list;
+typedef struct MPARAMFreeList
+{
+    MPARAM* first;
+    b32 is_busy;
+} MPARAMFreeList;
+
+static DWORD main_thread_id;
+static DWORD window_thread_id;
+
+static MPARAMFreeList win32_window_mparam_free_list;
 static Win32Window* win32_window_free_list;
 static MemoryArena* win32_window_memory_arena;
 static OSEventList* win32_window_event_list;
 static MemoryArena* win32_window_event_arena;
 static u32 win32_window_count;
 
-static DWORD main_thread_id;
-static DWORD window_thread_id;
-
 static b32 win32_quit;
 
-static MPARAM* create_mparam(HWND handle, WPARAM wparam)
+static void acquire_mparam_free_list(void)
 {
-    MPARAM* mparam = 0;
-
-    if (win32_window_message_free_list)
+    while (TRUE)
     {
-        mparam = win32_window_message_free_list;
-        win32_window_message_free_list = win32_window_message_free_list->next;
+        b32 busy = 0;
+
+        if ((busy = InterlockedCompareExchangeAcquire((volatile long*)&win32_window_mparam_free_list.is_busy, 1, 0)) == 0)
+        {
+            return;
+        }
+        WaitOnAddress((volatile void*)&win32_window_mparam_free_list.is_busy, &busy, sizeof(busy), INFINITE);
     }
-    else
+}
+
+static void release_mparam_free_list(void)
+{
+    InterlockedCompareExchangeRelease((volatile long*)&win32_window_mparam_free_list.is_busy, 0, win32_window_mparam_free_list.is_busy);
+    WakeByAddressSingle(&win32_window_mparam_free_list.is_busy);
+}
+
+static void send_mparam(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
+{
+    acquire_mparam_free_list();
     {
-        mparam = PUSH_STRUCT(win32_window_memory_arena, MPARAM);
+        MPARAM* mparam = 0;
+
+        if (win32_window_mparam_free_list.first)
+        {
+            mparam = win32_window_mparam_free_list.first;
+            win32_window_mparam_free_list.first = win32_window_mparam_free_list.first->next;
+        }
+        else
+        {
+            mparam = PUSH_STRUCT(win32_window_memory_arena, MPARAM);
+        }
+    
+        STRUCT_ZERO(mparam, MPARAM);
+        mparam->handle = handle;
+        mparam->wparam = wparam;
+
+        PostThreadMessage(main_thread_id, message, (WPARAM)mparam, lparam);
     }
-    STRUCT_ZERO(mparam, MPARAM);
-
-    mparam->handle = handle;
-    mparam->wparam = wparam;
-
-    return mparam;
+    release_mparam_free_list();
 }
 
 static void free_mparam(MPARAM* mparam)
 {
-    MPARAM* temp = win32_window_message_free_list;
-    
-    win32_window_message_free_list = mparam;
-    win32_window_message_free_list->next = temp;
+    acquire_mparam_free_list();
+    {
+        MPARAM* temp = 0;
+
+        temp = win32_window_mparam_free_list.first;
+        win32_window_mparam_free_list.first = mparam;
+        win32_window_mparam_free_list.first->next = temp;
+    }
+    release_mparam_free_list();
 }
 
 // NOTE: Main thread message loop.
@@ -148,8 +183,6 @@ static void process_message(void)
                 event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
                 event->key = key;
                 event->type = type;
-
-                
             }
             break;
         }
@@ -159,12 +192,11 @@ static void process_message(void)
             Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(mparam->handle, GWLP_USERDATA));
 
             event->window_handle = (OSWindowHandle)window->handle;
+            ++event_list->count;
 
             DLL_PUSH_BACK(event_list->first, event_list->last, event);
-            ++event_list->count;
+            free_mparam(mparam);
         }
-
-        free_mparam(mparam);
     }
 
     if (temporary_memory.initial_size)
@@ -183,9 +215,7 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         case WM_KEYDOWN:
         case WM_KEYUP:
         {
-            MPARAM* mparam = create_mparam(handle, wparam);
-
-            PostThreadMessage(main_thread_id, message, (WPARAM)mparam, lparam);
+            send_mparam(handle, message, wparam, lparam);
         }
         break;
 

@@ -38,7 +38,7 @@ set all_include=%common_include% %win32_include% %os_include%
 
 %ar% mem.obj os_memory.obj os_window.obj os_timer.obj os.obj win32_timer.obj win32_memory.obj win32_window.obj win32.obj /out:os.lib
 
-%linker% /debug /incremental:no application.obj mem.obj test.obj /out:application.exe os.lib User32.lib Winmm.lib /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup /wholearchive:clang_rt.asan-x86_64.lib
+%linker% /debug /fixed /incremental:no /opt:ref /opt:icf application.obj mem.obj test.obj /out:application.exe os.lib User32.lib Winmm.lib Synchronization.lib /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup /wholearchive:clang_rt.asan-x86_64.lib
 
 IF NOT EXIST binaries mkdir binaries
 pushd binaries
