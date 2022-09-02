@@ -33,6 +33,7 @@ typedef struct MPARAMFreeList
 {
     MPARAM* first;
     b32 is_busy;
+    u32 padding;
 } MPARAMFreeList;
 
 static DWORD main_thread_id;
