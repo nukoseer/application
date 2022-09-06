@@ -65,11 +65,11 @@ set all_include=%common_include% %win32_include% %os_include%
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %os_include% %test_include% %common_include% ..\source\common\mem.c ..\source\test\test.c
 
-%compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %win32_defines% %all_include% ..\source\os\os_memory.c ..\source\os\os_window.c ..\source\os\os_timer.c ..\source\os\os.c ..\source\win32\win32_timer.c ..\source\win32\win32_memory.c ..\source\win32\win32_window.c ..\source\win32\win32.c
+%compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %win32_defines% %all_include% ..\source\os\os_io.c ..\source\os\os_timer.c ..\source\os\os_memory.c ..\source\os\os_window.c ..\source\os\os.c ..\source\win32\win32_io.c ..\source\win32\win32_timer.c ..\source\win32\win32_memory.c ..\source\win32\win32_window.c ..\source\win32\win32.c
 
-%ar% mem.obj os_memory.obj os_window.obj os_timer.obj os.obj win32_timer.obj win32_memory.obj win32_window.obj win32.obj /out:os.lib
+%ar% mem.obj os_io.obj os_timer.obj os_memory.obj os_window.obj os.obj win32_io.obj win32_timer.obj win32_memory.obj win32_window.obj win32.obj /out:os.lib
 
-%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe mem.obj test.obj os.lib Kernel32.lib User32.lib Winmm.lib Synchronization.lib
+%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib Kernel32.lib User32.lib Winmm.lib Synchronization.lib libvcruntime.lib libucrt.lib
 
 REM libvcruntime.lib libucrt.lib
 
@@ -83,3 +83,4 @@ move ..\*.lib .
 popd
 
 popd
+

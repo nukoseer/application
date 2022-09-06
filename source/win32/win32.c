@@ -1,6 +1,7 @@
 #include "types.h"
 #include "win32.h"
 #include "win32_window.h"
+#include "win32_io.h"
 
 b32 win32_should_quit(void)
 {
@@ -15,4 +16,5 @@ void win32_destroy(void)
 void win32_init(void)
 {
     win32_window_init();
+    win32_io_init();
 }

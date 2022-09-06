@@ -6,7 +6,7 @@
 //////////////////////////////////
 // NOTE: General helper macros. //
 //////////////////////////////////
-#if 0
+#if 1
     #define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
 #else
     #define ASSERT(x)
@@ -22,6 +22,19 @@
 #define KILOBYTES(n) ((n) << 10)
 #define MEGABYTES(n) (KILOBYTES(n) << 10)
 #define GIGABYTES(n) (MEGABYTES(n) << 10)
+
+inline u32 string_length(const char* str)
+{
+    u32 length = 0;
+
+    while (str && *str)
+    {
+        ++length;
+        ++str;
+    }
+
+    return length;
+}
 
 ///////////////////////////////////////////////////
 // NOTE: Start - stretchy buffer implementation. //

@@ -36,8 +36,8 @@ static void application(void)
                 fprintf(stderr, "handle: %llu, key: %d\n", event->window_handle, event->key);
             }
         }
-        os_window_get_position(os_window_handle, &x, &y, &width, &height);
-        os_window_set_position(os_window_handle2, x + width, y, width, height);
+        // os_window_get_position(os_window_handle, &x, &y, &width, &height);
+        // os_window_set_position(os_window_handle2, x + width, y, width, height);
 
         {
             char milliseconds_string[32] = { 0 };
@@ -45,8 +45,10 @@ static void application(void)
             // UNUSED_VARIABLE(milliseconds);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-            os_window_set_title(os_window_handle, milliseconds_string);
-            os_window_set_title(os_window_handle2, milliseconds_string);
+            os_io_write_console(milliseconds_string);
+            
+            // os_window_set_title(os_window_handle, milliseconds_string);
+            // os_window_set_title(os_window_handle2, milliseconds_string);
         }
     }
 
