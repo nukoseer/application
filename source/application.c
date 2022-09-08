@@ -29,11 +29,14 @@ static void application(void)
         {
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
             {
+                os_io_write_console("handle: %llu, OS_EVENT_TYPE_WINDOW_CLOSE\n", event->window_handle);
                 os_window_close(event->window_handle);
             }
             else if (event->type == OS_EVENT_TYPE_PRESS)
             {
-                fprintf(stderr, "handle: %llu, key: %d\n", event->window_handle, event->key);
+                os_io_set_console_fg_color(event->key % 4);
+                // os_io_write_console("handle: %llu, key: %d\n", event->window_handle, event->key);
+                os_io_log_trace("handle: %llu, key: %d\n", event->window_handle, event->key);
             }
         }
         // os_window_get_position(os_window_handle, &x, &y, &width, &height);
@@ -45,7 +48,7 @@ static void application(void)
             // UNUSED_VARIABLE(milliseconds);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-            os_io_write_console(milliseconds_string);
+            // os_io_write_console(milliseconds_string);
             
             // os_window_set_title(os_window_handle, milliseconds_string);
             // os_window_set_title(os_window_handle2, milliseconds_string);
