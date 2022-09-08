@@ -7,7 +7,7 @@
 #define MAX_OUTPUT_LENGTH 512
 
 typedef u32 OSIOWriteConsole(const char* str, u32 length);
-typedef b32 OSIOSetConsoleFgColor(OSIOConsoleFgColor console_fg_color);
+typedef b32 OSIOSetConsoleFgColor(i32 console_fg_color);
 
 typedef struct OSIO
 {

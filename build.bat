@@ -44,7 +44,7 @@ if %debug%==yes (
 if %compiler%==clang-cl (
    set linker=lld-link
    set ar=llvm-lib
-   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fno-omit-frame-pointer /clang:-fuse-ld=lld-link /clang:-Wno-format-nonliteral -Wno-unreachable-code-break
+   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fno-omit-frame-pointer /clang:-fuse-ld=lld-link /clang:-Wno-format-nonliteral
 ) else (
      if %compiler%==cl (
      	set linker=link
