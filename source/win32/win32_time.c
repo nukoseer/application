@@ -2,11 +2,11 @@
 #include <timeapi.h>
 #include "types.h"
 #include "utils.h"
-#include "win32_timer.h"
+#include "win32_time.h"
 
 #define TIMER_UNINITIALIZED 1
 
-i64 win32_timer_get_tick(void)
+i64 win32_time_get_tick(void)
 {
     static MMRESULT is_time_granular = TIMER_UNINITIALIZED;
     LARGE_INTEGER tick = { 0 };
@@ -20,7 +20,7 @@ i64 win32_timer_get_tick(void)
     return (i64)tick.QuadPart;
 }
 
-i64 win32_timer_get_frequency(void)
+i64 win32_time_get_frequency(void)
 {
     // NOTE: Counts per second
     static LARGE_INTEGER frequency;
@@ -32,7 +32,7 @@ i64 win32_timer_get_frequency(void)
     return (i64)frequency.QuadPart;
 }
 
-void win32_timer_sleep(u32 milliseconds)
+void win32_time_sleep(u32 milliseconds)
 {
     Sleep(milliseconds);
 }

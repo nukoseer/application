@@ -20,10 +20,10 @@ static void application(void)
 
     while (!os_should_quit())
     {
-        OSTimerHandle os_timer_handle = os_timer_begin();
+        OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
         OSEventList event_list = os_window_get_events();
 
-        os_timer_sleep(16);
+        os_time_sleep(16);
 
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
@@ -44,7 +44,7 @@ static void application(void)
 
         {
             char milliseconds_string[32] = { 0 };
-            f64 milliseconds = os_timer_end(os_timer_handle);
+            f64 milliseconds = os_time_end_tick(os_time_tick_handle);
             // UNUSED_VARIABLE(milliseconds);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
