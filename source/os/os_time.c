@@ -8,12 +8,14 @@
 typedef i64  OSTimeGetTick(void);
 typedef i64  OSTimeGetFrequency(void);
 typedef void OSTimeSleep(u32 milliseconds);
+typedef void OSTimeNow(OSSystemTime* os_system_time);
 
 typedef struct OSTime
 {
     OSTimeGetTick* get_tick;
     OSTimeGetFrequency* get_frequency;
     OSTimeSleep* sleep;
+    OSTimeNow* now;
 } OSTime;
 
 #ifdef WIN32
@@ -24,6 +26,7 @@ static OSTime os_time =
     .get_tick = &win32_time_get_tick,
     .get_frequency = &win32_time_get_frequency,
     .sleep = &win32_time_sleep,
+    .now = &win32_time_now,
 };
 
 #else
@@ -121,4 +124,14 @@ void os_time_sleep(u32 milliseconds)
 {
     ASSERT(os_time.sleep);
     os_time.sleep(milliseconds);
+}
+
+OSSystemTime os_time_now(void)
+{
+    OSSystemTime os_system_time = { 0 };
+
+    ASSERT(os_time.now);
+    os_time.now(&os_system_time);
+
+    return os_system_time;
 }

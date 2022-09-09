@@ -18,6 +18,15 @@ static void application(void)
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     os_window_set_position(os_window_handle2, x + width, y, width, height);
 
+    {
+        char time_string[32] = { 0 };
+        OSSystemTime os_system_time = os_time_now();
+
+        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d\n", os_system_time.day, os_system_time.month, os_system_time.year,
+                os_system_time.hour, os_system_time.minute, os_system_time.second);
+        os_io_write_console(time_string);
+    }
+
     while (!os_should_quit())
     {
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
