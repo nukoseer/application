@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include "types.h"
 #include "utils.h"
+#include "os_time.h"
 #include "os_io.h"
 
 #define MAX_OUTPUT_LENGTH 512
@@ -72,3 +73,15 @@ u32 os_io_write_console(const char* fmt, ...)
     return length;
 }
 
+u32 os_io_write_time(void)
+{
+    char time_string[16] = { 0 };
+    OSDateTime os_local_time = os_time_local_now();
+    u32 length = 0;
+
+    sprintf(time_string, "%02d:%02d:%02d", os_local_time.hour, os_local_time.minute, os_local_time.second);
+
+    length = os_io_write_console(time_string);
+
+    return length;
+}

@@ -20,10 +20,10 @@ static void application(void)
 
     {
         char time_string[32] = { 0 };
-        OSSystemTime os_system_time = os_time_now();
+        OSDateTime os_local_time = os_time_local_now();
 
-        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d\n", os_system_time.day, os_system_time.month, os_system_time.year,
-                os_system_time.hour, os_system_time.minute, os_system_time.second);
+        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d\n", os_local_time.day, os_local_time.month, os_local_time.year,
+                                                                os_local_time.hour, os_local_time.minute, os_local_time.second);
         os_io_write_console(time_string);
     }
 

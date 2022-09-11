@@ -38,7 +38,7 @@ void win32_time_sleep(u32 milliseconds)
     Sleep(milliseconds);
 }
 
-void win32_time_now(OSSystemTime* os_system_time)
+void win32_time_system_now(OSDateTime* os_system_time)
 {
     SYSTEMTIME system_time = { 0 };
 
@@ -52,4 +52,20 @@ void win32_time_now(OSSystemTime* os_system_time)
     os_system_time->minute       = system_time.wMinute;
     os_system_time->second       = system_time.wSecond;
     os_system_time->milliseconds = system_time.wMilliseconds;
+}
+
+void win32_time_local_now(OSDateTime* os_local_time)
+{
+    SYSTEMTIME local_time = { 0 };
+
+    GetLocalTime(&local_time);
+
+    os_local_time->year         = local_time.wYear;
+    os_local_time->month        = local_time.wMonth;
+    os_local_time->day_of_week  = local_time.wDayOfWeek;
+    os_local_time->day          = local_time.wDay;
+    os_local_time->hour         = local_time.wHour;
+    os_local_time->minute       = local_time.wMinute;
+    os_local_time->second       = local_time.wSecond;
+    os_local_time->milliseconds = local_time.wMilliseconds;
 }

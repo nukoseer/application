@@ -18,22 +18,29 @@ b32 win32_io_set_console_fg_color(i32 console_fg_color)
             foreground_color = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
         }
         break;
-
+        case OS_IO_CONSOLE_FG_COLOR_GRAY:
+        {
+            foreground_color = FOREGROUND_INTENSITY;
+        }
+        break;
         case OS_IO_CONSOLE_FG_COLOR_RED:
         {
             foreground_color = FOREGROUND_RED;
         }
         break;
-
         case OS_IO_CONSOLE_FG_COLOR_GREEN:
         {
             foreground_color = FOREGROUND_GREEN;
         }
         break;
-
         case OS_IO_CONSOLE_FG_COLOR_BLUE:
         {
             foreground_color = FOREGROUND_BLUE;
+        }
+        break;
+        case OS_IO_CONSOLE_FG_COLOR_CYAN:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_BLUE | FOREGROUND_GREEN;
         }
         break;
     }
@@ -52,7 +59,6 @@ u32 win32_io_write_console(const char* str, u32 length)
     result = WriteFile(std_handle_output, str, length, &number_of_chars_written, 0);
     ASSERT(result);
     ASSERT(length == number_of_chars_written);
-    FlushFileBuffers(std_handle_output);
 
     return (u32)number_of_chars_written;
 }
