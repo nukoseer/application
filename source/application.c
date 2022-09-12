@@ -24,7 +24,13 @@ static void application(void)
 
         sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d\n", os_local_time.day, os_local_time.month, os_local_time.year,
                                                                 os_local_time.hour, os_local_time.minute, os_local_time.second);
-        os_io_write_console(time_string);
+
+        os_io_log_trace("%s", time_string);
+        os_io_log_debug("%s", time_string);
+        os_io_log_info("%s", time_string);
+        os_io_log_warn("%s", time_string);
+        os_io_log_error("%s", time_string);
+        os_io_log_fatal("%s", time_string);
     }
 
     while (!os_should_quit())

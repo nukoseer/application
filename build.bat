@@ -44,7 +44,10 @@ if %debug%==yes (
 if %compiler%==clang-cl (
    set linker=lld-link
    set ar=llvm-lib
-   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fno-omit-frame-pointer /clang:-fuse-ld=lld-link /clang:-Wno-format-nonliteral
+   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fuse-ld=lld-link /clang:-Wno-format-nonliteral
+   if %debug%==yes (
+   set clang_compiler_flags=!clang_compiler_flags! /clang:-fno-omit-frame-pointer
+   )
 ) else (
      if %compiler%==cl (
      	set linker=link
@@ -53,7 +56,7 @@ if %compiler%==clang-cl (
 	REM /wd4200 MSVC does not support Flexible Array Members
 	REM /wd5045 Spectre mitigation (?) warning
 	REM /wd4711 Function selected for automatic inline expansion
-	Rem /wd4710 Function not inlined
+	REM /wd4710 Function not inlined
      )
 )
 

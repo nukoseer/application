@@ -13,34 +13,79 @@ b32 win32_io_set_console_fg_color(i32 console_fg_color)
 
     switch (console_fg_color)
     {
-        case OS_IO_CONSOLE_FG_COLOR_WHITE:
-        {
-            foreground_color = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-        }
-        break;
-        case OS_IO_CONSOLE_FG_COLOR_GRAY:
-        {
-            foreground_color = FOREGROUND_INTENSITY;
-        }
-        break;
-        case OS_IO_CONSOLE_FG_COLOR_RED:
-        {
-            foreground_color = FOREGROUND_RED;
-        }
-        break;
-        case OS_IO_CONSOLE_FG_COLOR_GREEN:
-        {
-            foreground_color = FOREGROUND_GREEN;
-        }
-        break;
-        case OS_IO_CONSOLE_FG_COLOR_BLUE:
+        case CONSOLE_FG_COLOR_DBLUE:
         {
             foreground_color = FOREGROUND_BLUE;
         }
         break;
-        case OS_IO_CONSOLE_FG_COLOR_CYAN:
+        case CONSOLE_FG_COLOR_DGREEN:
         {
-            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_BLUE | FOREGROUND_GREEN;
+            foreground_color = FOREGROUND_GREEN;
+        }
+        break;
+        case CONSOLE_FG_COLOR_DCYAN:
+        {
+            foreground_color = FOREGROUND_BLUE | FOREGROUND_GREEN;
+        }
+        break;
+        case CONSOLE_FG_COLOR_DRED:
+        {
+            foreground_color = FOREGROUND_RED;
+        }
+        break;
+        case CONSOLE_FG_COLOR_DPURPLE:
+        {
+            foreground_color = FOREGROUND_BLUE | FOREGROUND_RED;
+        }
+        break;
+        case CONSOLE_FG_COLOR_DYELLOW:
+        {
+            foreground_color = FOREGROUND_GREEN | FOREGROUND_RED;
+        }
+        break;
+        case CONSOLE_FG_COLOR_DWHITE:
+        {
+            foreground_color = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+        }
+        break;
+        case CONSOLE_FG_COLOR_GRAY:
+        {
+            foreground_color = FOREGROUND_INTENSITY;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LBLUE:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_BLUE;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LGREEN:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LCYAN:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_BLUE;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LRED:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LPURPLE:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_BLUE;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LYELLOW:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN;
+        }
+        break;
+        case CONSOLE_FG_COLOR_LWHITE:
+        {
+            foreground_color = FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
         }
         break;
     }
