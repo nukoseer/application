@@ -25,12 +25,12 @@ static void application(void)
         sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d\n", os_local_time.day, os_local_time.month, os_local_time.year,
                                                                 os_local_time.hour, os_local_time.minute, os_local_time.second);
 
-        os_io_log_trace("%s", time_string);
-        os_io_log_debug("%s", time_string);
-        os_io_log_info("%s", time_string);
-        os_io_log_warn("%s", time_string);
-        os_io_log_error("%s", time_string);
-        os_io_log_fatal("%s", time_string);
+        OS_IO_LOG_TRACE("%s", time_string);
+        OS_IO_LOG_DEBUG("%s", time_string);
+        OS_IO_LOG_INFO("%s", time_string);
+        OS_IO_LOG_WARN("%s", time_string);
+        OS_IO_LOG_ERROR("%s", time_string);
+        OS_IO_LOG_FATAL("%s", time_string);
     }
 
     while (!os_should_quit())
@@ -49,9 +49,7 @@ static void application(void)
             }
             else if (event->type == OS_EVENT_TYPE_PRESS)
             {
-                os_io_set_console_fg_color(event->key % 4);
-                // os_io_write_console("handle: %llu, key: %d\n", event->window_handle, event->key);
-                os_io_log_trace("handle: %llu, key: %d\n", event->window_handle, event->key);
+                OS_IO_LOG_TRACE("handle: %llu, key: %d\n", event->window_handle, event->key);
             }
         }
         // os_window_get_position(os_window_handle, &x, &y, &width, &height);
@@ -63,7 +61,6 @@ static void application(void)
             // UNUSED_VARIABLE(milliseconds);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-            // os_io_write_console(milliseconds_string);
             
             // os_window_set_title(os_window_handle, milliseconds_string);
             // os_window_set_title(os_window_handle2, milliseconds_string);

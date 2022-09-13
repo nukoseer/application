@@ -8,12 +8,10 @@
 #define MAX_OUTPUT_LENGTH 512
 
 typedef u32 OSIOWriteConsole(const char* str, u32 length);
-typedef b32 OSIOSetConsoleFgColor(i32 console_fg_color);
 
 typedef struct OSIO
 {
     OSIOWriteConsole* write_console;
-    OSIOSetConsoleFgColor* set_console_fg_color;
 } OSIO;
 
 #ifdef WIN32
@@ -23,7 +21,6 @@ typedef struct OSIO
 static OSIO os_io =
 {
     .write_console = &win32_io_write_console,
-    .set_console_fg_color = &win32_io_set_console_fg_color,
 };
 
 #else
@@ -31,6 +28,14 @@ static OSIO os_io =
 #endif
 
 static char os_io_str[MAX_OUTPUT_LENGTH + 1];
+static const char* os_io_log_level_string[] = 
+{
+    "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL",
+};
+static const char* os_io_log_level_colors[] =
+{
+  "\x1b[37m", "\x1b[96m", "\x1b[92m", "\x1b[93m", "\x1b[91m", "\x1b[95m"
+};
 
 static u32 write_console(const char* fmt, va_list args)
 {
@@ -51,16 +56,6 @@ static u32 write_console(const char* fmt, va_list args)
     return length;
 }
 
-b32 os_io_set_console_fg_color(OSIOConsoleFgColor console_fg_color)
-{
-    b32 result = FALSE;
-    
-    ASSERT(os_io.set_console_fg_color);
-    result = os_io.set_console_fg_color(console_fg_color);
-
-    return result;
-}
-
 u32 os_io_write_console(const char* fmt, ...)
 {
     va_list args;
@@ -73,15 +68,33 @@ u32 os_io_write_console(const char* fmt, ...)
     return length;
 }
 
-u32 os_io_write_time(void)
+u32 os_io_log(OSIOLogLevel log_level, const char* file, i32 line, const char* fmt, ...)
 {
-    char time_string[16] = { 0 };
-    OSDateTime os_local_time = os_time_local_now();
+    static char buffer[MAX_OUTPUT_LENGTH] = { 0 };
+    va_list args;
     u32 length = 0;
+    i32 ilength = 0;
+    OSDateTime os_local_time = os_time_local_now();
+    
+    ilength = snprintf(buffer, MAX_OUTPUT_LENGTH, "\x1b[97m%02d:%02d:%02d %s%-5s \x1b[90m%s:%d: \x1b[97m", os_local_time.hour, os_local_time.minute, os_local_time.second, os_io_log_level_colors[log_level], os_io_log_level_string[log_level], file, line);
 
-    sprintf(time_string, "%02d:%02d:%02d", os_local_time.hour, os_local_time.minute, os_local_time.second);
+    if (ilength > 0)
+    {
+        length += (u32)ilength;
+        va_start(args, fmt);
+        
+        if ((ilength += vsnprintf(buffer + ilength, (size_t)(MAX_OUTPUT_LENGTH - ilength), fmt, args)) > 0)
+        {
+            if (length < (u32)ilength)
+            {
+                length = (u32)ilength;
+            }
+        }
 
-    length = os_io_write_console(time_string);
+        va_end(args);
+        ASSERT(os_io.write_console);
+        length = os_io.write_console(buffer, length);    
+    }
 
     return length;
 }
