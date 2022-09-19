@@ -22,15 +22,15 @@ static void application(void)
         char time_string[32] = { 0 };
         OSDateTime os_local_time = os_time_local_now();
 
-        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d\n", os_local_time.day, os_local_time.month, os_local_time.year,
-                                                                os_local_time.hour, os_local_time.minute, os_local_time.second);
+        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d", os_local_time.day, os_local_time.month, os_local_time.year,
+                os_local_time.hour, os_local_time.minute, os_local_time.second);
 
-        OS_IO_LOG_TRACE("%s", time_string);
-        OS_IO_LOG_DEBUG("%s", time_string);
-        OS_IO_LOG_INFO("%s", time_string);
-        OS_IO_LOG_WARN("%s", time_string);
-        OS_IO_LOG_ERROR("%s", time_string);
-        OS_IO_LOG_FATAL("%s", time_string);
+        OS_LOG_TRACE("%s", time_string);
+        OS_LOG_DEBUG("%s", time_string);
+        OS_LOG_INFO("%s", time_string);
+        OS_LOG_WARN("%s", time_string);
+        OS_LOG_ERROR("%s", time_string);
+        OS_LOG_FATAL("%s", time_string);
     }
 
     while (!os_should_quit())
@@ -49,7 +49,7 @@ static void application(void)
             }
             else if (event->type == OS_EVENT_TYPE_PRESS)
             {
-                OS_IO_LOG_TRACE("handle: %llu, key: %d\n", event->window_handle, event->key);
+                OS_LOG_INFO("handle: %llu, key: %d", event->window_handle, event->key);
             }
         }
         // os_window_get_position(os_window_handle, &x, &y, &width, &height);
