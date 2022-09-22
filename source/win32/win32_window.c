@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "mem.h"
 #include "os_window.h"
+#include "os_log.h"
 #include "win32_window.h"
 
 #define WINDOW_CLASS_NAME ("application_window_class")
@@ -59,6 +60,7 @@ static void acquire_mparam_free_list(void)
         {
             return;
         }
+        OS_LOG_WARN("WaitOnAddress mparam");
         WaitOnAddress((volatile void*)&win32_window_mparam_free_list.is_busy, &busy, sizeof(busy), INFINITE);
     }
 }
