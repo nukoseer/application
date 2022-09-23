@@ -8,7 +8,7 @@ set win32_defines=/DWIN32 /DWIN32_LEAN_AND_MEAN
 
 set debug_compiler_flags=/Od /Zi /RTC1 /fsanitize=address
 set release_compiler_flags=/O2
-set common_compiler_flags=/TC /MT /FC /nologo /Wall /WX /D_CRT_SECURE_NO_WARNINGS
+set common_compiler_flags=/Oi /TC /MT /FC /nologo /Wall /WX /D_CRT_SECURE_NO_WARNINGS
 set object_flags=/c /Fo
 
 set debug_linker_flags=/debug
