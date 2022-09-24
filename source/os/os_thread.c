@@ -13,8 +13,7 @@ typedef struct OSThread
     OSThreadSuspend* suspend;
 } OSThread;
 
-#ifdef WIN32
-
+#ifdef _WIN32
 #include "win32_thread.h"
 
 static OSThread os_thread =
@@ -25,7 +24,7 @@ static OSThread os_thread =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 OSThreadHandle os_thread_create(OSThreadProcedure* thread_procedure, void* parameter)

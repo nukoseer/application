@@ -12,8 +12,7 @@ typedef struct OSIO
     OSIOWriteConsole* write_console;
 } OSIO;
 
-#ifdef WIN32
-
+#ifdef _WIN32
 #include "win32_io.h"
 
 static OSIO os_io =
@@ -22,7 +21,7 @@ static OSIO os_io =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 static char os_io_str[OS_IO_MAX_OUTPUT_LENGTH + 1];

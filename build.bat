@@ -4,7 +4,7 @@ setlocal EnableDelayedExpansion
 IF NOT EXIST build mkdir build
 pushd build
 
-set win32_defines=/DWIN32 /DWIN32_LEAN_AND_MEAN
+set win32_defines=/DWIN32_LEAN_AND_MEAN
 
 set debug_compiler_flags=/Od /Zi /RTC1 /fsanitize=address
 set release_compiler_flags=/O2

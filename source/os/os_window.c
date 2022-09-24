@@ -25,7 +25,7 @@ typedef struct OSWindow
     OSWindowSetTitle* set_title;
 } OSWindow;
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "win32_window.h"
 
 static OSWindow os_window =
@@ -41,7 +41,7 @@ static OSWindow os_window =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 static MemoryArena* os_event_arena;

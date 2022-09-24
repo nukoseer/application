@@ -21,7 +21,7 @@ typedef struct OSMemory
     OSMemoryHeapRelease* heap_release;
 } OSMemory;
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "win32_memory.h"
 
 static OSMemory os_memory =
@@ -36,7 +36,7 @@ static OSMemory os_memory =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 void* os_memory_reserve(memory_size size)

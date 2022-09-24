@@ -4,7 +4,7 @@
 typedef unsigned long os_thread_callback_return;
 typedef void* os_thread_callback_param;
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 typedef uptr OSThreadHandle;

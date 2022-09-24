@@ -27,7 +27,7 @@ typedef struct OSAtomic
     OSAtomicCompareExchangePointerRelease* compare_exchange_pointer_release;
 } OSAtomic;
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include "win32_atomic.h"
 
@@ -46,7 +46,7 @@ static OSAtomic os_atomic =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 i32 os_atomic_add(volatile i32* addend, i32 value)

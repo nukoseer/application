@@ -8,7 +8,7 @@ typedef void OSInit(void);
 typedef b32 OSQuit(void);
 typedef void OSDestroy(void);
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "win32.h"
 
 typedef struct OS
@@ -26,7 +26,7 @@ static OS os =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 b32 os_should_quit(void)

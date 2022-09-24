@@ -20,7 +20,7 @@ typedef struct OSTime
     OSTimeLocalNow* local_now;
 } OSTime;
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "win32_time.h"
 
 static OSTime os_time =
@@ -33,7 +33,7 @@ static OSTime os_time =
 };
 
 #else
-#error WIN32 must be defined.
+#error _WIN32 must be defined.
 #endif
 
 typedef struct OSTimeTick
