@@ -5,32 +5,36 @@
 #include "utils.h"
 #include "win32_thread.h"
 
-uptr win32_thread_create(u32 (*thread_procedure)(void*), void* parameter)
+static HANDLE thread_handle_to_handle(uptr thread_handle)
 {
-    uptr thread_handle = 0;
+    HANDLE handle = 0;
+    
+    ASSERT(thread_handle);
+    handle = (HANDLE)thread_handle;
+
+    return handle;
+}
+
+uptr win32_thread_create(unsigned long (*thread_procedure)(void*), void* parameter)
+{
+    HANDLE thread_handle = 0;
 
     // NOTE: In the future, we should probably think more about
     // optional parameters. All of them are 0 for now.
-    thread_handle = _beginthreadex(0, 0, thread_procedure, parameter, 0, 0);
+    thread_handle = CreateThread(0, 0, thread_procedure, parameter, 0, 0);
     ASSERT(thread_handle);
 
-    return thread_handle;
-}
-
-void win32_thread_exit(u32 exit_code)
-{
-    _endthreadex(exit_code);
+    return (uptr)thread_handle;
 }
 
 u32 win32_thread_resume(uptr thread_handle)
 {
     u32 result = 0;
+    HANDLE handle = thread_handle_to_handle(thread_handle);
 
-    ASSERT(thread_handle);
-    if (thread_handle)
+    ASSERT(handle);
+    if (handle)
     {
-        HANDLE handle = (HANDLE)thread_handle;
-        
         result = (u32)ResumeThread(handle);
         ASSERT(result == (u32)-1);
     }
@@ -41,12 +45,12 @@ u32 win32_thread_resume(uptr thread_handle)
 u32 win32_thread_suspend(uptr thread_handle)
 {
     u32 result = 0;
+    HANDLE handle = thread_handle_to_handle(thread_handle);
 
-    ASSERT(thread_handle);
-    if (thread_handle)
+    ASSERT(handle);
+
+    if (handle)
     {
-        HANDLE handle = (HANDLE)thread_handle;
-
         result = (u32)SuspendThread(handle);
         ASSERT(result == (u32)-1);
     }

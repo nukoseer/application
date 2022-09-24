@@ -3,14 +3,12 @@
 #include "os_thread.h"
 
 typedef uptr OSThreadCreate(OSThreadProcedure* thread_procedure, void* parameter);
-typedef void OSThreadExit(u32 exit_code);
 typedef u32  OSThreadResume(uptr thread_handle);
 typedef u32  OSThreadSuspend(uptr thread_handle);
 
 typedef struct OSThread
 {
     OSThreadCreate* create;
-    OSThreadExit* exit;
     OSThreadResume* resume;
     OSThreadSuspend* suspend;
 } OSThread;
@@ -22,7 +20,6 @@ typedef struct OSThread
 static OSThread os_thread =
 {
     .create = &win32_thread_create,
-    .exit = &win32_thread_exit,
     .resume = &win32_thread_resume,
     .suspend = &win32_thread_suspend,
 };
@@ -41,12 +38,6 @@ OSThreadHandle os_thread_create(OSThreadProcedure* thread_procedure, void* param
     thread_handle = os_thread.create(thread_procedure, parameter);
 
     return thread_handle;
-}
-
-void os_thread_exit(u32 exit_code)
-{
-    ASSERT(os_thread.exit);
-    os_thread.exit(exit_code);
 }
 
 u32 os_thread_resume(OSThreadHandle thread_handle)
