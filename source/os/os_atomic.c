@@ -6,6 +6,8 @@ typedef i32   OSAtomicAdd(volatile i32* addend, i32 value);
 typedef i32   OSAtomicIncrement(volatile i32* addend);
 typedef i32   OSAtomicIncrementAcquire(volatile i32* addend);
 typedef i32   OSAtomicIncrementRelease(volatile i32* addend);
+typedef i32   OSAtomicExchange(volatile i32* destination, i32 new_value);
+typedef i32   OSAtomicExchangeAcquire(volatile i32* destination, i32 new_value);
 typedef i32   OSAtomicCompareExchange(volatile i32* destination, i32 new_value, i32 comperand);
 typedef i32   OSAtomicCompareExchangeAcquire(volatile i32* destination, i32 new_value, i32 comperand);
 typedef i32   OSAtomicCompareExchangeRelease(volatile i32* destination, i32 new_value, i32 comperand);
@@ -19,6 +21,8 @@ typedef struct OSAtomic
     OSAtomicIncrement* increment;
     OSAtomicIncrementAcquire* increment_acquire;
     OSAtomicIncrementRelease* increment_release;
+    OSAtomicExchange* exchange;
+    OSAtomicExchangeAcquire* exchange_acquire;
     OSAtomicCompareExchange* compare_exchange;
     OSAtomicCompareExchangeAcquire* compare_exchange_acquire;
     OSAtomicCompareExchangeRelease* compare_exchange_release;
@@ -37,6 +41,8 @@ static OSAtomic os_atomic =
     .increment = &win32_atomic_increment,
     .increment_acquire = &win32_atomic_increment_acquire,
     .increment_release = &win32_atomic_increment_release,
+    .exchange = &win32_atomic_exchange,
+    .exchange_acquire = &win32_atomic_exchange_acquire,
     .compare_exchange = &win32_atomic_compare_exchange,
     .compare_exchange_acquire = &win32_atomic_compare_exchange_acquire,
     .compare_exchange_release = &win32_atomic_compare_exchange_release,
@@ -87,6 +93,26 @@ i32 os_atomic_increment_release(volatile i32* addend)
     result = os_atomic.increment_release(addend);
 
     return result;
+}
+
+i32 os_atomic_exchange(volatile i32* destination, i32 new_value)
+{
+    i32 initial_value = 0;
+
+    ASSERT(os_atomic.exchange);
+    initial_value = os_atomic.exchange(destination, new_value);
+
+    return initial_value;
+}
+
+i32 os_atomic_exchange_acquire(volatile i32* destination, i32 new_value)
+{
+    i32 initial_value = 0;
+
+    ASSERT(os_atomic.exchange_acquire);
+    initial_value = os_atomic.exchange_acquire(destination, new_value);
+
+    return initial_value;
 }
 
 i32 os_atomic_compare_exchange(volatile i32* destination, i32 new_value, i32 comperand)

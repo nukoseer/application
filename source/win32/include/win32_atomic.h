@@ -4,6 +4,8 @@ i32   win32_atomic_add(volatile i32* addend, i32 value);
 i32   win32_atomic_increment(volatile i32* addend);
 i32   win32_atomic_increment_acquire(volatile i32* addend);
 i32   win32_atomic_increment_release(volatile i32* addend);
+i32   win32_atomic_exchange(volatile i32* destination, i32 new_value);
+i32   win32_atomic_exchange_acquire(volatile i32* destination, i32 new_value);
 i32   win32_atomic_compare_exchange(volatile i32* destination, i32 new_value, i32 comperand);
 i32   win32_atomic_compare_exchange_acquire(volatile i32* destination, i32 new_value, i32 comperand);
 i32   win32_atomic_compare_exchange_release(volatile i32* destination, i32 new_value, i32 comperand);

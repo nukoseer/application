@@ -40,6 +40,24 @@ i32 win32_atomic_increment_release(volatile i32* addend)
     return result;
 }
 
+i32 win32_atomic_exchange(volatile i32* destination, i32 new_value)
+{
+    i32 initial_value = 0;
+    
+    initial_value = InterlockedExchange((volatile LONG*)destination, new_value);
+
+    return initial_value;
+}
+
+i32 win32_atomic_exchange_acquire(volatile i32* destination, i32 new_value)
+{
+    i32 initial_value = 0;
+    
+    initial_value = InterlockedExchangeAcquire((volatile LONG*)destination, new_value);
+
+    return initial_value;
+}
+
 i32 win32_atomic_compare_exchange(volatile i32* destination, i32 new_value, i32 comperand)
 {
     i32 initial_value = 0;
