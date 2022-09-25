@@ -31,7 +31,7 @@ OSThreadHandle os_thread_create(OSThreadProcedure* thread_procedure, void* param
 {
     OSThreadHandle thread_handle = 0;
 
-    ASSERT(thread_procedure && parameter);
+    ASSERT(thread_procedure);
     ASSERT(os_thread.create);
 
     thread_handle = os_thread.create(thread_procedure, parameter);
