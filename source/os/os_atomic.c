@@ -6,6 +6,9 @@ typedef i32   OSAtomicAdd(volatile i32* addend, i32 value);
 typedef i32   OSAtomicIncrement(volatile i32* addend);
 typedef i32   OSAtomicIncrementAcquire(volatile i32* addend);
 typedef i32   OSAtomicIncrementRelease(volatile i32* addend);
+typedef i32   OSAtomicDecrement(volatile i32* addend);
+typedef i32   OSAtomicDecrementAcquire(volatile i32* addend);
+typedef i32   OSAtomicDecrementRelease(volatile i32* addend);
 typedef i32   OSAtomicExchange(volatile i32* destination, i32 new_value);
 typedef i32   OSAtomicExchangeAcquire(volatile i32* destination, i32 new_value);
 typedef i32   OSAtomicCompareExchange(volatile i32* destination, i32 new_value, i32 comperand);
@@ -21,6 +24,9 @@ typedef struct OSAtomic
     OSAtomicIncrement* increment;
     OSAtomicIncrementAcquire* increment_acquire;
     OSAtomicIncrementRelease* increment_release;
+    OSAtomicDecrement* decrement;
+    OSAtomicDecrementAcquire* decrement_acquire;
+    OSAtomicDecrementRelease* decrement_release;
     OSAtomicExchange* exchange;
     OSAtomicExchangeAcquire* exchange_acquire;
     OSAtomicCompareExchange* compare_exchange;
@@ -41,6 +47,9 @@ static OSAtomic os_atomic =
     .increment = &win32_atomic_increment,
     .increment_acquire = &win32_atomic_increment_acquire,
     .increment_release = &win32_atomic_increment_release,
+    .decrement = &win32_atomic_decrement,
+    .decrement_acquire = &win32_atomic_decrement_acquire,
+    .decrement_release = &win32_atomic_decrement_release,
     .exchange = &win32_atomic_exchange,
     .exchange_acquire = &win32_atomic_exchange_acquire,
     .compare_exchange = &win32_atomic_compare_exchange,
@@ -91,6 +100,36 @@ i32 os_atomic_increment_release(volatile i32* addend)
 
     ASSERT(os_atomic.increment_release);
     result = os_atomic.increment_release(addend);
+
+    return result;
+}
+
+i32 os_atomic_decrement(volatile i32* addend)
+{
+    i32 result = 0;
+
+    ASSERT(os_atomic.decrement);
+    result = os_atomic.decrement(addend);
+
+    return result;
+}
+
+i32 os_atomic_decrement_acquire(volatile i32* addend)
+{
+    i32 result = 0;
+
+    ASSERT(os_atomic.decrement_acquire);
+    result = os_atomic.decrement_acquire(addend);
+
+    return result;
+}
+
+i32 os_atomic_decrement_release(volatile i32* addend)
+{
+    i32 result = 0;
+
+    ASSERT(os_atomic.decrement_release);
+    result = os_atomic.decrement_release(addend);
 
     return result;
 }
