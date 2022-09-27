@@ -9,6 +9,9 @@ typedef i32   OSAtomicIncrementRelease(volatile i32* addend);
 typedef i32   OSAtomicDecrement(volatile i32* addend);
 typedef i32   OSAtomicDecrementAcquire(volatile i32* addend);
 typedef i32   OSAtomicDecrementRelease(volatile i32* addend);
+typedef i32   OSAtomicAnd(volatile i32* value, i32 mask);
+typedef i32   OSAtomicAndAcquire(volatile i32* value, i32 mask);
+typedef i32   OSAtomicAndRelease(volatile i32* value, i32 mask);
 typedef i32   OSAtomicExchange(volatile i32* destination, i32 new_value);
 typedef i32   OSAtomicExchangeAcquire(volatile i32* destination, i32 new_value);
 typedef i32   OSAtomicCompareExchange(volatile i32* destination, i32 new_value, i32 comperand);
@@ -27,6 +30,9 @@ typedef struct OSAtomic
     OSAtomicDecrement* decrement;
     OSAtomicDecrementAcquire* decrement_acquire;
     OSAtomicDecrementRelease* decrement_release;
+    OSAtomicAnd* and;
+    OSAtomicAndAcquire* and_acquire;
+    OSAtomicAndRelease* and_release;
     OSAtomicExchange* exchange;
     OSAtomicExchangeAcquire* exchange_acquire;
     OSAtomicCompareExchange* compare_exchange;
@@ -50,6 +56,9 @@ static OSAtomic os_atomic =
     .decrement = &win32_atomic_decrement,
     .decrement_acquire = &win32_atomic_decrement_acquire,
     .decrement_release = &win32_atomic_decrement_release,
+    .and = &win32_atomic_and,
+    .and_acquire = &win32_atomic_and_acquire,
+    .and_release = &win32_atomic_and_release,
     .exchange = &win32_atomic_exchange,
     .exchange_acquire = &win32_atomic_exchange_acquire,
     .compare_exchange = &win32_atomic_compare_exchange,
@@ -132,6 +141,36 @@ i32 os_atomic_decrement_release(volatile i32* addend)
     result = os_atomic.decrement_release(addend);
 
     return result;
+}
+
+i32 os_atomic_and(volatile i32* value, i32 mask)
+{
+    i32 initial_value = 0;
+
+    ASSERT(os_atomic.and);
+    initial_value = os_atomic.and(value, mask);
+
+    return initial_value;
+}
+
+i32 os_atomic_and_acquire(volatile i32* value, i32 mask)
+{
+    i32 initial_value = 0;
+
+    ASSERT(os_atomic.and_acquire);
+    initial_value = os_atomic.and_acquire(value, mask);
+
+    return initial_value;
+}
+
+i32 os_atomic_and_release(volatile i32* value, i32 mask)
+{
+    i32 initial_value = 0;
+
+    ASSERT(os_atomic.and_release);
+    initial_value = os_atomic.and_release(value, mask);
+
+    return initial_value;
 }
 
 i32 os_atomic_exchange(volatile i32* destination, i32 new_value)

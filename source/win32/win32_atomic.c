@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <intrin.h>
 
 #include "types.h"
 #include "utils.h"
@@ -17,7 +18,7 @@ i32 win32_atomic_increment(volatile i32* addend)
 {
     i32 result = 0;
     
-    result = InterlockedIncrement((volatile LONG*)addend);
+    result = _InterlockedIncrement((volatile LONG*)addend);
 
     return result;
 }
@@ -44,7 +45,7 @@ i32 win32_atomic_decrement(volatile i32* addend)
 {
     i32 result = 0;
     
-    result = InterlockedDecrement((volatile LONG*)addend);
+    result = _InterlockedDecrement((volatile LONG*)addend);
 
     return result;
 }
@@ -67,11 +68,38 @@ i32 win32_atomic_decrement_release(volatile i32* addend)
     return result;
 }
 
+i32 win32_atomic_and(volatile i32* value, i32 mask)
+{
+    i32 initial_value = 0;
+    
+    initial_value = _InterlockedAnd((volatile LONG*)value, mask);
+
+    return initial_value;
+}
+
+i32 win32_atomic_and_acquire(volatile i32* value, i32 mask)
+{
+    i32 initial_value = 0;
+    
+    initial_value = InterlockedAndAcquire((volatile LONG*)value, mask);
+
+    return initial_value;
+}
+
+i32 win32_atomic_and_release(volatile i32* value, i32 mask)
+{
+    i32 initial_value = 0;
+    
+    initial_value = InterlockedAndRelease((volatile LONG*)value, mask);
+
+    return initial_value;
+}
+
 i32 win32_atomic_exchange(volatile i32* destination, i32 new_value)
 {
     i32 initial_value = 0;
     
-    initial_value = InterlockedExchange((volatile LONG*)destination, new_value);
+    initial_value = _InterlockedExchange((volatile LONG*)destination, new_value);
 
     return initial_value;
 }
@@ -89,7 +117,7 @@ i32 win32_atomic_compare_exchange(volatile i32* destination, i32 new_value, i32 
 {
     i32 initial_value = 0;
 
-    initial_value = InterlockedCompareExchange((volatile LONG*)destination, new_value, comperand);
+    initial_value = _InterlockedCompareExchange((volatile LONG*)destination, new_value, comperand);
 
     return initial_value;
 }
@@ -116,7 +144,7 @@ void* win32_atomic_compare_exchange_pointer(volatile void* destination, void* ne
 {
     void* initial_value = 0;
 
-    initial_value = InterlockedCompareExchangePointer(destination, new_value, comperand);
+    initial_value = _InterlockedCompareExchangePointer(destination, new_value, comperand);
 
     return initial_value;
 }
