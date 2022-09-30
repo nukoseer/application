@@ -106,6 +106,8 @@ void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, .
 
 static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter)
 {
+    // TODO: We should not let this thread spin-lock.
+    
     while (TRUE)
     {
         i32 tail = 0;
