@@ -13,12 +13,12 @@
     #define ASSERT(x)
 #endif
 
-#define UNUSED_VARIABLE(x) ((void)(x))
+#define UNUSED_VARIABLE(x)  ((void)(x))
+#define ARRAY_COUNT(x)      (sizeof(x) / sizeof(*(x)))
+#define PADDING(x)          u8 padding_[x]
 
-#define ARRAY_COUNT(x) (sizeof(x) / sizeof(*(x)))
-
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#define OFFSETOF(T, m) ((size_t)(&(((T*)0)->m)))
+#define MAX(a, b)           ((a) >= (b) ? (a) : (b))
+#define OFFSETOF(T, m)      ((size_t)(&(((T*)0)->m)))
 
 #define KILOBYTES(n) ((n) << 10)
 #define MEGABYTES(n) (KILOBYTES(n) << 10)

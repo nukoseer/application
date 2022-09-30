@@ -25,6 +25,7 @@ static const char* os_log_level_colors[] =
 typedef struct OSLogRingElement
 {
     char fmt[OS_IO_MAX_OUTPUT_LENGTH + 1];
+    PADDING(7);
     const char* file;
     i32 line;
     OSLogLevel log_level;
@@ -36,6 +37,7 @@ typedef struct OSLogRing
     volatile i32 head;
     volatile i32 tail;
     volatile i32 count;
+    PADDING(4);
 } OSLogRing;
 
 static OSLogRing os_log_ring;
