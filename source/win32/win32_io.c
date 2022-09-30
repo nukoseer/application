@@ -8,11 +8,9 @@ static HANDLE std_handle_output = 0;
 
 u32 win32_io_write_console(const char* str, u32 length)
 {
-    BOOL result = FALSE;
     DWORD number_of_chars_written = 0;
 
-    result = WriteFile(std_handle_output, str, length, &number_of_chars_written, 0);
-    ASSERT(result);
+    WriteFile(std_handle_output, str, length, &number_of_chars_written, 0);
     ASSERT(length == number_of_chars_written);
 
     return (u32)number_of_chars_written;

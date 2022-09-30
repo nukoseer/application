@@ -6,72 +6,138 @@
 #include "os_time.h"
 #include "os_io.h"
 #include "os_log.h"
+#include "os_thread.h"
 #include "os_atomic.h"
 
-static volatile b32 os_log_locked = FALSE;
+#define OS_LOG_RING_SIZE 32
+#define OS_LOG_RING_MASK OS_LOG_RING_SIZE - 1
 
 static const char* os_log_level_string[] = 
 {
     "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL",
 };
+
 static const char* os_log_level_colors[] =
 {
   "\x1b[97m", "\x1b[96m", "\x1b[92m", "\x1b[93m", "\x1b[91m", "\x1b[95m"
 };
 
-static void log_lock(void)
+typedef struct OSLogRingElement
+{
+    char fmt[OS_IO_MAX_OUTPUT_LENGTH + 1];
+    const char* file;
+    i32 line;
+    OSLogLevel log_level;
+} OSLogRingElement;
+
+typedef struct OSLogRing
+{
+    OSLogRingElement elements[OS_LOG_RING_SIZE];
+    volatile i32 head;
+    volatile i32 tail;
+    volatile i32 count;
+} OSLogRing;
+
+static OSLogRing os_log_ring;
+
+static i32 log_ring_buffer_push(void)
+{
+    i32 head = 0;
+    i32 masked_head = 0;
+
+    head = os_atomic_increment(&os_log_ring.head);
+    masked_head = head & OS_LOG_RING_MASK;
+
+    if (head & OS_LOG_RING_SIZE)
+    {
+        os_atomic_and(&os_log_ring.head, ~OS_LOG_RING_SIZE);
+    }
+
+    return masked_head;
+}
+
+static void log_ring_buffer_push_commit(void)
+{
+    os_atomic_increment(&os_log_ring.count);
+}
+
+static i32 log_ring_buffer_pop(void)
+{
+    i32 tail = 0;
+    i32 masked_tail = 0;
+    
+    tail = os_atomic_increment(&os_log_ring.tail);
+    masked_tail = tail & OS_LOG_RING_MASK;
+
+    if (tail & OS_LOG_RING_SIZE)
+    {
+        os_atomic_and(&os_log_ring.tail, ~OS_LOG_RING_SIZE);
+    }
+
+    return masked_tail;
+}
+
+static void log_ring_buffer_pop_commit(void)
+{
+    os_atomic_decrement(&os_log_ring.count);
+}
+
+void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, ...)
+{
+    i32 head = 0;
+
+    head = log_ring_buffer_push();
+    {
+        OSLogRingElement* element = os_log_ring.elements + head;
+        va_list args;
+
+        va_start(args, fmt);
+        vsnprintf(element->fmt, OS_IO_MAX_OUTPUT_LENGTH, fmt, args);
+        va_end(args);
+
+        element->log_level = log_level;
+        element->file = file;
+        element->line = line;
+    }
+    log_ring_buffer_push_commit();
+}
+
+static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter)
 {
     while (TRUE)
     {
-        b32 locked = FALSE;
+        i32 tail = 0;
 
-        if ((locked = os_atomic_compare_exchange_acquire(&os_log_locked, TRUE, FALSE)) == 0)
+        while (os_atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count) > 0)
         {
-            return;
-        }
-    }
-}
-
-static void log_unlock(void)
-{
-    os_atomic_compare_exchange_release(&os_log_locked, 0, os_log_locked);
-}
-
-u32 os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, ...)
-{
-    u32 length = 0;
-    
-    log_lock();
-    {
-        static char buffer[OS_IO_MAX_OUTPUT_LENGTH + 1] = { 0 };
-        va_list args;
-        i32 ilength = 0;
-        OSDateTime os_local_time = os_time_local_now();
-    
-        ilength = snprintf(buffer, OS_IO_MAX_OUTPUT_LENGTH,
-                           "\x1b[97m%02d:%02d:%02d %s%-5s \x1b[90m%s:%d: \x1b[97m",
-                           os_local_time.hour, os_local_time.minute, os_local_time.second,
-                           os_log_level_colors[log_level], os_log_level_string[log_level], file, line);
-
-        if (ilength > 0)
-        {
-            length += (u32)ilength;
-
-            va_start(args, fmt);
-            if ((ilength += vsnprintf(buffer + ilength, (size_t)(OS_IO_MAX_OUTPUT_LENGTH - ilength), fmt, args)) > 0)
+            tail = log_ring_buffer_pop();
             {
-                if (length < (u32)ilength)
-                {
-                    length = (u32)ilength;
-                }
+                static char buffer[OS_IO_MAX_OUTPUT_LENGTH + 1];
+                OSLogRingElement* element = os_log_ring.elements + tail;
+                OSDateTime os_local_time = os_time_local_now();
+    
+                snprintf(buffer, OS_IO_MAX_OUTPUT_LENGTH,
+                         "\x1b[97m%02d:%02d:%02d %s%-5s \x1b[90m%s:%d: \x1b[97m %s\n\x1b[0m",
+                         os_local_time.hour, os_local_time.minute, os_local_time.second,
+                         os_log_level_colors[element->log_level], os_log_level_string[element->log_level],
+                         element->file, element->line, element->fmt);
+                
+                os_io_write_console(buffer);
             }
-            va_end(args);
-
-            length = os_io_write_console(buffer);
-            length += os_io_write_console("\n\x1b[0m");
+            log_ring_buffer_pop_commit();
         }
     }
-    log_unlock();
 
-    return length;
+    UNUSED_VARIABLE(parameter);
+}
+
+void os_log_init(void)
+{
+    static b32 init;
+
+    if (!init)
+    {
+        os_thread_create(&os_log_thread_procedure, 0);
+        init = TRUE;
+    }
 }

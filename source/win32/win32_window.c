@@ -60,7 +60,7 @@ static void acquire_mparam_free_list(void)
         {
             return;
         }
-        OS_LOG_WARN("WaitOnAddress mparam");
+        OS_LOG_WARN("acquire_mparam_free_list WaitOnAddress");
         WaitOnAddress((volatile void*)&win32_window_mparam_free_list.is_busy, &busy, sizeof(busy), INFINITE);
     }
 }

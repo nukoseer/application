@@ -49,6 +49,5 @@ void os_init(void)
     ASSERT(os.init);
     os.init();
     os_window_init();
+    os_log_init();
 }
-
-

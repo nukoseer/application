@@ -7,7 +7,8 @@
 // NOTE: General helper macros. //
 //////////////////////////////////
 #if 1
-    #define ASSERT(x) do { if (!(x)) { *(volatile int*)0; } } while (0)
+    #include "os_log.h"
+    #define ASSERT(x) do { if (!(x)) { OS_LOG_FATAL("ASSERT"); *(volatile int*)0; } } while (0)
 #else
     #define ASSERT(x)
 #endif

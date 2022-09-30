@@ -22,7 +22,8 @@ static void application(void)
         char time_string[32] = { 0 };
         OSDateTime os_local_time = os_time_local_now();
 
-        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d", os_local_time.day, os_local_time.month, os_local_time.year,
+        sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d",
+                os_local_time.day, os_local_time.month, os_local_time.year,
                 os_local_time.hour, os_local_time.minute, os_local_time.second);
 
         os_io_write_console("%s\n", time_string);
@@ -47,13 +48,13 @@ static void application(void)
                 OS_LOG_TRACE("handle: %llu, key: %d", event->window_handle, event->key);
             }
         }
+
         // os_window_get_position(os_window_handle, &x, &y, &width, &height);
         // os_window_set_position(os_window_handle2, x + width, y, width, height);
 
         {
             char milliseconds_string[32] = { 0 };
             f64 milliseconds = os_time_end_tick(os_time_tick_handle);
-            // UNUSED_VARIABLE(milliseconds);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
             
