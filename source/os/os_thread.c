@@ -5,12 +5,17 @@
 typedef uptr OSThreadCreate(OSThreadProcedure* thread_procedure, void* parameter);
 typedef u32  OSThreadResume(uptr thread_handle);
 typedef u32  OSThreadSuspend(uptr thread_handle);
+typedef b32  OSThreadWaitOnAddress(volatile void* address, void* compare_address,
+                                   memory_size address_size, u32 milliseconds);
+typedef void OSThreadWakeByAddress(void* address);
 
 typedef struct OSThread
 {
     OSThreadCreate* create;
     OSThreadResume* resume;
     OSThreadSuspend* suspend;
+    OSThreadWaitOnAddress* wait_on_address;
+    OSThreadWakeByAddress* wake_by_address;
 } OSThread;
 
 #ifdef _WIN32
@@ -21,6 +26,8 @@ static OSThread os_thread =
     .create = &win32_thread_create,
     .resume = &win32_thread_resume,
     .suspend = &win32_thread_suspend,
+    .wait_on_address = &win32_thread_wait_on_address,
+    .wake_by_address = &win32_thread_wake_by_address,
 };
 
 #else
@@ -57,4 +64,21 @@ u32 os_thread_suspend(OSThreadHandle thread_handle)
     result = os_thread.suspend(thread_handle);
 
     return result;
+}
+
+b32 os_thread_wait_on_address(volatile void* address, void* compare_address,
+                              memory_size address_size, u32 milliseconds)
+{
+    b32 result = 0;
+
+    ASSERT(os_thread.wait_on_address);
+    result = os_thread.wait_on_address(address, compare_address, address_size, milliseconds);
+
+    return result;
+}
+
+void os_thread_wake_by_address(void* address)
+{
+    ASSERT(os_thread.wake_by_address);
+    os_thread.wake_by_address(address);
 }

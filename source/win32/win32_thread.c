@@ -58,3 +58,17 @@ u32 win32_thread_suspend(uptr thread_handle)
     return result;
 }
 
+b32 win32_thread_wait_on_address(volatile void* address, void* compare_address,
+                                 memory_size address_size, u32 milliseconds)
+{
+    b32 result = 0;
+
+    result = WaitOnAddress(address, compare_address, address_size, milliseconds);
+
+    return result;
+}
+
+void win32_thread_wake_by_address(void* address)
+{
+    WakeByAddressSingle(address);
+}
