@@ -102,17 +102,17 @@ void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, .
         element->line = line;
     }
     log_ring_buffer_push_commit();
+    os_thread_wake_by_address((void*)&os_log_ring.count);
 }
 
 static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter)
 {
-    // TODO: We should not let this thread spin-lock.
-    
     while (TRUE)
     {
         i32 tail = 0;
-
-        while (os_atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count) > 0)
+        i32 count = 0;
+        
+        while ((count = os_atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count)) > 0)
         {
             tail = log_ring_buffer_pop();
             {
@@ -130,6 +130,7 @@ static os_thread_callback_return os_log_thread_procedure(os_thread_callback_para
             }
             log_ring_buffer_pop_commit();
         }
+        os_thread_wait_on_address(&os_log_ring.count, &count, sizeof(count), 0xFFFFFFFF);
     }
 
     UNUSED_VARIABLE(parameter);

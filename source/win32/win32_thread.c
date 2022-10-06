@@ -63,6 +63,7 @@ b32 win32_thread_wait_on_address(volatile void* address, void* compare_address,
 {
     b32 result = 0;
 
+    // NOTE: I think we can use futex for Linux equilavent?
     result = WaitOnAddress(address, compare_address, address_size, milliseconds);
 
     return result;
