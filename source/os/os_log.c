@@ -40,7 +40,44 @@ typedef struct OSLogRing
     PADDING(4);
 } OSLogRing;
 
+static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter);
+static i32 log_ring_buffer_push(void);
+static void log_ring_buffer_push_commit(void);
+static i32 log_ring_buffer_pop(void);
+static void log_ring_buffer_pop_commit(void);
+
 static OSLogRing os_log_ring;
+
+static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter)
+{
+    while (TRUE)
+    {
+        i32 tail = 0;
+        i32 count = 0;
+        
+        while ((count = os_atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count)) > 0)
+        {
+            tail = log_ring_buffer_pop();
+            {
+                static char buffer[OS_IO_MAX_OUTPUT_LENGTH + 1];
+                OSLogRingElement* element = os_log_ring.elements + tail;
+                OSDateTime os_local_time = os_time_local_now();
+    
+                snprintf(buffer, OS_IO_MAX_OUTPUT_LENGTH,
+                         "\x1b[97m%02d:%02d:%02d %s%-5s \x1b[90m%s:%d: \x1b[97m %s\n\x1b[0m",
+                         os_local_time.hour, os_local_time.minute, os_local_time.second,
+                         os_log_level_colors[element->log_level], os_log_level_string[element->log_level],
+                         element->file, element->line, element->fmt);
+                
+                os_io_write_console(buffer);
+            }
+            log_ring_buffer_pop_commit();
+        }
+        os_thread_wait_on_address(&os_log_ring.count, &count, sizeof(count), 0xFFFFFFFF);
+    }
+
+    UNUSED_VARIABLE(parameter);
+}
 
 static i32 log_ring_buffer_push(void)
 {
@@ -103,37 +140,6 @@ void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, .
     }
     log_ring_buffer_push_commit();
     os_thread_wake_by_address((void*)&os_log_ring.count);
-}
-
-static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter)
-{
-    while (TRUE)
-    {
-        i32 tail = 0;
-        i32 count = 0;
-        
-        while ((count = os_atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count)) > 0)
-        {
-            tail = log_ring_buffer_pop();
-            {
-                static char buffer[OS_IO_MAX_OUTPUT_LENGTH + 1];
-                OSLogRingElement* element = os_log_ring.elements + tail;
-                OSDateTime os_local_time = os_time_local_now();
-    
-                snprintf(buffer, OS_IO_MAX_OUTPUT_LENGTH,
-                         "\x1b[97m%02d:%02d:%02d %s%-5s \x1b[90m%s:%d: \x1b[97m %s\n\x1b[0m",
-                         os_local_time.hour, os_local_time.minute, os_local_time.second,
-                         os_log_level_colors[element->log_level], os_log_level_string[element->log_level],
-                         element->file, element->line, element->fmt);
-                
-                os_io_write_console(buffer);
-            }
-            log_ring_buffer_pop_commit();
-        }
-        os_thread_wait_on_address(&os_log_ring.count, &count, sizeof(count), 0xFFFFFFFF);
-    }
-
-    UNUSED_VARIABLE(parameter);
 }
 
 void os_log_init(void)
