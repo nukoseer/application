@@ -17,6 +17,7 @@ typedef enum OSLogLevel
 #define OS_LOG_ERROR(...) os_log(OS_LOG_LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define OS_LOG_FATAL(...) os_log(OS_LOG_LEVEL_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
+void os_log_set_level(OSLogLevel log_level);
 void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, ...);
 void os_log_init(void);
 

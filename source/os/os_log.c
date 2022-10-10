@@ -47,6 +47,7 @@ static i32 log_ring_buffer_pop(void);
 static void log_ring_buffer_pop_commit(void);
 
 static OSLogRing os_log_ring;
+static OSLogLevel os_log_level;
 
 static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter)
 {
@@ -121,25 +122,31 @@ static void log_ring_buffer_pop_commit(void)
     os_atomic_decrement(&os_log_ring.count);
 }
 
+void os_log_set_level(OSLogLevel log_level)
+{
+    os_log_level = log_level;
+}
+
 void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, ...)
 {
-    i32 head = 0;
-
-    head = log_ring_buffer_push();
+    if (log_level >= os_log_level)
     {
-        OSLogRingElement* element = os_log_ring.elements + head;
-        va_list args;
+        i32 head = log_ring_buffer_push();
+        {
+            OSLogRingElement* element = os_log_ring.elements + head;
+            va_list args;
 
-        va_start(args, fmt);
-        vsnprintf(element->fmt, OS_IO_MAX_OUTPUT_LENGTH, fmt, args);
-        va_end(args);
+            va_start(args, fmt);
+            vsnprintf(element->fmt, OS_IO_MAX_OUTPUT_LENGTH, fmt, args);
+            va_end(args);
 
-        element->log_level = log_level;
-        element->file = file;
-        element->line = line;
+            element->log_level = log_level;
+            element->file = file;
+            element->line = line;
+        }
+        log_ring_buffer_push_commit();
+        os_thread_wake_by_address((void*)&os_log_ring.count);
     }
-    log_ring_buffer_push_commit();
-    os_thread_wake_by_address((void*)&os_log_ring.count);
 }
 
 void os_log_init(void)

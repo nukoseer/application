@@ -29,6 +29,8 @@ static void application(void)
         os_io_write_console("%s\n", time_string);
     }
 
+    os_log_set_level(OS_LOG_LEVEL_DEBUG);
+    
     while (!os_should_quit())
     {
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
