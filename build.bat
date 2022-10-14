@@ -68,9 +68,9 @@ set all_include=%common_include% %win32_include% %os_include%
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %os_include% %test_include% %common_include% ..\source\common\mem.c ..\source\test\test.c
 
-%compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %win32_defines% %all_include% ..\source\os\os_thread.c ..\source\os\os_log.c ..\source\os\os_io.c ..\source\os\os_time.c ..\source\os\os_memory.c ..\source\os\os_window.c ..\source\os\os_atomic.c ..\source\os\os.c ..\source\win32\win32_thread.c ..\source\win32\win32_io.c ..\source\win32\win32_time.c ..\source\win32\win32_memory.c ..\source\win32\win32_window.c ..\source\win32\win32_atomic.c ..\source\win32\win32.c
+%compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %win32_defines% %all_include% ..\source\os\os_thread.c ..\source\os\os_log.c ..\source\os\os_io.c ..\source\os\os_time.c ..\source\os\os_memory.c ..\source\os\os_window.c ..\source\os\os_atomic.c ..\source\os\os.c ..\source\win32\win32_graphics.c ..\source\win32\win32_thread.c ..\source\win32\win32_io.c ..\source\win32\win32_time.c ..\source\win32\win32_memory.c ..\source\win32\win32_window.c ..\source\win32\win32_atomic.c ..\source\win32\win32.c
 
-%ar% mem.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_atomic.obj os.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32_atomic.obj win32.obj /out:os.lib
+%ar% mem.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_atomic.obj os.obj win32_graphics.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32_atomic.obj win32.obj /out:os.lib
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib Kernel32.lib User32.lib Winmm.lib Synchronization.lib libvcruntime.lib libucrt.lib
 
