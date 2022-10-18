@@ -3,9 +3,12 @@
 #define COBJMACROS
 
 #include <Windows.h>
+
+#pragma warning(push, 0)
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <d3dcompiler.h>
+#pragma warning(pop)
 
 #include "types.h"
 #include "utils.h"
