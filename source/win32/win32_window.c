@@ -1,4 +1,12 @@
 #include <Windows.h>
+
+#pragma warning(push, 0)
+#include <windowsx.h>
+#include <shellapi.h>
+#include <dwmapi.h>
+#include <VersionHelpers.h>
+#pragma warning(pop)
+
 #include "types.h"
 #include "utils.h"
 #include "mem.h"
@@ -10,6 +18,13 @@
 #define MSG_WINDOW_OPEN   (WM_USER + 1)
 #define MSG_WINDOW_CLOSE  (MSG_WINDOW_OPEN + 1)
 
+#ifndef WM_NCUAHDRAWCAPTION
+#define WM_NCUAHDRAWCAPTION (0x00AE)
+#endif
+#ifndef WM_NCUAHDRAWFRAME
+#define WM_NCUAHDRAWFRAME (0x00AF)
+#endif
+
 typedef struct Win32Window Win32Window;
 struct Win32Window
 {
@@ -20,6 +35,9 @@ struct Win32Window
     int height;
     const char* title;
     Win32Window* next;
+    RECT region;
+    b32 borderless;
+    PADDING(4);
 };
 
 typedef struct MPARAM MPARAM;
@@ -34,7 +52,6 @@ typedef struct MPARAMFreeList
 {
     MPARAM* first;
     b32 is_busy;
-
     PADDING(4);
 } MPARAMFreeList;
 
@@ -86,7 +103,7 @@ static void send_mparam(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
         {
             mparam = PUSH_STRUCT(win32_window_memory_arena, MPARAM);
         }
-    
+
         STRUCT_ZERO(mparam, MPARAM);
         mparam->handle = handle;
         mparam->wparam = wparam;
@@ -146,7 +163,7 @@ static void process_message(void)
                 OSEventType type = is_down ? OS_EVENT_TYPE_PRESS : OS_EVENT_TYPE_RELEASE;
                 OSKey key = OS_KEY_NULL;
 
-                if (!key_map[1])
+                if (!key_map['A'])
                 {
                     u32 i = 0;
                     u32 j = 0;
@@ -177,13 +194,15 @@ static void process_message(void)
                     key_map[VK_LEFT]    = OS_KEY_LEFT;
                     key_map[VK_DOWN]    = OS_KEY_DOWN;
                     key_map[VK_RIGHT]   = OS_KEY_RIGHT;
+
+                    OS_LOG_DEBUG("Key map initialized.");
                 }
 
                 if (wparam < ARRAY_COUNT(key_map))
                 {
                     key = key_map[wparam];
                 }
-                
+
                 event = PUSH_STRUCT_ZERO(event_arena, OSEvent);
                 event->key = key;
                 event->type = type;
@@ -197,10 +216,11 @@ static void process_message(void)
 
             event->window_handle = (OSWindowHandle)window->handle;
             ++event_list->count;
-
             DLL_PUSH_BACK(event_list->first, event_list->last, event);
-            free_mparam(mparam);
         }
+
+        if (mparam)
+            free_mparam(mparam);
     }
 
     if (temporary_memory.initial_size)
@@ -209,12 +229,271 @@ static void process_message(void)
     }
 }
 
+static void update_region(Win32Window* window)
+{
+	RECT old_region = window->region;
+
+	if (IsMaximized(window->handle))
+    {
+		WINDOWINFO window_info = { .cbSize = sizeof(window_info) };
+
+		GetWindowInfo(window->handle, &window_info);
+
+        // NOTE: For maximized windows, a region is needed to cut off
+        // the non-client borders that hang over the edge of the
+        // screen.
+		window->region = (RECT)
+        {
+			.left = window_info.rcClient.left - window_info.rcWindow.left,
+			.top = window_info.rcClient.top - window_info.rcWindow.top,
+			.right = window_info.rcClient.right - window_info.rcWindow.left,
+			.bottom = window_info.rcClient.bottom - window_info.rcWindow.top,
+		};
+	}
+    else {
+		// NOTE: Don't mess with the region when window is not
+        // maximized, otherwise it will lose its shadow.
+		window->region = (RECT) { 0 };
+	}
+
+	// NOTE: Avoid unnecessarily updating the region to avoid unnecessary redraws.
+	if (EqualRect(&window->region, &old_region))
+		return;
+	// NOTE: Treat empty regions as NULL regions.
+	if (EqualRect(&window->region, &(RECT) { 0 }))
+		SetWindowRgn(window->handle, NULL, TRUE);
+	else
+		SetWindowRgn(window->handle, CreateRectRgnIndirect(&window->region), TRUE);
+}
+
+static void handle_windowposchanged(Win32Window* window, const WINDOWPOS* pos)
+{
+	RECT client = { 0 };
+    LONG old_width = 0;
+	LONG old_height = 0;
+    b32 client_changed = 0;
+
+	GetClientRect(window->handle, &client);
+
+    old_width = (LONG)window->width;
+	old_height = (LONG)window->height;
+	window->width = client.right;
+	window->height = client.bottom;
+	client_changed = window->width != old_width || window->height != old_height;
+
+	if (client_changed || (pos->flags & SWP_FRAMECHANGED))
+		update_region(window);
+
+	if (client_changed)
+    {
+		// NOTE: Invalidate the changed parts of the rectangle drawn in WM_PAINT.
+		if (window->width > old_width)
+			InvalidateRect(window->handle, &(RECT) { old_width - 1, 0, old_width, old_height }, TRUE);
+        else
+			InvalidateRect(window->handle, &(RECT) { window->width - 1, 0, window->width, window->height }, TRUE);
+
+		if (window->height > old_height)
+			InvalidateRect(window->handle, &(RECT) { 0, old_height - 1, old_width, old_height }, TRUE);
+        else
+			InvalidateRect(window->handle, &(RECT) { 0, window->height - 1, window->width, window->height }, TRUE);
+	}
+}
+
+static b32 has_autohide_appbar(UINT edge, RECT monitor)
+{
+    b32 result = FALSE;
+
+	if (IsWindows8Point1OrGreater())
+		result = (b32)SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &(APPBARDATA) { .cbSize = sizeof(APPBARDATA), .uEdge = edge, .rc = monitor });
+    else
+    {
+        // NOTE: Before Windows 8.1, it was not possible to specify a
+        // monitor when checking for hidden appbars, so check only on
+        // the primary monitor.
+        if (monitor.left != 0 || monitor.top != 0)
+            result = FALSE;
+        else
+            result = (b32)SHAppBarMessage(ABM_GETAUTOHIDEBAR, &(APPBARDATA) { .cbSize = sizeof(APPBARDATA), .uEdge = edge });
+    }
+
+    return result;
+}
+
+static void handle_nccalcsize(Win32Window* window, WPARAM wparam, LPARAM lparam)
+{
+    HMONITOR monitor = { 0 };
+    MONITORINFO monitor_info = { 0 };
+    RECT nonclient = { 0 };
+    RECT client = { 0 };
+	union
+    {
+		LPARAM lparam;
+		RECT* rect;
+	} params = { .lparam = lparam };
+
+    // NOTE: DefWindowProc must be called in both the maximized and
+    // non-maximized cases, otherwise tile/cascade windows won't work.
+	nonclient = *params.rect;
+    DefWindowProcW(window->handle, WM_NCCALCSIZE, wparam, params.lparam);
+	client = *params.rect;
+
+	if (IsMaximized(window->handle))
+    {
+		WINDOWINFO window_info = { .cbSize = sizeof(window_info) };
+
+		GetWindowInfo(window->handle, &window_info);
+
+        // NOTE: Maximized windows always have a non-client border
+        // that hangs over the edge of the screen, so the size
+        // proposed by WM_NCCALCSIZE is fine. Just adjust the top
+        // border to remove the window title.
+		*params.rect = (RECT)
+        {
+			.left = client.left,
+			.top = ((LONG)nonclient.top + (LONG)window_info.cyWindowBorders),
+			.right = client.right,
+			.bottom = client.bottom,
+		};
+
+		monitor = MonitorFromWindow(window->handle, MONITOR_DEFAULTTOPRIMARY);
+		monitor_info.cbSize = sizeof(monitor_info);
+		GetMonitorInfoW(monitor, &monitor_info);
+
+        // NOTE: If the client rectangle is the same as the monitor's
+        // rectangle, the shell assumes that the window has gone
+        // fullscreen, so it removes the topmost attribute from any
+        // auto-hide appbars, making them inaccessible. To avoid this,
+        // reduce the size of the client area by one pixel on a
+        // certain edge. The edge is chosen based on which side of the
+        // monitor is likely to contain an auto-hide appbar, so the
+        // missing client area is covered by it.
+		if (EqualRect(params.rect, &monitor_info.rcMonitor))
+        {
+			if (has_autohide_appbar(ABE_BOTTOM, monitor_info.rcMonitor))
+				params.rect->bottom--;
+			else if (has_autohide_appbar(ABE_LEFT, monitor_info.rcMonitor))
+				params.rect->left++;
+			else if (has_autohide_appbar(ABE_TOP, monitor_info.rcMonitor))
+				params.rect->top++;
+			else if (has_autohide_appbar(ABE_RIGHT, monitor_info.rcMonitor))
+				params.rect->right--;
+		}
+	}
+    else
+    {
+        // NOTE: For the non-maximized case, set the output RECT to
+        // what it was before WM_NCCALCSIZE modified it. This will
+        // make the client size the same as the non-client size.
+		*params.rect = nonclient;
+	}
+}
+
+static LRESULT handle_nchittest(Win32Window* window, int x, int y)
+{
+    LRESULT result = HTCLIENT;
+
+	if (!IsMaximized(window->handle))
+    {
+        i32 frame_size = 0;
+        i32 diagonal_width = 0;
+        POINT mouse = { x, y };
+
+        ScreenToClient(window->handle, &mouse);
+
+        // NOTE: The horizontal frame should be the same size as the
+        // vertical frame, since the NONCLIENTMETRICS structure does
+        // not distinguish between them.
+        frame_size = GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+        // NOTE: The diagonal size handles are wider than the frame.
+        diagonal_width = frame_size * 2 + GetSystemMetrics(SM_CXBORDER);
+
+        if (mouse.y < frame_size)
+        {
+            if (mouse.x < diagonal_width)
+                result = HTTOPLEFT;
+            else if (mouse.x >= window->width - diagonal_width)
+                result = HTTOPRIGHT;
+            else
+                result = HTTOP; // maybe HTCAPTION.
+        }
+        else if (mouse.y >= window->height - frame_size)
+        {
+            if (mouse.x < diagonal_width)
+                result = HTBOTTOMLEFT;
+            else if (mouse.x >= window->width - diagonal_width)
+                result = HTBOTTOMRIGHT;
+            else
+                result = HTBOTTOM;
+        }
+        else
+        {
+            if (mouse.x < frame_size)
+                result = HTLEFT;
+            else if (mouse.x >= window->width - frame_size)
+                result = HTRIGHT;
+        }
+    }
+
+	return result;
+}
+
 static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LPARAM lparam)
 {
     LRESULT result = 0;
 
     switch (message)
     {
+        case WM_NCACTIVATE:
+        {
+            // NOTE: DefWindowProc won't repaint the window border if
+            // lParam (normally a HRGN) is -1. This is recommended in:
+            // https://blogs.msdn.microsoft.com/wpfsdk/2008/09/08/custom-window-chrome-in-wpf/
+            return DefWindowProc(handle, message, wparam, -1);
+        }
+        case WM_NCUAHDRAWCAPTION:
+        case WM_NCUAHDRAWFRAME:
+        {
+            // NOTE: These undocumented messages are sent to draw themed
+            // window borders. Block them to prevent drawing borders over
+            // the client area.
+        }
+        break;
+        case WM_WINDOWPOSCHANGED:
+        case WM_NCCALCSIZE:
+        case WM_NCHITTEST:
+        {
+            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
+
+            if (window && window->borderless)
+            {
+                if (message == WM_WINDOWPOSCHANGED)
+                {
+                    handle_windowposchanged(window, (WINDOWPOS*)lparam);
+                }
+                else if (message == WM_NCCALCSIZE)
+                {
+                    handle_nccalcsize(window, wparam, lparam);
+                }
+                else if (message == WM_NCHITTEST)
+                {
+                    result = handle_nchittest(window, GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+                }
+            }
+            else
+            {
+                result = DefWindowProc(handle, message, wparam, lparam);
+            }
+        }
+        break;
+        case WM_LBUTTONDOWN:
+        {
+            if (wparam & MK_SHIFT)
+            {
+                ReleaseCapture();
+                SendMessageW(handle, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+            }
+        }
+        break;
         case WM_CLOSE:
         case WM_KEYDOWN:
         case WM_KEYUP:
@@ -222,7 +501,6 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
             send_mparam(handle, message, wparam, lparam);
         }
         break;
-
         default:
         {
             result = DefWindowProc(handle, message, wparam, lparam);
@@ -233,14 +511,24 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
     return result;
 }
 
+// NOTE: Resource for borderless window support: https://github.com/rossy/borderless-window
 static void window_open(Win32Window* win32_window)
 {
     HWND handle = 0;
     HDC device_context = 0;
     DWORD style = WS_OVERLAPPEDWINDOW;
-    DWORD exstyle = WS_EX_APPWINDOW | WS_EX_NOREDIRECTIONBITMAP;
+    DWORD exstyle = WS_EX_APPWINDOW;
 
-    handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME, win32_window->title, style, CW_USEDEFAULT, CW_USEDEFAULT, win32_window->width, win32_window->height, 0, 0, 0, 0);
+    if (win32_window->borderless)
+        exstyle |= WS_EX_LAYERED;
+    else
+        exstyle |= WS_EX_NOREDIRECTIONBITMAP;
+
+    handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME,
+                            win32_window->title, style,
+                            CW_USEDEFAULT, CW_USEDEFAULT,
+                            win32_window->width, win32_window->height,
+                            0, 0, 0, 0);
     ASSERT(handle);
     device_context = GetDC(handle);
     ASSERT(device_context);
@@ -249,6 +537,17 @@ static void window_open(Win32Window* win32_window)
     win32_window->device_context = device_context;
 
     SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)win32_window);
+
+    if (win32_window->borderless)
+    {
+        SetLayeredWindowAttributes(handle, RGB(255, 0, 255), 0, LWA_COLORKEY);
+        // NOTE: The window needs a frame to show a shadow, so give it
+        // the smallest amount of frame possible
+        // https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmenablecomposition
+        DwmExtendFrameIntoClientArea(handle, &(MARGINS) { 0, 0, 1, 0 });
+        DwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &(DWORD) { DWMNCRP_ENABLED }, sizeof(DWORD));
+        update_region(win32_window);
+    }
     ShowWindow(handle, SW_SHOW);
 
     ++win32_window_count;
@@ -298,7 +597,7 @@ static DWORD WINAPI window_thread_proc(LPVOID param)
                 case MSG_WINDOW_CLOSE:
                 {
                     win32_window = (Win32Window*)message.wParam;
-                    window_close(win32_window);    
+                    window_close(win32_window);
                 }
                 break;
                 default:
@@ -324,6 +623,8 @@ static void register_window_class(void)
     window_class.lpfnWndProc = window_proc;
     window_class.hInstance = GetModuleHandle(0);
     window_class.lpszClassName = WINDOW_CLASS_NAME;
+    window_class.hCursor = LoadCursor(NULL, IDC_ARROW);
+    window_class.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 
     atom = RegisterClassEx(&window_class);
     UNUSED_VARIABLE(atom);
@@ -333,9 +634,9 @@ static void register_window_class(void)
 static void set_process_dpi_aware(void)
 {
     b32 result = 0;
-    
+
     result = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-    
+
     if (!result)
     {
         result = !!SetProcessDPIAware();
@@ -344,7 +645,7 @@ static void set_process_dpi_aware(void)
     ASSERT(result);
 }
 
-uptr win32_window_open(const char* title, int width, int height)
+uptr win32_window_open(const char* title, i32 width, i32 height, b32 borderless)
 {
     static HANDLE semaphore_handle = 0;
     static Win32Window* win32_window = 0;
@@ -364,6 +665,7 @@ uptr win32_window_open(const char* title, int width, int height)
     win32_window->title = title;
     win32_window->width = width;
     win32_window->height = height;
+    win32_window->borderless = borderless;
 
     if (!win32_window_count)
     {

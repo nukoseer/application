@@ -72,7 +72,7 @@ set all_include=%common_include% %win32_include% %os_include%
 
 %ar% mem.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_atomic.obj os.obj win32_graphics.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32_atomic.obj win32.obj /out:os.lib
 
-%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib Kernel32.lib User32.lib Winmm.lib Synchronization.lib libvcruntime.lib libucrt.lib
+%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib Kernel32.lib User32.lib Winmm.lib Synchronization.lib Shell32.lib Dwmapi.lib Gdi32.lib libvcruntime.lib libucrt.lib
 
 REM libvcruntime.lib libucrt.lib
 

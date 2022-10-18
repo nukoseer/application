@@ -3,7 +3,7 @@
 struct OSEventList;
 struct MemoryArena;
 
-uptr win32_window_open(const char* title, int width, int height);
+uptr win32_window_open(const char* title, i32 width, i32 height, b32 borderless);
 b32  win32_window_close(uptr window_pointer);
 uptr win32_window_get_handle_from(uptr window_pointer);
 uptr win32_window_get_window_from(uptr handle_pointer);

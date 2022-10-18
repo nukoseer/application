@@ -3,7 +3,7 @@
 #include "mem.h"
 #include "os_window.h"
 
-typedef uptr OSWindowOpen(const char* title, i32 width, i32 height);
+typedef uptr OSWindowOpen(const char* title, i32 width, i32 height, b32 borderless);
 typedef b32  OSWindowClose(uptr window_pointer);
 typedef uptr OSWindowGetHandleFrom(uptr window_pointer);
 typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
@@ -150,13 +150,13 @@ b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title)
     return result;
 }
 
-OSWindowHandle os_window_open(const char* title, i32 width, i32 height)
+OSWindowHandle os_window_open(const char* title, i32 width, i32 height, b32 borderless)
 {
     uptr window = 0;
     OSWindowHandle os_window_handle = 0;
     
     ASSERT(os_window.open);
-    window = os_window.open(title, width, height);
+    window = os_window.open(title, width, height, borderless);
     ASSERT(window);
     
     os_window_handle = get_handle_from_window(window);
