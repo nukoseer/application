@@ -1,10 +1,37 @@
 #include <Windows.h>
+
 #include "types.h"
 #include "utils.h"
 #include "win32_io.h"
 #include "os_io.h"
 
 static HANDLE std_handle_output = 0;
+
+static DWORD map_access_mode(i32 access_mode)
+{
+    DWORD generic_access_mode = 0;
+    
+    switch (access_mode)
+    {
+        case OS_IO_FILE_ACCESS_MODE_READ:
+        {
+            generic_access_mode = GENERIC_READ;
+        }
+        break;
+        case OS_IO_FILE_ACCESS_MODE_WRITE:
+        {
+            generic_access_mode = GENERIC_WRITE;
+        }
+        break;
+        case OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ:
+        {
+            generic_access_mode = GENERIC_WRITE | GENERIC_READ;
+        }
+        break;
+    }
+
+    return generic_access_mode;
+}
 
 u32 win32_io_write_console(const char* str, u32 length)
 {
@@ -14,6 +41,19 @@ u32 win32_io_write_console(const char* str, u32 length)
     ASSERT(length == number_of_chars_written);
 
     return (u32)number_of_chars_written;
+}
+
+uptr win32_io_create_file(const char* file_name, i32 access_mode)
+{
+    HANDLE file_handle = 0;
+    DWORD generic_access_mode = 0;
+
+    generic_access_mode = map_access_mode(access_mode);
+
+    file_handle = CreateFile(file_name, generic_access_mode, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    ASSERT(INVALID_HANDLE_VALUE != file_handle);
+
+    return (uptr)file_handle;
 }
 
 void win32_io_init(void)

@@ -6,6 +6,7 @@ static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
     OSWindowHandle os_window_handle2 = 0;
+    OSIOFileHandle os_io_file_handle = 0;
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
@@ -14,6 +15,9 @@ static void application(void)
     os_init();
     os_window_handle = os_window_open("Application Window", 640, 480, FALSE);
     os_window_handle2 = os_window_open("Application Window2", 640, 480, TRUE);
+
+    os_io_file_handle = os_io_create_file("test_file.txt", OS_IO_FILE_ACCESS_MODE_READ);
+    UNUSED_VARIABLE(os_io_file_handle);
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     os_window_set_position(os_window_handle2, x + width, y, width, height);

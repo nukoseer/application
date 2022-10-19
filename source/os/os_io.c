@@ -5,11 +5,13 @@
 #include "utils.h"
 #include "os_io.h"
 
-typedef u32 OSIOWriteConsole(const char* str, u32 length);
+typedef u32  OSIOWriteConsole(const char* str, u32 length);
+typedef uptr OSIOCreateFile(const char* file_name, i32 access_mode);
 
 typedef struct OSIO
 {
     OSIOWriteConsole* write_console;
+    OSIOCreateFile* create_file;
 } OSIO;
 
 #ifdef _WIN32
@@ -18,6 +20,7 @@ typedef struct OSIO
 static OSIO os_io =
 {
     .write_console = &win32_io_write_console,
+    .create_file = &win32_io_create_file,
 };
 
 #else
@@ -57,3 +60,12 @@ u32 os_io_write_console(const char* fmt, ...)
     return length;
 }
 
+OSIOFileHandle os_io_create_file(const char* file_name, i32 access_mode)
+{
+    OSIOFileHandle file_handle = 0;
+    
+    ASSERT(os_io.create_file);
+    file_handle = (OSIOFileHandle)os_io.create_file(file_name, access_mode);
+
+    return file_handle;
+}
