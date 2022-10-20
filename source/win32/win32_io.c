@@ -33,6 +33,19 @@ static DWORD map_access_mode(i32 access_mode)
     return generic_access_mode;
 }
 
+static uptr create_file(const char* file_name, i32 access_mode, i32 creating_mode)
+{
+    HANDLE file_handle = 0;
+    DWORD generic_access_mode = 0;
+
+    generic_access_mode = map_access_mode(access_mode);
+
+    file_handle = CreateFile(file_name, generic_access_mode, 0, 0, creating_mode, FILE_ATTRIBUTE_NORMAL, 0);
+    ASSERT(INVALID_HANDLE_VALUE != file_handle);
+
+    return (uptr)file_handle;
+}
+
 u32 win32_io_write_console(const char* str, u32 length)
 {
     DWORD number_of_chars_written = 0;
@@ -45,15 +58,20 @@ u32 win32_io_write_console(const char* str, u32 length)
 
 uptr win32_io_create_file(const char* file_name, i32 access_mode)
 {
-    HANDLE file_handle = 0;
-    DWORD generic_access_mode = 0;
+    uptr file_handle = 0;
+    
+    file_handle = create_file(file_name, access_mode, CREATE_ALWAYS);
 
-    generic_access_mode = map_access_mode(access_mode);
+    return file_handle;
+}
 
-    file_handle = CreateFile(file_name, generic_access_mode, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-    ASSERT(INVALID_HANDLE_VALUE != file_handle);
+uptr win32_io_open_file(const char* file_name, i32 access_mode)
+{
+    uptr file_handle = 0;
+    
+    file_handle = create_file(file_name, access_mode, OPEN_ALWAYS);
 
-    return (uptr)file_handle;
+    return file_handle;
 }
 
 void win32_io_init(void)

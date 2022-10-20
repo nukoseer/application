@@ -7,11 +7,13 @@
 
 typedef u32  OSIOWriteConsole(const char* str, u32 length);
 typedef uptr OSIOCreateFile(const char* file_name, i32 access_mode);
+typedef uptr OSIOOpenFile(const char* file_name, i32 access_mode);
 
 typedef struct OSIO
 {
     OSIOWriteConsole* write_console;
     OSIOCreateFile* create_file;
+    OSIOOpenFile* open_file;
 } OSIO;
 
 #ifdef _WIN32
@@ -21,6 +23,7 @@ static OSIO os_io =
 {
     .write_console = &win32_io_write_console,
     .create_file = &win32_io_create_file,
+    .open_file = &win32_io_open_file,
 };
 
 #else
@@ -66,6 +69,16 @@ OSIOFileHandle os_io_create_file(const char* file_name, i32 access_mode)
     
     ASSERT(os_io.create_file);
     file_handle = (OSIOFileHandle)os_io.create_file(file_name, access_mode);
+
+    return file_handle;
+}
+
+OSIOFileHandle os_io_open_file(const char* file_name, i32 access_mode)
+{
+    OSIOFileHandle file_handle = 0;
+    
+    ASSERT(os_io.open_file);
+    file_handle = (OSIOFileHandle)os_io.open_file(file_name, access_mode);
 
     return file_handle;
 }

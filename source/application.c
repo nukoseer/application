@@ -16,8 +16,8 @@ static void application(void)
     os_window_handle = os_window_open("Application Window", 640, 480, FALSE);
     os_window_handle2 = os_window_open("Application Window2", 640, 480, TRUE);
 
-    os_io_file_handle = os_io_create_file("test_file.txt", OS_IO_FILE_ACCESS_MODE_READ);
-    UNUSED_VARIABLE(os_io_file_handle);
+    os_io_file_handle = os_io_open_file("test_file.txt", OS_IO_FILE_ACCESS_MODE_READ);
+    OS_LOG_TRACE("os_io_file_handle: %llu", os_io_file_handle);
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     os_window_set_position(os_window_handle2, x + width, y, width, height);
@@ -29,7 +29,7 @@ static void application(void)
         sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d",
                 os_local_time.day, os_local_time.month, os_local_time.year,
                 os_local_time.hour, os_local_time.minute, os_local_time.second);
-
+        
         os_io_write_console("%s\n", time_string);
     }
 

@@ -12,6 +12,7 @@ typedef enum OSIOFileAccessMode
 
 u32 os_io_write_console(const char* fmt, ...);
 OSIOFileHandle os_io_create_file(const char* file_name, i32 access_mode);
+OSIOFileHandle os_io_open_file(const char* file_name, i32 access_mode);
 
 #define H_OS_IO_H
 #endif
