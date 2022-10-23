@@ -74,6 +74,17 @@ uptr win32_io_open_file(const char* file_name, i32 access_mode)
     return file_handle;
 }
 
+b32 win32_io_close_file(uptr file_handle)
+{
+    BOOL result = FALSE;
+    HANDLE handle = (HANDLE)file_handle;
+    
+    result = CloseHandle(handle);
+    ASSERT(result);
+
+    return (b32)result;
+}
+
 void win32_io_init(void)
 {
     if (!std_handle_output)

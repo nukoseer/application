@@ -6,7 +6,6 @@ static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
     OSWindowHandle os_window_handle2 = 0;
-    OSIOFileHandle os_io_file_handle = 0;
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
@@ -16,8 +15,32 @@ static void application(void)
     os_window_handle = os_window_open("Application Window", 640, 480, FALSE);
     os_window_handle2 = os_window_open("Application Window2", 640, 480, TRUE);
 
-    os_io_file_handle = os_io_open_file("test_file.txt", OS_IO_FILE_ACCESS_MODE_READ);
-    OS_LOG_TRACE("os_io_file_handle: %llu", os_io_file_handle);
+    {
+        OSIOFileHandle os_io_file_handle = 0;
+
+        os_io_file_handle = os_io_open_file("test_file.txt", OS_IO_FILE_ACCESS_MODE_READ);
+
+        if (os_io_file_handle)
+        {
+            b32 result = FALSE;
+
+            OS_LOG_TRACE("File opened: %llu.");
+            result = os_io_close_file(os_io_file_handle);
+
+            if (result)
+            {
+                OS_LOG_TRACE("File closed: %llu.");
+            }
+            else
+            {
+                OS_LOG_TRACE("File could not close: %llu.");
+            }
+        }
+        else
+        {
+            OS_LOG_TRACE("File could not open: %llu.");
+        }
+    }
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     os_window_set_position(os_window_handle2, x + width, y, width, height);
