@@ -8,7 +8,8 @@
 typedef u32  OSIOWriteConsole(const char* str, u32 length);
 typedef uptr OSIOCreateFile(const char* file_name, i32 access_mode);
 typedef uptr OSIOOpenFile(const char* file_name, i32 access_mode);
-typedef b32 OSIOCloseFile(uptr file_handle);
+typedef b32  OSIOCloseFile(uptr file_handle);
+typedef b32  OSIODeleteFile(const char* file_name);
 
 typedef struct OSIO
 {
@@ -16,6 +17,7 @@ typedef struct OSIO
     OSIOCreateFile* create_file;
     OSIOOpenFile* open_file;
     OSIOCloseFile* close_file;
+    OSIODeleteFile* delete_file;
 } OSIO;
 
 #ifdef _WIN32
@@ -27,6 +29,7 @@ static OSIO os_io =
     .create_file = &win32_io_create_file,
     .open_file = &win32_io_open_file,
     .close_file = &win32_io_close_file,
+    .delete_file = &win32_io_delete_file,
 };
 
 #else
@@ -92,6 +95,16 @@ b32 os_io_close_file(OSIOFileHandle file_handle)
 
     ASSERT(os_io.close_file);
     result = os_io.close_file(file_handle);
+
+    return result;
+}
+
+b32 os_io_delete_file(const char* file_name)
+{
+    b32 result = FALSE;
+
+    ASSERT(os_io.delete_file);
+    result = os_io.delete_file(file_name);
 
     return result;
 }

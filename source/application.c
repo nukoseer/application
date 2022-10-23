@@ -15,36 +15,41 @@ static void application(void)
     os_window_handle = os_window_open("Application Window", 640, 480, FALSE);
     os_window_handle2 = os_window_open("Application Window2", 640, 480, TRUE);
 
+    // TODO: Put this block to the test function.
     {
         OSIOFileHandle os_io_file_handle = 0;
+        const char* file_name = "test_file.txt";
 
-        os_io_file_handle = os_io_open_file("test_file.txt", OS_IO_FILE_ACCESS_MODE_READ);
+        os_io_file_handle = os_io_open_file(file_name, OS_IO_FILE_ACCESS_MODE_READ);
 
         if (os_io_file_handle)
         {
             b32 result = FALSE;
 
-            OS_LOG_TRACE("File opened: %llu.");
+            OS_LOG_TRACE("File opened: %llu.", os_io_file_handle);
             result = os_io_close_file(os_io_file_handle);
 
             if (result)
             {
-                OS_LOG_TRACE("File closed: %llu.");
+                OS_LOG_TRACE("File closed: %llu.", os_io_file_handle);
+                result = os_io_delete_file(file_name);
+                
+                if (result)
+                    OS_LOG_TRACE("File deleted: %s.", file_name);
+                else
+                    OS_LOG_TRACE("File could not delete: %llu.");
             }
             else
-            {
                 OS_LOG_TRACE("File could not close: %llu.");
-            }
         }
         else
-        {
             OS_LOG_TRACE("File could not open: %llu.");
-        }
     }
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     os_window_set_position(os_window_handle2, x + width, y, width, height);
 
+    // TODO: Put this block to the test function.
     {
         char time_string[32] = { 0 };
         OSDateTime os_local_time = os_time_local_now();

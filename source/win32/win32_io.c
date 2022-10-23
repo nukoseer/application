@@ -85,6 +85,16 @@ b32 win32_io_close_file(uptr file_handle)
     return (b32)result;
 }
 
+b32 win32_io_delete_file(const char* file_name)
+{
+    BOOL result = FALSE;
+
+    result = DeleteFile(file_name);
+    ASSERT(result);
+
+    return (b32)result;
+}
+
 void win32_io_init(void)
 {
     if (!std_handle_output)
