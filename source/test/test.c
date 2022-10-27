@@ -1,7 +1,9 @@
+#include <stdio.h>
 #include "test.h"
 #include "types.h"
 #include "utils.h"
 #include "mem.h"
+#include "os.h"
 
 static void stretchy_buffer_test(void)
 {
@@ -97,8 +99,35 @@ static void doubly_linked_list_test(void)
     release_memory_arena(arena);
 }
 
+static void file_operation_test(void)
+{
+    OSIOFileHandle os_io_file_handle = 0;
+    const char* file_name = "test_file.txt";
+    b32 result = FALSE;
+    
+    os_io_file_handle = os_io_open_file(file_name, OS_IO_FILE_ACCESS_MODE_READ);
+    ASSERT(os_io_file_handle);
+    result = os_io_close_file(os_io_file_handle);
+    ASSERT(result);
+    result = os_io_delete_file(file_name);
+    ASSERT(result);
+}
+
+static void time_test(void)
+{
+    char time_string[32] = { 0 };
+    OSDateTime os_local_time = os_time_local_now();
+
+    sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d",
+            os_local_time.day, os_local_time.month, os_local_time.year,
+            os_local_time.hour, os_local_time.minute, os_local_time.second);
+    fprintf(stderr, "%s\n", time_string);
+}
+
 void run_test(void)
 {
     stretchy_buffer_test();
     doubly_linked_list_test();
+    file_operation_test();
+    time_test();
 }
