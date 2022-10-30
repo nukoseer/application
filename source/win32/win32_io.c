@@ -46,7 +46,7 @@ static uptr create_file(const char* file_name, i32 access_mode, i32 creating_mod
     return (uptr)file_handle;
 }
 
-u32 win32_io_write_console(const char* str, u32 length)
+u32 win32_io_console_write(const char* str, u32 length)
 {
     DWORD number_of_chars_written = 0;
 
@@ -56,7 +56,7 @@ u32 win32_io_write_console(const char* str, u32 length)
     return (u32)number_of_chars_written;
 }
 
-uptr win32_io_create_file(const char* file_name, i32 access_mode)
+uptr win32_io_file_create(const char* file_name, i32 access_mode)
 {
     uptr file_handle = 0;
     
@@ -65,7 +65,7 @@ uptr win32_io_create_file(const char* file_name, i32 access_mode)
     return file_handle;
 }
 
-uptr win32_io_open_file(const char* file_name, i32 access_mode)
+uptr win32_io_file_open(const char* file_name, i32 access_mode)
 {
     uptr file_handle = 0;
     
@@ -74,7 +74,7 @@ uptr win32_io_open_file(const char* file_name, i32 access_mode)
     return file_handle;
 }
 
-b32 win32_io_close_file(uptr file_handle)
+b32 win32_io_file_close(uptr file_handle)
 {
     BOOL result = FALSE;
     HANDLE handle = (HANDLE)file_handle;
@@ -85,7 +85,7 @@ b32 win32_io_close_file(uptr file_handle)
     return (b32)result;
 }
 
-b32 win32_io_delete_file(const char* file_name)
+b32 win32_io_file_delete(const char* file_name)
 {
     BOOL result = FALSE;
 

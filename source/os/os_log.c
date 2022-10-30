@@ -70,7 +70,7 @@ static os_thread_callback_return os_log_thread_procedure(os_thread_callback_para
                          os_log_level_colors[element->log_level], os_log_level_string[element->log_level],
                          element->file, element->line, element->fmt);
                 
-                os_io_write_console(buffer);
+                os_io_console_write(buffer);
             }
             log_ring_buffer_pop_commit();
         }

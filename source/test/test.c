@@ -105,11 +105,11 @@ static void file_operation_test(void)
     const char* file_name = "test_file.txt";
     b32 result = FALSE;
     
-    os_io_file_handle = os_io_open_file(file_name, OS_IO_FILE_ACCESS_MODE_READ);
+    os_io_file_handle = os_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
     ASSERT(os_io_file_handle);
-    result = os_io_close_file(os_io_file_handle);
+    result = os_io_file_close(os_io_file_handle);
     ASSERT(result);
-    result = os_io_delete_file(file_name);
+    result = os_io_file_delete(file_name);
     ASSERT(result);
 }
 

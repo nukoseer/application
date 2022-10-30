@@ -5,19 +5,19 @@
 #include "utils.h"
 #include "os_io.h"
 
-typedef u32  OSIOWriteConsole(const char* str, u32 length);
-typedef uptr OSIOCreateFile(const char* file_name, i32 access_mode);
-typedef uptr OSIOOpenFile(const char* file_name, i32 access_mode);
-typedef b32  OSIOCloseFile(uptr file_handle);
-typedef b32  OSIODeleteFile(const char* file_name);
+typedef u32  OSIOConsoleWrite(const char* str, u32 length);
+typedef uptr OSIOFileCreate(const char* file_name, i32 access_mode);
+typedef uptr OSIOFileOpen(const char* file_name, i32 access_mode);
+typedef b32  OSIOFileClose(uptr file_handle);
+typedef b32  OSIOFileDelete(const char* file_name);
 
 typedef struct OSIO
 {
-    OSIOWriteConsole* write_console;
-    OSIOCreateFile* create_file;
-    OSIOOpenFile* open_file;
-    OSIOCloseFile* close_file;
-    OSIODeleteFile* delete_file;
+    OSIOConsoleWrite* console_write;
+    OSIOFileCreate* file_create;
+    OSIOFileOpen* file_open;
+    OSIOFileClose* file_close;
+    OSIOFileDelete* file_delete;
 } OSIO;
 
 #ifdef _WIN32
@@ -25,11 +25,11 @@ typedef struct OSIO
 
 static OSIO os_io =
 {
-    .write_console = &win32_io_write_console,
-    .create_file = &win32_io_create_file,
-    .open_file = &win32_io_open_file,
-    .close_file = &win32_io_close_file,
-    .delete_file = &win32_io_delete_file,
+    .console_write = &win32_io_console_write,
+    .file_create = &win32_io_file_create,
+    .file_open = &win32_io_file_open,
+    .file_close = &win32_io_file_close,
+    .file_delete = &win32_io_file_delete,
 };
 
 #else
@@ -50,14 +50,14 @@ static u32 write_console(const char* fmt, va_list args)
     {
         length = (u32)ilength;
 
-        ASSERT(os_io.write_console);
-        length = os_io.write_console(os_io_str, length);
+        ASSERT(os_io.console_write);
+        length = os_io.console_write(os_io_str, length);
     }
 
     return length;
 }
 
-u32 os_io_write_console(const char* fmt, ...)
+u32 os_io_console_write(const char* fmt, ...)
 {
     va_list args;
     u32 length = 0;
@@ -69,42 +69,42 @@ u32 os_io_write_console(const char* fmt, ...)
     return length;
 }
 
-OSIOFileHandle os_io_create_file(const char* file_name, i32 access_mode)
+OSIOFileHandle os_io_file_create(const char* file_name, i32 access_mode)
 {
     OSIOFileHandle file_handle = 0;
     
-    ASSERT(os_io.create_file);
-    file_handle = (OSIOFileHandle)os_io.create_file(file_name, access_mode);
+    ASSERT(os_io.file_create);
+    file_handle = (OSIOFileHandle)os_io.file_create(file_name, access_mode);
 
     return file_handle;
 }
 
-OSIOFileHandle os_io_open_file(const char* file_name, i32 access_mode)
+OSIOFileHandle os_io_file_open(const char* file_name, i32 access_mode)
 {
     OSIOFileHandle file_handle = 0;
     
-    ASSERT(os_io.open_file);
-    file_handle = (OSIOFileHandle)os_io.open_file(file_name, access_mode);
+    ASSERT(os_io.file_open);
+    file_handle = (OSIOFileHandle)os_io.file_open(file_name, access_mode);
 
     return file_handle;
 }
 
-b32 os_io_close_file(OSIOFileHandle file_handle)
+b32 os_io_file_close(OSIOFileHandle file_handle)
 {
     b32 result = FALSE;
 
-    ASSERT(os_io.close_file);
-    result = os_io.close_file(file_handle);
+    ASSERT(os_io.file_close);
+    result = os_io.file_close(file_handle);
 
     return result;
 }
 
-b32 os_io_delete_file(const char* file_name)
+b32 os_io_file_delete(const char* file_name)
 {
     b32 result = FALSE;
 
-    ASSERT(os_io.delete_file);
-    result = os_io.delete_file(file_name);
+    ASSERT(os_io.file_delete);
+    result = os_io.file_delete(file_name);
 
     return result;
 }
