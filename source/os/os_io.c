@@ -10,6 +10,9 @@ typedef uptr OSIOFileCreate(const char* file_name, i32 access_mode);
 typedef uptr OSIOFileOpen(const char* file_name, i32 access_mode);
 typedef b32  OSIOFileClose(uptr file_handle);
 typedef b32  OSIOFileDelete(const char* file_name);
+typedef uptr OSIOFileFindBegin(const char* file_name, u32* file_count);
+typedef uptr OSIOFileFindAndOpen(OSIOFileFindHandle find_handle, i32 access_mode);
+typedef b32  OSIOFileFindEnd(OSIOFileFindHandle find_handle);
 
 typedef struct OSIO
 {
@@ -18,6 +21,9 @@ typedef struct OSIO
     OSIOFileOpen* file_open;
     OSIOFileClose* file_close;
     OSIOFileDelete* file_delete;
+    OSIOFileFindBegin* file_find_begin;
+    OSIOFileFindAndOpen* file_find_and_open;
+    OSIOFileFindEnd* file_find_end;
 } OSIO;
 
 #ifdef _WIN32
@@ -30,6 +36,9 @@ static OSIO os_io =
     .file_open = &win32_io_file_open,
     .file_close = &win32_io_file_close,
     .file_delete = &win32_io_file_delete,
+    .file_find_begin = &win32_io_file_find_begin,
+    .file_find_and_open = &win32_io_file_find_and_open,
+    .file_find_end = &win32_io_file_find_end,
 };
 
 #else
@@ -105,6 +114,36 @@ b32 os_io_file_delete(const char* file_name)
 
     ASSERT(os_io.file_delete);
     result = os_io.file_delete(file_name);
+
+    return result;
+}
+
+OSIOFileFindHandle os_io_file_find_begin(const char* file_name, u32* file_count)
+{
+    OSIOFileFindHandle find_handle = 0;
+
+    ASSERT(os_io.file_find_begin);
+    find_handle = os_io.file_find_begin(file_name, file_count);
+
+    return find_handle;
+}
+
+OSIOFileHandle os_io_file_find_and_open(OSIOFileFindHandle find_handle, i32 access_mode)
+{
+    OSIOFileHandle file_handle = 0;
+
+    ASSERT(os_io.file_find_and_open);
+    file_handle = os_io.file_find_and_open(find_handle, access_mode);
+
+    return file_handle;
+}
+
+b32 os_io_file_find_end(OSIOFileFindHandle find_handle)
+{
+    b32 result = 0;
+
+    ASSERT(os_io.file_find_end);
+    result = os_io.file_find_end(find_handle);
 
     return result;
 }

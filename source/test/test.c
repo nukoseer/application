@@ -109,6 +109,25 @@ static void file_operation_test(void)
     ASSERT(os_io_file_handle);
     result = os_io_file_close(os_io_file_handle);
     ASSERT(result);
+
+    {
+        OSIOFileFindHandle os_io_file_find_handle = 0;
+        u32 file_count = 0;
+        u32 i = 0;
+        
+        os_io_file_find_handle = os_io_file_find_begin("test_file.txt", &file_count);
+        ASSERT(file_count == 1);
+
+        for (i = 0; i < file_count; ++i)
+        {
+            os_io_file_handle = os_io_file_find_and_open(os_io_file_find_handle, OS_IO_FILE_ACCESS_MODE_READ);
+            result = os_io_file_close(os_io_file_handle);
+            ASSERT(result);
+        }
+        result = os_io_file_find_end(os_io_file_find_handle);
+        ASSERT(result);
+    }
+
     result = os_io_file_delete(file_name);
     ASSERT(result);
 }

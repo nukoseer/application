@@ -2,8 +2,15 @@
 
 #include "types.h"
 #include "utils.h"
+#include "win32_memory.h"
 #include "win32_io.h"
 #include "os_io.h"
+
+typedef struct Win32IOFileFindInfo
+{
+    HANDLE handle;
+    WIN32_FIND_DATA data;
+} Win32IOFileFindInfo;
 
 static HANDLE std_handle_output = 0;
 
@@ -42,6 +49,11 @@ static uptr create_file(const char* file_name, i32 access_mode, i32 creating_mod
 
     file_handle = CreateFile(file_name, generic_access_mode, 0, 0, creating_mode, FILE_ATTRIBUTE_NORMAL, 0);
     ASSERT(INVALID_HANDLE_VALUE != file_handle);
+
+    if (file_handle == INVALID_HANDLE_VALUE)
+    {
+        file_handle = 0;
+    }
 
     return (uptr)file_handle;
 }
@@ -93,6 +105,71 @@ b32 win32_io_file_delete(const char* file_name)
     ASSERT(result);
 
     return (b32)result;
+}
+
+uptr win32_io_file_find_begin(const char* file_name, u32* file_count)
+{
+    Win32IOFileFindInfo* file_find_info = 0;
+    u32 find_count = 0;
+
+    file_find_info = (Win32IOFileFindInfo*)win32_memory_heap_allocate(sizeof(Win32IOFileFindInfo));
+    ASSERT(file_find_info);
+
+    file_find_info->handle = FindFirstFile(file_name, &file_find_info->data);
+
+    while (file_find_info->handle != INVALID_HANDLE_VALUE)
+    {
+        ++find_count;
+        
+        if (!FindNextFile(file_find_info->handle, &file_find_info->data))
+        {
+            break;
+        }
+    }
+
+    FindClose(file_find_info->handle);
+    
+    file_find_info->handle = FindFirstFile(file_name, &file_find_info->data);
+        
+    if (file_count)
+    {
+        *file_count = find_count;
+    }
+
+    return (uptr)file_find_info;
+}
+
+uptr win32_io_file_find_and_open(uptr find_handle, i32 access_mode)
+{
+    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)find_handle;
+    uptr file_handle = 0;
+    
+    if (find_info->handle != INVALID_HANDLE_VALUE)
+    {
+        file_handle = win32_io_file_open(find_info->data.cFileName, access_mode);
+
+        if (!FindNextFile(find_info->handle, &find_info->data))
+        {
+            FindClose(find_info->handle);
+            find_info->handle = INVALID_HANDLE_VALUE;
+        }
+    }
+
+    return file_handle;
+}
+
+b32 win32_io_file_find_end(uptr find_handle)
+{
+    b32 result = 0;
+    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)find_handle;
+
+    if (find_info)
+    {
+        FindClose(find_info->handle);
+        result = win32_memory_heap_release(find_info);
+    }
+    
+    return result;
 }
 
 void win32_io_init(void)
