@@ -16,6 +16,7 @@ u32 os_io_console_write(const char* fmt, ...);
 OSIOFileHandle os_io_file_create(const char* file_name, i32 access_mode);
 OSIOFileHandle os_io_file_open(const char* file_name, i32 access_mode);
 b32 os_io_file_delete(const char* file_name);
+u32 os_io_file_write(OSIOFileHandle file_handle, const char* buffer, u32 size);
 b32 os_io_file_close(OSIOFileHandle file_handle);
 OSIOFileFindHandle os_io_file_find_begin(const char* file_name, u32* file_count);
 OSIOFileHandle os_io_file_find_and_open(OSIOFileFindHandle find_handle, i32 access_mode);

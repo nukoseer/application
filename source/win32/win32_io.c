@@ -58,6 +58,20 @@ static uptr create_file(const char* file_name, i32 access_mode, i32 creating_mod
     return (uptr)file_handle;
 }
 
+static u32 write_file(uptr file_handle, const char* buffer, u32 size)
+{
+    HANDLE handle = (HANDLE)file_handle;
+    b32 result = 0;
+    DWORD bytes_written = 0;
+
+    result = WriteFile(handle, buffer, size, &bytes_written, 0);
+    ASSERT(result);
+    ASSERT(bytes_written == size);
+
+    return (u32)bytes_written;
+}
+
+// TODO: Probably we can merge win32_io_console_write() and win32_io_file_write(). At least partially?
 u32 win32_io_console_write(const char* str, u32 length)
 {
     DWORD number_of_chars_written = 0;
@@ -105,6 +119,15 @@ b32 win32_io_file_delete(const char* file_name)
     ASSERT(result);
 
     return (b32)result;
+}
+
+u32 win32_io_file_write(uptr file_handle, const char* buffer, u32 size)
+{
+    u32 result = 0;
+
+    result = write_file(file_handle, buffer, size);
+
+    return result;
 }
 
 uptr win32_io_file_find_begin(const char* file_name, u32* file_count)

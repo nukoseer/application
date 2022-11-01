@@ -120,7 +120,17 @@ static void file_operation_test(void)
 
         for (i = 0; i < file_count; ++i)
         {
-            os_io_file_handle = os_io_file_find_and_open(os_io_file_find_handle, OS_IO_FILE_ACCESS_MODE_READ);
+            os_io_file_handle = os_io_file_find_and_open(os_io_file_find_handle,
+                                                         OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ);
+
+            {
+                const char buffer[] = "test";
+                u32 bytes_written = 0;
+
+                bytes_written = os_io_file_write(os_io_file_handle, buffer, sizeof(buffer));
+                ASSERT(bytes_written == sizeof(buffer));
+            }
+            
             result = os_io_file_close(os_io_file_handle);
             ASSERT(result);
         }
