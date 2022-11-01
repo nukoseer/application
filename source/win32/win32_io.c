@@ -71,6 +71,19 @@ static u32 write_file(uptr file_handle, const char* buffer, u32 size)
     return (u32)bytes_written;
 }
 
+static u32 read_file(uptr file_handle, char* buffer, u32 size)
+{
+    HANDLE handle = (HANDLE)file_handle;
+    b32 result = 0;
+    DWORD bytes_read = 0;
+
+    result = ReadFile(handle, buffer, size, &bytes_read, 0);
+    ASSERT(result);
+    ASSERT(bytes_read == size);
+
+    return (u32)bytes_read;
+}
+
 // TODO: Probably we can merge win32_io_console_write() and win32_io_file_write(). At least partially?
 u32 win32_io_console_write(const char* str, u32 length)
 {
@@ -126,6 +139,15 @@ u32 win32_io_file_write(uptr file_handle, const char* buffer, u32 size)
     u32 result = 0;
 
     result = write_file(file_handle, buffer, size);
+
+    return result;
+}
+
+u32 win32_io_file_read(uptr file_handle, char* buffer, u32 size)
+{
+    u32 result = 0;
+
+    result = read_file(file_handle, buffer, size);
 
     return result;
 }

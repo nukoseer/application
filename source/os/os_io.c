@@ -11,6 +11,7 @@ typedef OSIOFileHandle     OSIOFileOpen(const char* file_name, i32 access_mode);
 typedef b32                OSIOFileClose(OSIOFileHandle file_handle);
 typedef b32                OSIOFileDelete(const char* file_name);
 typedef u32                OSIOFileWrite(OSIOFileHandle file_handle, const char* buffer, u32 size);
+typedef u32                OSIOFileRead(OSIOFileHandle file_handle, char* buffer, u32 size);
 typedef OSIOFileFindHandle OSIOFileFindBegin(const char* file_name, u32* file_count);
 typedef OSIOFileHandle     OSIOFileFindAndOpen(OSIOFileFindHandle find_handle, i32 access_mode);
 typedef b32                OSIOFileFindEnd(OSIOFileFindHandle find_handle);
@@ -23,6 +24,7 @@ typedef struct OSIO
     OSIOFileClose* file_close;
     OSIOFileDelete* file_delete;
     OSIOFileWrite* file_write;
+    OSIOFileRead* file_read;
     OSIOFileFindBegin* file_find_begin;
     OSIOFileFindAndOpen* file_find_and_open;
     OSIOFileFindEnd* file_find_end;
@@ -39,6 +41,7 @@ static OSIO os_io =
     .file_close = &win32_io_file_close,
     .file_delete = &win32_io_file_delete,
     .file_write = &win32_io_file_write,
+    .file_read = &win32_io_file_read,
     .file_find_begin = &win32_io_file_find_begin,
     .file_find_and_open = &win32_io_file_find_and_open,
     .file_find_end = &win32_io_file_find_end,
@@ -121,12 +124,22 @@ b32 os_io_file_delete(const char* file_name)
     return result;
 }
 
-u32 os_io_file_write(uptr file_handle, const char* buffer, u32 size)
+u32 os_io_file_write(OSIOFileHandle file_handle, const char* buffer, u32 size)
 {
     u32 result = 0;
 
     ASSERT(os_io.file_write);
     result = os_io.file_write(file_handle, buffer, size);
+
+    return result;
+}
+
+u32 os_io_file_read(OSIOFileHandle file_handle, char* buffer, u32 size)
+{
+    u32 result = 0;
+
+    ASSERT(os_io.file_read);
+    result = os_io.file_read(file_handle, buffer, size);
 
     return result;
 }

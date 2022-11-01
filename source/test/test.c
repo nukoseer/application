@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "test.h"
 #include "types.h"
 #include "utils.h"
@@ -124,11 +125,20 @@ static void file_operation_test(void)
                                                          OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ);
 
             {
-                const char buffer[] = "test";
-                u32 bytes_written = 0;
+                const char write_buffer[] = "test";
+                char read_buffer[sizeof(write_buffer)] = { 0 };
+                u32 size = 0;
 
-                bytes_written = os_io_file_write(os_io_file_handle, buffer, sizeof(buffer));
-                ASSERT(bytes_written == sizeof(buffer));
+                size = os_io_file_write(os_io_file_handle, write_buffer, sizeof(write_buffer));
+                ASSERT(size == sizeof(write_buffer));
+
+                // TODO: To read after write we should reset the
+                // file-pointer. Otherwise it reads from the end of the
+                // file so there is no bytes to read.
+                size = os_io_file_read(os_io_file_handle, read_buffer, sizeof(read_buffer));
+                ASSERT(size == sizeof(read_buffer));
+
+                ASSERT(!strcmp(write_buffer, read_buffer));
             }
             
             result = os_io_file_close(os_io_file_handle);
