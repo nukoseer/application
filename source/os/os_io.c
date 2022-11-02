@@ -15,6 +15,9 @@ typedef u32                OSIOFileRead(OSIOFileHandle file_handle, char* buffer
 typedef OSIOFileFindHandle OSIOFileFindBegin(const char* file_name, u32* file_count);
 typedef OSIOFileHandle     OSIOFileFindAndOpen(OSIOFileFindHandle find_handle, i32 access_mode);
 typedef b32                OSIOFileFindEnd(OSIOFileFindHandle find_handle);
+typedef u32                OSIOFilePointerMove(OSIOFileHandle file_handle, i32 distance, i32 offset);
+typedef u32                OSIOFilePointerReset(OSIOFileHandle file_handle);
+typedef u32                OSIOFilePointerGet(OSIOFileHandle file_handle);
 
 typedef struct OSIO
 {
@@ -28,6 +31,9 @@ typedef struct OSIO
     OSIOFileFindBegin* file_find_begin;
     OSIOFileFindAndOpen* file_find_and_open;
     OSIOFileFindEnd* file_find_end;
+    OSIOFilePointerMove* file_pointer_move;
+    OSIOFilePointerReset* file_pointer_reset;
+    OSIOFilePointerGet* file_pointer_get;
 } OSIO;
 
 #ifdef _WIN32
@@ -45,6 +51,9 @@ static OSIO os_io =
     .file_find_begin = &win32_io_file_find_begin,
     .file_find_and_open = &win32_io_file_find_and_open,
     .file_find_end = &win32_io_file_find_end,
+    .file_pointer_move = &win32_io_file_pointer_move,
+    .file_pointer_reset = &win32_io_file_pointer_reset,
+    .file_pointer_get = &win32_io_file_pointer_get,
 };
 
 #else
@@ -170,6 +179,36 @@ b32 os_io_file_find_end(OSIOFileFindHandle find_handle)
 
     ASSERT(os_io.file_find_end);
     result = os_io.file_find_end(find_handle);
+
+    return result;
+}
+
+u32 os_io_file_pointer_move(OSIOFileHandle file_handle, i32 distance, OSIOFilePointerOffset offset)
+{
+    u32 result = 0;
+
+    ASSERT(os_io.file_pointer_move);
+    result = os_io.file_pointer_move(file_handle, distance, offset);
+
+    return result;
+}
+
+u32 os_io_file_pointer_reset(OSIOFileHandle file_handle)
+{
+    u32 result = 0;
+
+    ASSERT(os_io.file_pointer_reset);
+    result = os_io.file_pointer_reset(file_handle);
+
+    return result;
+}
+
+u32 os_io_file_pointer_get(OSIOFileHandle file_handle)
+{
+    u32 result = 0;
+
+    ASSERT(os_io.file_pointer_get);
+    result = os_io.file_pointer_get(file_handle);
 
     return result;
 }

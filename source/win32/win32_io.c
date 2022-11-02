@@ -84,6 +84,17 @@ static u32 read_file(uptr file_handle, char* buffer, u32 size)
     return (u32)bytes_read;
 }
 
+static u32 move_file_pointer(uptr file_handle, i32 distance, i32 offset)
+{
+    u32 result = 0;
+    HANDLE handle = (HANDLE)file_handle;
+    
+    result = (u32)SetFilePointer(handle, distance, 0, (u32)offset);
+    ASSERT(result != INVALID_SET_FILE_POINTER);
+
+    return result;
+}
+
 // TODO: Probably we can merge win32_io_console_write() and win32_io_file_write(). At least partially?
 u32 win32_io_console_write(const char* str, u32 length)
 {
@@ -214,6 +225,33 @@ b32 win32_io_file_find_end(uptr find_handle)
         result = win32_memory_heap_release(find_info);
     }
     
+    return result;
+}
+
+u32 win32_io_file_pointer_move(uptr file_handle, i32 distance, i32 offset)
+{
+    u32 result = 0;
+    
+    result = move_file_pointer(file_handle, distance, offset);
+
+    return result;
+}
+
+u32 win32_io_file_pointer_reset(uptr file_handle)
+{
+    u32 result = 0;
+    
+    result = move_file_pointer(file_handle, 0, FILE_BEGIN);
+
+    return result;
+}
+
+u32 win32_io_file_pointer_get(uptr file_handle)
+{
+    u32 result = 0;
+    
+    result = move_file_pointer(file_handle, 0, FILE_CURRENT);
+
     return result;
 }
 
