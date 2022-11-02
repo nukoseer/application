@@ -35,21 +35,22 @@ uptr win32_graphics_init(uptr handle_pointer)
         D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0 };
         UINT flags = 0;
 #ifndef NDEBUG
-        // this enables VERY USEFUL debug messages in debugger output
+        // NOTE: This enables VERY USEFUL debug messages in debugger output.
         flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
         
         hresult = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, levels, ARRAY_COUNT(levels),
                                     D3D11_SDK_VERSION, &device, NULL, &context);
-        // make sure device creation succeeeds before continuing
-        // for simple applciation you could retry device creation with
-        // D3D_DRIVER_TYPE_WARP driver type which enables software rendering
-        // (could be useful on broken drivers or remote desktop situations)
+        // NOTE: Make sure device creation succeeeds before continuing
+        // for simple application you could retry device creation with
+        // D3D_DRIVER_TYPE_WARP driver type which enables software
+        // rendering (could be useful on broken drivers or remote
+        // desktop situations).
         ASSERT(SUCCEEDED(hresult));
     }
 
 #ifndef NDEBUG
-    // for debug builds enable VERY USEFUL debug break on API errors
+    // NOTE: For debug builds enable VERY USEFUL debug break on API errors.
     {
         ID3D11InfoQueue* info = 0;
     
@@ -58,15 +59,15 @@ uptr win32_graphics_init(uptr handle_pointer)
         ID3D11InfoQueue_SetBreakOnSeverity(info, D3D11_MESSAGE_SEVERITY_ERROR, TRUE);
         ID3D11InfoQueue_Release(info);
     }
-    // after this there's no need to check for any errors on device functions manually
-    // so all HRESULT return  values in this code will be ignored
-    // debugger will break on errors anyway
+    // NOTE: After this there is no need to check for any errors on
+    // device functions manually so all HRESULT return values in this
+    // code will be ignored debugger will break on errors anyway.
 #endif
     {
         // NOTE: Create DXGI swap chain.
         IDXGISwapChain1* swap_chain = 0;
         {
-            // create DXGI 1.2 factory for creating swap chain
+            // NOTE: Create DXGI 1.2 factory for creating swap chain.
             IDXGIFactory2* factory = 0;
 
             hresult = CreateDXGIFactory(&IID_IDXGIFactory2, (void**)&factory);
@@ -82,27 +83,29 @@ uptr win32_graphics_init(uptr handle_pointer)
                     // or use DXGI_FORMAT_R8G8B8A8_UNORM_SRGB for storing sRGB
                     .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
 
-                    // FLIP presentation model does not allow MSAA framebuffer
-                    // if you want MSAA then you'll need to render offscreen and manually
-                    // resolve to non-MSAA framebuffer
+                    // NOTE: FLIP presentation model does not allow
+                    // MSAA framebuffer if you want MSAA then you'll
+                    // need to render offscreen and manually resolve
+                    // to non-MSAA framebuffer.
                     .SampleDesc = { 1, 0 },
 
                     .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
                     .BufferCount = 2,
 
-                    // we don't want any automatic scaling of window content
-                    // this is supported only on FLIP presentation model
+                    // NOTE: We don't want any automatic scaling of
+                    // window content this is supported only on FLIP
+                    // presentation model.
                     .Scaling = DXGI_SCALING_NONE,
 
-                    // use more efficient FLIP presentation model
+                    // NOTE: Use more efficient FLIP presentation model
                     // Windows 10 allows to use DXGI_SWAP_EFFECT_FLIP_DISCARD
                     // for Windows 8 compatibility use DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
-                    // for Windows 7 compatibility use DXGI_SWAP_EFFECT_DISCARD
+                    // for Windows 7 compatibility use DXGI_SWAP_EFFECT_DISCARD.
                     .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
                 };
 
                 hresult = IDXGIFactory2_CreateSwapChainForHwnd(factory, (IUnknown*)device, handle, &desc, NULL, NULL, &swap_chain);
-                // make sure swap chain creation succeeds before continuing
+                // NOTE: Make sure swap chain creation succeeds before continuing.
                 ASSERT(SUCCEEDED(hresult));
 
                 IDXGIFactory_Release(factory);
