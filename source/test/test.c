@@ -132,8 +132,7 @@ static void file_operation_test(void)
                 size = os_io_file_write(os_io_file_handle, write_buffer, sizeof(write_buffer));
                 ASSERT(size == sizeof(write_buffer));
 
-                size = os_io_file_pointer_get(os_io_file_handle);
-                ASSERT(size != 0);
+                ASSERT(os_io_file_size(os_io_file_handle) == os_io_file_pointer_get(os_io_file_handle));
                 
                 size = os_io_file_pointer_reset(os_io_file_handle);
                 ASSERT(size == 0);

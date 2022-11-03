@@ -163,6 +163,17 @@ u32 win32_io_file_read(uptr file_handle, char* buffer, u32 size)
     return result;
 }
 
+u32 win32_io_file_size(uptr file_handle)
+{
+    u32 result = 0;
+    HANDLE handle = (HANDLE)file_handle;
+    
+    result = (u32)GetFileSize(handle ,0);
+    ASSERT(result != INVALID_FILE_SIZE);
+
+    return result;
+}
+
 uptr win32_io_file_find_begin(const char* file_name, u32* file_count)
 {
     Win32IOFileFindInfo* file_find_info = 0;
