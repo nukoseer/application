@@ -34,6 +34,9 @@ b32 os_io_file_find_end(OSIOFileFindHandle find_handle);
 u32 os_io_file_pointer_move(OSIOFileHandle file_handle, i32 distance, OSIOFilePointerOffset offset);
 u32 os_io_file_pointer_reset(OSIOFileHandle file_handle);
 u32 os_io_file_pointer_get(OSIOFileHandle file_handle);
+b32 os_io_file_get_creation_time(OSIOFileHandle file_handle, OSDateTime* os_date_time);
+b32 os_io_file_get_last_access_time(OSIOFileHandle file_handle, OSDateTime* os_date_time);
+b32 os_io_file_get_last_write_time(OSIOFileHandle file_handle, OSDateTime* os_date_time);
 
 #define H_OS_IO_H
 #endif

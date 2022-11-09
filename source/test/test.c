@@ -100,14 +100,32 @@ static void doubly_linked_list_test(void)
     release_memory_arena(arena);
 }
 
+static void print_time(char* label, OSDateTime* os_date_time)
+{
+    char time_string[32] = { 0 };
+
+    sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d",
+            os_date_time->day, os_date_time->month, os_date_time->year,
+            os_date_time->hour, os_date_time->minute, os_date_time->second);
+    fprintf(stderr, "%-24s", label);
+    fprintf(stderr, "%s\n", time_string);
+}
+
 static void file_operation_test(void)
 {
     OSIOFileHandle os_io_file_handle = 0;
     const char* file_name = "test_file.txt";
     b32 result = FALSE;
+    OSDateTime os_date_time = { 0 };
     
     os_io_file_handle = os_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
     ASSERT(os_io_file_handle);
+
+    result = os_io_file_get_creation_time(os_io_file_handle, &os_date_time);
+    ASSERT(result);
+
+    print_time("File creation time: ", &os_date_time);
+    
     result = os_io_file_close(os_io_file_handle);
     ASSERT(result);
 
@@ -132,6 +150,11 @@ static void file_operation_test(void)
                 size = os_io_file_write(os_io_file_handle, write_buffer, sizeof(write_buffer));
                 ASSERT(size == sizeof(write_buffer));
 
+                result = os_io_file_get_last_access_time(os_io_file_handle, &os_date_time);
+                ASSERT(result);
+
+                print_time("File last access time: ", &os_date_time);
+
                 ASSERT(os_io_file_size(os_io_file_handle) == os_io_file_pointer_get(os_io_file_handle));
                 
                 size = os_io_file_pointer_reset(os_io_file_handle);
@@ -142,6 +165,11 @@ static void file_operation_test(void)
 
                 ASSERT(!strcmp(write_buffer, read_buffer));
             }
+
+            result = os_io_file_get_last_write_time(os_io_file_handle, &os_date_time);
+            ASSERT(result);
+
+            print_time("File last write time: ", &os_date_time);
             
             result = os_io_file_close(os_io_file_handle);
             ASSERT(result);
@@ -156,19 +184,15 @@ static void file_operation_test(void)
 
 static void time_test(void)
 {
-    char time_string[32] = { 0 };
     OSDateTime os_local_time = os_time_local_now();
 
-    sprintf(time_string, "%02d/%02d/%04d %02d:%02d:%02d",
-            os_local_time.day, os_local_time.month, os_local_time.year,
-            os_local_time.hour, os_local_time.minute, os_local_time.second);
-    fprintf(stderr, "%s\n", time_string);
+    print_time("Current time: ", &os_local_time);
 }
 
 void run_test(void)
 {
     stretchy_buffer_test();
     doubly_linked_list_test();
-    file_operation_test();
     time_test();
+    file_operation_test();
 }

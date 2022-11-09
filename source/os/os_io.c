@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "utils.h"
+#include "os_time.h"
 #include "os_io.h"
 
 typedef u32                OSIOConsoleWrite(const char* str, u32 length);
@@ -19,6 +20,9 @@ typedef b32                OSIOFileFindEnd(OSIOFileFindHandle find_handle);
 typedef u32                OSIOFilePointerMove(OSIOFileHandle file_handle, i32 distance, i32 offset);
 typedef u32                OSIOFilePointerReset(OSIOFileHandle file_handle);
 typedef u32                OSIOFilePointerGet(OSIOFileHandle file_handle);
+typedef b32                OSIOFileGetCreationTime(uptr file_handle, OSDateTime* os_date_time);
+typedef b32                OSIOFileGetLastAccessTime(uptr file_handle, OSDateTime* os_date_time);
+typedef b32                OSIOFileGetLastWriteTime(uptr file_handle, OSDateTime* os_date_time);
 
 typedef struct OSIO
 {
@@ -36,6 +40,9 @@ typedef struct OSIO
     OSIOFilePointerMove* file_pointer_move;
     OSIOFilePointerReset* file_pointer_reset;
     OSIOFilePointerGet* file_pointer_get;
+    OSIOFileGetCreationTime* file_get_creation_time;
+    OSIOFileGetLastAccessTime* file_get_last_access_time;
+    OSIOFileGetLastWriteTime* file_get_last_write_time;
 } OSIO;
 
 #ifdef _WIN32
@@ -57,6 +64,9 @@ static OSIO os_io =
     .file_pointer_move = &win32_io_file_pointer_move,
     .file_pointer_reset = &win32_io_file_pointer_reset,
     .file_pointer_get = &win32_io_file_pointer_get,
+    .file_get_creation_time = &win32_io_file_get_creation_time,
+    .file_get_last_access_time = &win32_io_file_get_last_access_time,
+    .file_get_last_write_time = &win32_io_file_get_last_write_time,
 };
 
 #else
@@ -222,6 +232,36 @@ u32 os_io_file_pointer_get(OSIOFileHandle file_handle)
 
     ASSERT(os_io.file_pointer_get);
     result = os_io.file_pointer_get(file_handle);
+
+    return result;
+}
+
+b32 os_io_file_get_creation_time(OSIOFileHandle file_handle, OSDateTime* os_date_time)
+{
+    b32 result = 0;
+
+    ASSERT(os_io.file_get_creation_time);
+    result = os_io.file_get_creation_time(file_handle, os_date_time);
+
+    return result;
+}
+
+b32 os_io_file_get_last_access_time(OSIOFileHandle file_handle, OSDateTime* os_date_time)
+{
+    b32 result = 0;
+
+    ASSERT(os_io.file_get_last_access_time);
+    result = os_io.file_get_last_access_time(file_handle, os_date_time);
+
+    return result;
+}
+
+b32 os_io_file_get_last_write_time(OSIOFileHandle file_handle, OSDateTime* os_date_time)
+{
+    b32 result = 0;
+
+    ASSERT(os_io.file_get_last_write_time);
+    result = os_io.file_get_last_write_time(file_handle, os_date_time);
 
     return result;
 }
