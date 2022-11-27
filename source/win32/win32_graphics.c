@@ -31,6 +31,13 @@ uptr win32_graphics_init(uptr handle_pointer)
     ID3D11DeviceContext* context = graphics.context;
     HWND handle = (HWND)handle_pointer;
     HRESULT hresult = { 0 };
+    
+    ID3D11Buffer* buffer = 0;
+    ID3D11ShaderResourceView* texture_view = 0;
+    ID3D11SamplerState* sampler = 0;
+    ID3D11BlendState* blend_state = 0;
+    ID3D11RasterizerState* rasterizer_state = 0;
+    ID3D11DepthStencilState* depth_state = 0;
 
     // NOTE: Create D3D11 device & context.
     {
@@ -268,6 +275,118 @@ uptr win32_graphics_init(uptr handle_pointer)
             }
         }
     }
+
+    {
+        D3D11_BUFFER_DESC desc =
+        {
+            // NOTE: Space for 4x4 float matrix (cbuffer0 from pixel shader).
+            .ByteWidth = 4 * 4 * sizeof(float),
+            .Usage = D3D11_USAGE_DYNAMIC,
+            .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+            .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+        };
+        ID3D11Device_CreateBuffer(device, &desc, NULL, &buffer);
+    }
+
+    {
+        // NOTE: Checkerboard texture, with 50% transparency on black colors.
+        u32 pixels[] =
+        {
+            0x80000000, 0xffffffff,
+            0xffffffff, 0x80000000,
+        };
+
+        UINT width = 2;
+        UINT height = 2;
+
+        D3D11_TEXTURE2D_DESC desc =
+        {
+            .Width = width,
+            .Height = height,
+            .MipLevels = 1,
+            .ArraySize = 1,
+            .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+            .SampleDesc = { 1, 0 },
+            .Usage = D3D11_USAGE_IMMUTABLE,
+            .BindFlags = D3D11_BIND_SHADER_RESOURCE,
+        };
+
+        D3D11_SUBRESOURCE_DATA data =
+        {
+            .pSysMem = pixels,
+            .SysMemPitch = width * sizeof(unsigned int),
+        };
+
+        ID3D11Texture2D* texture = 0;
+
+        ID3D11Device_CreateTexture2D(device, &desc, &data, &texture);
+        ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource*)texture, NULL, &texture_view);
+        ID3D11Texture2D_Release(texture);
+    }
+
+    // NOTE: Sampler.
+    {
+        D3D11_SAMPLER_DESC desc =
+        {
+            .Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
+            .AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
+            .AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
+            .AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+        };
+
+        ID3D11Device_CreateSamplerState(device, &desc, &sampler);
+    }
+
+    // NOTE: Blend state.
+    {
+        // NOTE: Enable alpha blending.
+        D3D11_BLEND_DESC desc =
+        {
+            .RenderTarget[0] =
+            {
+                .BlendEnable = TRUE,
+                .SrcBlend = D3D11_BLEND_SRC_ALPHA,
+                .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+                .BlendOp = D3D11_BLEND_OP_ADD,
+                .SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA,
+                .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+                .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+                .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL,
+            },
+        };
+        ID3D11Device_CreateBlendState(device, &desc, &blend_state);
+    }
+
+    // NOTE: Rasterizer state.
+    {
+        // NOTE: Disable culling.
+        D3D11_RASTERIZER_DESC desc =
+        {
+            .FillMode = D3D11_FILL_SOLID,
+            .CullMode = D3D11_CULL_NONE,
+        };
+        ID3D11Device_CreateRasterizerState(device, &desc, &rasterizer_state);
+    }
+
+    // NOTE: Depth state.
+    {
+        // NOTE: Disable depth & stencil test.
+        D3D11_DEPTH_STENCIL_DESC desc =
+        {
+            .DepthEnable = FALSE,
+            .DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL,
+            .DepthFunc = D3D11_COMPARISON_LESS,
+            .StencilEnable = FALSE,
+            .StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK,
+            .StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK,
+            // .FrontFace = ... 
+            // .BackFace = ...
+        };
+        ID3D11Device_CreateDepthStencilState(device, &desc, &depth_state);
+    }
+
+    // ID3D11RenderTargetView* render_target_view = 0;
+    // ID3D11DepthStencilView* depth_stencil_view = 0;
 
     return (uptr)&graphics;
 }
