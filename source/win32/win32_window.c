@@ -31,8 +31,10 @@ struct Win32Window
     HANDLE semaphore_handle;
     HWND handle;
     HDC device_context;
-    int width;
-    int height;
+    i32 x;
+    i32 y;
+    i32 width;
+    i32 height;
     const char* title;
     Win32Window* next;
     RECT region;
@@ -526,7 +528,7 @@ static void window_open(Win32Window* win32_window)
 
     handle = CreateWindowEx(exstyle, WINDOW_CLASS_NAME,
                             win32_window->title, style,
-                            CW_USEDEFAULT, CW_USEDEFAULT,
+                            win32_window->x, win32_window->y,
                             win32_window->width, win32_window->height,
                             0, 0, 0, 0);
     ASSERT(handle);
@@ -645,7 +647,7 @@ static void set_process_dpi_aware(void)
     ASSERT(result);
 }
 
-uptr win32_window_open(const char* title, i32 width, i32 height, b32 borderless)
+uptr win32_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless)
 {
     static HANDLE semaphore_handle = 0;
     static Win32Window* win32_window = 0;
@@ -663,6 +665,8 @@ uptr win32_window_open(const char* title, i32 width, i32 height, b32 borderless)
     ASSERT(win32_window);
 
     win32_window->title = title;
+    win32_window->x = x;
+    win32_window->y = y;
     win32_window->width = width;
     win32_window->height = height;
     win32_window->borderless = borderless;
