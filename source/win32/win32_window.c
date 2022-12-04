@@ -762,35 +762,22 @@ void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_are
 b32 win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)
 {
     Win32Window* window = (Win32Window*)window_pointer;
-    b32 result = FALSE;
+    RECT rect = { 0 };
+    BOOL result = 0;
 
-    ASSERT(window);
+    ASSERT(window && window->handle);
+    result = GetWindowRect(window->handle, &rect);
+    ASSERT(result);
 
-    if (x)
+    if (result)
     {
-        *x = window->x;
-        result = TRUE;
-    }
-    
-    if (y)
-    {
-        *y = window->y;
-        result = TRUE;
+        *x = rect.left;
+        *y = rect.top;
+        *width = rect.right - rect.left;
+        *height = rect.bottom - rect.top;
     }
 
-    if (width)
-    {
-        *width = window->width;
-        result = TRUE;
-    }
-    
-    if (height)
-    {
-        *height = window->height;
-        result = TRUE;
-    }
-    
-    return result;
+    return !!result;
 }
 
 b32 win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 height)
