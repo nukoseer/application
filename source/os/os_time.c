@@ -49,7 +49,7 @@ static OSTimeTick* find_empty_time_tick(OSTimeTickHandle* os_time_tick_handle)
     OSTimeTickHandle found_time_tick_handle = INVALID_TIMER_HANDLE;
     OSTimeTick* found_time_tick = 0;
 
-    for (u32 i = 1; i < MAX_TIMER_COUNT; ++i)
+    for (i32 i = 1; i < MAX_TIMER_COUNT; ++i)
     {
         OSTimeTick* os_time_tick = os_time_ticks + i;
         

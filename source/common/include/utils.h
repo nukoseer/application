@@ -42,8 +42,8 @@ inline u32 string_length(const char* str)
 ///////////////////////////////////////////////////
 typedef struct BufferHeader
 {
-    memory_size len;
-    memory_size cap;
+    i64 len;
+    i64 cap;
     u8 buf[]; // NOTE: MSVC supports flexible array members as a compiler extension. But, normally it is in the C99 standard?.
 } BufferHeader;
 
@@ -60,10 +60,10 @@ typedef struct BufferHeader
 #define BUFFER_PUSH(buff, x) (BUFF__GROW(buff, 1), (buff)[BUFF__BASE(buff)->len++] = (x))
 #define BUFFER_FREE(buff) ((buff) ? (os_memory_heap_release(BUFF__BASE(buff)), (buff) = NULL) : 0)
 
-inline void* buffer__grow(void* buffer, memory_size new_capacity, memory_size element_size)
+inline void* buffer__grow(void* buffer, i64 new_capacity, i64 element_size)
 {
-    memory_size capacity = MAX(1 + BUFFER_CAPACITY(buffer) * 2, new_capacity);
-    memory_size size = capacity * element_size + OFFSETOF(BufferHeader, buf);
+    i64 capacity = MAX(1 + BUFFER_CAPACITY(buffer) * 2, new_capacity);
+    i64 size = capacity * element_size + OFFSETOF(BufferHeader, buf);
     BufferHeader* buffer_header = NULL;
 
     ASSERT(capacity >= new_capacity);

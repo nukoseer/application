@@ -8,8 +8,8 @@
 
 static void stretchy_buffer_test(void)
 {
-    u32* arr = NULL;
-    u32 i = 0;
+    i32* arr = NULL;
+    i32 i = 0;
 
     for (i = 0; i < 100; ++i)
     {
@@ -31,7 +31,7 @@ static void doubly_linked_list_test(void)
     {
         struct Number_* prev;
         struct Number_* next;
-        u64 i;
+        i64 i;
     } Number;
     typedef struct NumberList_
     {
@@ -39,8 +39,8 @@ static void doubly_linked_list_test(void)
         struct Number_* last;
     } NumberList;
 
-    u32 i = 0;
-    u32 count = 100;
+    i32 i = 0;
+    i32 count = 100;
     NumberList number_list = { 0 };
     MemoryArena* arena = NULL;
     TemporaryMemory temporary_memory = { 0 };
@@ -132,12 +132,12 @@ static void file_operation_test(void)
     {
         OSIOFileFindHandle os_io_file_find_handle = 0;
         u32 file_count = 0;
-        u32 i = 0;
+        i32 i = 0;
         
         os_io_file_find_handle = os_io_file_find_begin("test_file.txt", &file_count);
         ASSERT(file_count == 1);
 
-        for (i = 0; i < file_count; ++i)
+        for (i = 0; i < (i32)file_count; ++i)
         {
             os_io_file_handle = os_io_file_find_and_open(os_io_file_find_handle,
                                                          OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ);

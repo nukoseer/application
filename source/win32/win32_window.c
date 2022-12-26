@@ -167,8 +167,8 @@ static void process_message(void)
 
                 if (!key_map['A'])
                 {
-                    u32 i = 0;
-                    u32 j = 0;
+                    i32 i = 0;
+                    i32 j = 0;
 
                     for (i = 'A', j = OS_KEY_A; i <= 'Z'; i += 1, j += 1)
                     {
