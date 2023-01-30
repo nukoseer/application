@@ -56,7 +56,7 @@ static OSTimeTick* find_empty_time_tick(OSTimeTickHandle* os_time_tick_handle)
         if (os_time_tick->tick == 0)
         {
             found_time_tick = os_time_tick;
-            found_time_tick_handle = i;
+            found_time_tick_handle = (u32)i;
             break;
         }
     }

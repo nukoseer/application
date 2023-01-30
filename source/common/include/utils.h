@@ -63,19 +63,19 @@ typedef struct BufferHeader
 inline void* buffer__grow(void* buffer, i64 new_capacity, i64 element_size)
 {
     i64 capacity = MAX(1 + BUFFER_CAPACITY(buffer) * 2, new_capacity);
-    i64 size = capacity * element_size + OFFSETOF(BufferHeader, buf);
+    i64 size = capacity * element_size + (i64)OFFSETOF(BufferHeader, buf);
     BufferHeader* buffer_header = NULL;
 
     ASSERT(capacity >= new_capacity);
 
     if (!buffer)
     {
-        buffer_header = (BufferHeader*)os_memory_heap_allocate(size);
+        buffer_header = (BufferHeader*)os_memory_heap_allocate((memory_size)size);
         buffer_header->len = 0;
     }
     else
     {
-        buffer_header = (BufferHeader*)os_memory_heap_reallocate(BUFF__BASE(buffer), size);
+        buffer_header = (BufferHeader*)os_memory_heap_reallocate(BUFF__BASE(buffer), (memory_size)size);
     }
 
     buffer_header->cap = capacity;

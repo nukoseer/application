@@ -45,7 +45,7 @@ static void doubly_linked_list_test(void)
     MemoryArena* arena = NULL;
     TemporaryMemory temporary_memory = { 0 };
     
-    arena = allocate_memory_arena(sizeof(Number) * count);
+    arena = allocate_memory_arena(sizeof(Number) * (u32)count);
 
     {
         temporary_memory = begin_temporary_memory(arena);
