@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "os_atomic.h"
 #include "os_window.h"
+#include "os_graphics.h"
 #include "os_memory.h"
 #include "os_time.h"
 #include "os_io.h"

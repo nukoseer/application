@@ -19,7 +19,9 @@ static void application(void)
     os_window_set_position(os_window_handle2, x + width, y, width, height);
 
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
-    
+
+    os_graphics_init(os_window_handle);
+
     while (!os_should_quit())
     {
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();

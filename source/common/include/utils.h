@@ -13,6 +13,9 @@
     #define ASSERT(x)
 #endif
 
+#define STRINGFY_(x) #x
+#define STRINGFY(x) STRINGFY_(x)
+
 #define UNUSED_VARIABLE(x)  ((void)(x))
 #define ARRAY_COUNT(x)      (sizeof(x) / sizeof(*(x)))
 #define PADDING(x)          u8 padding_[x]
