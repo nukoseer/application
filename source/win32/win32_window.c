@@ -12,6 +12,7 @@
 #include "mem.h"
 #include "os_window.h"
 #include "os_log.h"
+#include "win32_graphics.h"
 #include "win32_window.h"
 
 #define WINDOW_CLASS_NAME ("application_window_class")
@@ -31,6 +32,7 @@ struct Win32Window
     HANDLE semaphore_handle;
     HWND handle;
     HDC device_context;
+    Win32Graphics* graphics_handle;
     i32 x;
     i32 y;
     i32 width;
@@ -503,6 +505,13 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
             send_mparam(handle, message, wparam, lparam);
         }
         break;
+        case WM_SIZE:
+        {
+            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
+            OS_LOG_DEBUG("WM_SIZE");
+            win32_graphics_resize_swap_chain(window->graphics_handle, window->width, window->height);
+        }
+        break;
         default:
         {
             result = DefWindowProc(handle, message, wparam, lparam);
@@ -550,6 +559,9 @@ static void window_open(Win32Window* win32_window)
         DwmSetWindowAttribute(handle, DWMWA_NCRENDERING_POLICY, &(DWORD) { DWMNCRP_ENABLED }, sizeof(DWORD));
         update_region(win32_window);
     }
+
+    win32_window->graphics_handle = win32_graphics_init((uptr)handle);
+
     ShowWindow(handle, SW_SHOW);
 
     ++win32_window_count;

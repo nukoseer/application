@@ -73,74 +73,6 @@ static void create_device_and_context(Win32Graphics* graphics)
 #endif
 }
 
-// TODO: This function is not used yet. clang-cl build fails.
-static void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width, i32 initial_height)
-{
-    ID3D11Device* device = graphics->device;
-    ID3D11DeviceContext* context = graphics->context;
-    ID3D11RenderTargetView* render_target_view = graphics->render_target_view;
-    ID3D11DepthStencilView* depth_stencil_view = graphics->depth_stencil_view;
-    IDXGISwapChain1* swap_chain = graphics->swap_chain;
-    i32 x, y, width, height = 0;
-    HRESULT hresult = { 0 };
-
-    win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle),
-                              &x, &y, &width, &height);
-
-    if (render_target_view == NULL ||
-        initial_width != width || initial_height != height)
-    {
-        if (render_target_view)
-        {
-            // release old swap chain buffers
-            ID3D11DeviceContext_ClearState(context);
-            ID3D11RenderTargetView_Release(render_target_view);
-            ID3D11DepthStencilView_Release(depth_stencil_view);
-            render_target_view = NULL;
-        }
-
-        // resize to new size for non-zero size
-        if (width != 0 && height != 0)
-        {
-            ID3D11Texture2D* back_buffer;
-
-            hresult = IDXGISwapChain1_ResizeBuffers(swap_chain, 0, width, height, DXGI_FORMAT_UNKNOWN, 0);
-            if (FAILED(hresult))
-            {
-                ASSERT((char*)"Failed to resize swap chain!");
-            }
-
-            // create RenderTarget view for new backbuffer texture
-            IDXGISwapChain1_GetBuffer(swap_chain, 0, &IID_ID3D11Texture2D, (void**)&back_buffer);
-            ID3D11Device_CreateRenderTargetView(device, (ID3D11Resource*)back_buffer, NULL, &render_target_view);
-            ID3D11Texture2D_Release(back_buffer);
-
-            {
-                ID3D11Texture2D* depth = 0;
-                D3D11_TEXTURE2D_DESC depth_desc =
-                {
-                    .Width = (UINT)width,
-                    .Height = (UINT)height,
-                    .MipLevels = 1,
-                    .ArraySize = 1,
-                    .Format = DXGI_FORMAT_D32_FLOAT, // or use DXGI_FORMAT_D32_FLOAT_S8X24_UINT if you need stencil
-                    .SampleDesc = { 1, 0 },
-                    .Usage = D3D11_USAGE_DEFAULT,
-                    .BindFlags = D3D11_BIND_DEPTH_STENCIL,
-                };
-
-                // create new depth stencil texture & DepthStencil view
-                ID3D11Device_CreateTexture2D(device, &depth_desc, NULL, &depth);
-                ID3D11Device_CreateDepthStencilView(device, (ID3D11Resource*)depth, NULL, &depth_stencil_view);
-                ID3D11Texture2D_Release(depth);
-            }
-        }
-
-        win32_window_set_position(win32_window_get_window_from((uptr)graphics->handle),
-                                  x, y, width, height);
-    }
-}
-
 static void create_swap_chain(Win32Graphics* graphics)
 {
     ID3D11Device* device = graphics->device;
@@ -154,10 +86,11 @@ static void create_swap_chain(Win32Graphics* graphics)
     hresult = CreateDXGIFactory(&IID_IDXGIFactory2, (void**)&factory);
     ASSERT(SUCCEEDED(hresult));
 
-    // default 0 value for width & height means to get it from HWND automatically
+    // NOTE: Default 0 value for width & height
+    // means to get it from HWND automatically
     // desc.Width = 0,
     // desc.Height = 0,
-    // or use DXGI_FORMAT_R8G8B8A8_UNORM_SRGB for storing sRGB
+    // or use DXGI_FORMAT_R8G8B8A8_UNORM_SRGB for storing sRGB.
     desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
     // NOTE: FLIP presentation model does not allow
@@ -235,24 +168,20 @@ static void create_shaders(Win32Graphics* graphics)
     descs[1] = (D3D11_INPUT_ELEMENT_DESC){ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(struct Vertex, uv),       D3D11_INPUT_PER_VERTEX_DATA, 0 };
     descs[2] = (D3D11_INPUT_ELEMENT_DESC){ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, OFFSETOF(struct Vertex, color),    D3D11_INPUT_PER_VERTEX_DATA, 0 };
 
-    // alternative to hlsl compilation at runtime is to precompile shaders offline
+    // NOTE: Alternative to hlsl compilation at runtime is to precompile shaders offline
     // it improves startup time - no need to parse hlsl files at runtime!
     // and it allows to remove runtime dependency on d3dcompiler dll file
-
     // a) save shader source code into "shader.hlsl" file
     // b) run hlsl compiler to compile shader, these run compilation with optimizations and without debug info:
-    //      fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fh d3d11_vshader.h /Vn d3d11_vshader /Qstrip_reflect /Qstrip_debug /Qstrip_priv shader.hlsl
-    //      fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fh d3d11_pshader.h /Vn d3d11_pshader /Qstrip_reflect /Qstrip_debug /Qstrip_priv shader.hlsl
-    //    they will save output to d3d11_vshader.h and d3d11_pshader.h files
-    // c) change #if 0 above to #if 1
-
-    // you can also use "/Fo d3d11_*shader.bin" argument to save compiled shader as binary file to store with your assets
-    // then provide binary data for Create*Shader functions below without need to include shader bytes in C
+    // fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_vertex_shader.h /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+    // fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_pixel_shader.h /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+    // You can also use "/Fo d3d11_*shader.bin" argument to save compiled shader as binary file to store with your assets
+    // then provide binary data for Create*Shader functions below without need to include shader bytes in C.
 
     {
 #include "d3d11_vertex_shader.h"
 #include "d3d11_pixel_shader.h"
-
+        
         ID3D11Device_CreateVertexShader(device, d3d11_vertex_shader, sizeof(d3d11_vertex_shader), NULL, vertex_shader);
         ID3D11Device_CreatePixelShader(device, d3d11_pixel_shader, sizeof(d3d11_pixel_shader), NULL, pixel_shader);
         ID3D11Device_CreateInputLayout(device, descs, ARRAYSIZE(descs), d3d11_vertex_shader, sizeof(d3d11_vertex_shader), input_layout);
@@ -344,7 +273,78 @@ static void create_depth_state(Win32Graphics* graphics)
     }
 }
 
-uptr win32_graphics_init(uptr handle_pointer)
+void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width, i32 initial_height)
+{
+    ID3D11Device* device = graphics->device;
+    ID3D11DeviceContext* context = graphics->context;
+    ID3D11RenderTargetView* render_target_view = graphics->render_target_view;
+    ID3D11DepthStencilView* depth_stencil_view = graphics->depth_stencil_view;
+    IDXGISwapChain1* swap_chain = graphics->swap_chain;
+    i32 x, y, width, height = 0;
+    HRESULT hresult = { 0 };
+
+    win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle),
+                              &x, &y, &width, &height);
+
+    OS_LOG_DEBUG("RESIZE SWAP CHAIN");
+
+    if (render_target_view == NULL ||
+        initial_width != width || initial_height != height)
+    {
+        if (render_target_view)
+        {
+            // NOTE: Release old swap chain buffers.
+            ID3D11DeviceContext_ClearState(context);
+            ID3D11RenderTargetView_Release(render_target_view);
+            ID3D11DepthStencilView_Release(depth_stencil_view);
+            render_target_view = NULL;
+        }
+
+        // NOTE: Resize to new size for non-zero size.
+        if (width != 0 && height != 0)
+        {
+            ID3D11Texture2D* back_buffer = 0;
+
+            hresult = IDXGISwapChain1_ResizeBuffers(swap_chain, 0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+            if (FAILED(hresult))
+            {
+                ASSERT((char*)"Failed to resize swap chain!");
+            }
+
+            // NOTE: Create RenderTarget view for new backbuffer texture.
+            IDXGISwapChain1_GetBuffer(swap_chain, 0, &IID_ID3D11Texture2D, (void**)&back_buffer);
+            ID3D11Device_CreateRenderTargetView(device, (ID3D11Resource*)back_buffer, NULL, &render_target_view);
+            ID3D11Texture2D_Release(back_buffer);
+
+            OS_LOG_DEBUG("RESIZE SWAP CHAIN");
+
+            {
+                ID3D11Texture2D* depth = 0;
+                D3D11_TEXTURE2D_DESC depth_desc =
+                {
+                    .Width = (UINT)width,
+                    .Height = (UINT)height,
+                    .MipLevels = 1,
+                    .ArraySize = 1,
+                    .Format = DXGI_FORMAT_D32_FLOAT, // or use DXGI_FORMAT_D32_FLOAT_S8X24_UINT if you need stencil.
+                    .SampleDesc = { 1, 0 },
+                    .Usage = D3D11_USAGE_DEFAULT,
+                    .BindFlags = D3D11_BIND_DEPTH_STENCIL,
+                };
+
+                // NOTE: Create new depth stencil texture & DepthStencil view.
+                ID3D11Device_CreateTexture2D(device, &depth_desc, NULL, &depth);
+                ID3D11Device_CreateDepthStencilView(device, (ID3D11Resource*)depth, NULL, &depth_stencil_view);
+                ID3D11Texture2D_Release(depth);
+            }
+        }
+        
+        win32_window_set_position(win32_window_get_window_from((uptr)graphics->handle),
+                                  x, y, width, height);
+    }
+}
+
+Win32Graphics* win32_graphics_init(uptr handle_pointer)
 {
     // TODO: Probably we should allocate dynamically for every call.
     static Win32Graphics graphics = { 0 };
@@ -412,7 +412,7 @@ uptr win32_graphics_init(uptr handle_pointer)
     create_rasterizer_state(&graphics);
     create_depth_state(&graphics);
 
-    return (uptr)&graphics;
+    return &graphics;
 }
 
 
