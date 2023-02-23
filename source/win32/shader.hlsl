@@ -14,22 +14,23 @@ struct PS_INPUT
     float4 color : COLOR;
 };
 
-// NOTE: b0 = constant buffer bound to slot 0.
-cbuffer cbuffer0 : register(b0)
-{
-    float4x4 uTransform;
-}
+// // NOTE: b0 = constant buffer bound to slot 0.
+// cbuffer cbuffer0 : register(b0)
+// {
+//     float4x4 uTransform;
+// }
 
 // NOTE: s0 = sampler bound to slot 0.
 sampler sampler0 : register(s0);
 
 // NOTE: t0 = shader resource bound to slot 0.
-Texture2D<float4> texture0 : register(t0);
+// Texture2D<float4> texture0 : register(t0);
 
 PS_INPUT vs(VS_INPUT input)
 {
     PS_INPUT output;
-    output.pos = mul(uTransform, float4(input.pos, 0, 1));
+    // output.pos = mul(uTransform, float4(input.pos, 0, 1));
+    output.pos = float4(input.pos, 0, 1);
     output.uv = input.uv;
     output.color = float4(input.color, 1);
     return output;
@@ -37,6 +38,7 @@ PS_INPUT vs(VS_INPUT input)
 
 float4 ps(PS_INPUT input) : SV_TARGET
 {
-    float4 tex = texture0.Sample(sampler0, input.uv);
-    return input.color * tex;
+    // float4 tex = texture0.Sample(sampler0, input.uv);
+    // return input.color * tex;
+    return input.color;
 }

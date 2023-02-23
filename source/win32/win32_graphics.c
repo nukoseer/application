@@ -126,6 +126,15 @@ static void create_swap_chain(Win32Graphics* graphics)
     IDXGIFactory_Release(factory);
 }
 
+typedef struct Vertex
+{
+    float position[2];
+    float uv[2];
+    float color[3];
+} Vertex;
+
+static ID3D11Buffer* vertex_buffer = 0;
+
 static void create_shaders(Win32Graphics* graphics)
 {
     ID3D11Device* device = graphics->device;
@@ -136,37 +145,29 @@ static void create_shaders(Win32Graphics* graphics)
     // NOTE: These must match vertex shader input layout (VS_INPUT in vertex shader source below).
     D3D11_INPUT_ELEMENT_DESC descs[3] = { 0 };
 
-    struct Vertex
     {
-        float position[2];
-        float uv[2];
-        float color[3];
-    };
+        Vertex data[] =
+        {
+            { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
+            { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
+            { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
+        };
 
-    // ID3D11Buffer* vertex_buffer = 0;
-    // {
-    //     struct Vertex data[] =
-    //     {
-    //         { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
-    //         { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    //         { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
-    //     };
+        D3D11_BUFFER_DESC desc =
+        {
+            .ByteWidth = sizeof(data),
+            .Usage = D3D11_USAGE_IMMUTABLE,
+            .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+        };
 
-    //     D3D11_BUFFER_DESC desc =
-    //     {
-    //         .ByteWidth = sizeof(data),
-    //         .Usage = D3D11_USAGE_IMMUTABLE,
-    //         .BindFlags = D3D11_BIND_VERTEX_BUFFER,
-    //     };
+        D3D11_SUBRESOURCE_DATA initial_data = { .pSysMem = data };
 
-    //     D3D11_SUBRESOURCE_DATA initial_data = { .pSysMem = data };
+        ID3D11Device_CreateBuffer(device, &desc, &initial_data, &vertex_buffer);
+    }
 
-    //     ID3D11Device_CreateBuffer(device, &desc, &initial_data, &vertex_buffer);
-    // }
-
-    descs[0] = (D3D11_INPUT_ELEMENT_DESC){ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(struct Vertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 };
-    descs[1] = (D3D11_INPUT_ELEMENT_DESC){ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(struct Vertex, uv),       D3D11_INPUT_PER_VERTEX_DATA, 0 };
-    descs[2] = (D3D11_INPUT_ELEMENT_DESC){ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, OFFSETOF(struct Vertex, color),    D3D11_INPUT_PER_VERTEX_DATA, 0 };
+    descs[0] = (D3D11_INPUT_ELEMENT_DESC){ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(Vertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 };
+    descs[1] = (D3D11_INPUT_ELEMENT_DESC){ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(Vertex, uv),       D3D11_INPUT_PER_VERTEX_DATA, 0 };
+    descs[2] = (D3D11_INPUT_ELEMENT_DESC){ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, OFFSETOF(Vertex, color),    D3D11_INPUT_PER_VERTEX_DATA, 0 };
 
     // NOTE: Alternative to hlsl compilation at runtime is to precompile shaders offline
     // it improves startup time - no need to parse hlsl files at runtime!
@@ -181,7 +182,7 @@ static void create_shaders(Win32Graphics* graphics)
     {
 #include "d3d11_vertex_shader.h"
 #include "d3d11_pixel_shader.h"
-        
+
         ID3D11Device_CreateVertexShader(device, d3d11_vertex_shader, sizeof(d3d11_vertex_shader), NULL, vertex_shader);
         ID3D11Device_CreatePixelShader(device, d3d11_pixel_shader, sizeof(d3d11_pixel_shader), NULL, pixel_shader);
         ID3D11Device_CreateInputLayout(device, descs, ARRAYSIZE(descs), d3d11_vertex_shader, sizeof(d3d11_vertex_shader), input_layout);
@@ -277,8 +278,8 @@ void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width
 {
     ID3D11Device* device = graphics->device;
     ID3D11DeviceContext* context = graphics->context;
-    ID3D11RenderTargetView* render_target_view = graphics->render_target_view;
-    ID3D11DepthStencilView* depth_stencil_view = graphics->depth_stencil_view;
+    ID3D11RenderTargetView** render_target_view = &graphics->render_target_view;
+    ID3D11DepthStencilView** depth_stencil_view = &graphics->depth_stencil_view;
     IDXGISwapChain1* swap_chain = graphics->swap_chain;
     i32 x, y, width, height = 0;
     HRESULT hresult = { 0 };
@@ -286,18 +287,16 @@ void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width
     win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle),
                               &x, &y, &width, &height);
 
-    OS_LOG_DEBUG("RESIZE SWAP CHAIN");
-
-    if (render_target_view == NULL ||
+    if (*render_target_view == NULL ||
         initial_width != width || initial_height != height)
     {
-        if (render_target_view)
+        if (*render_target_view)
         {
             // NOTE: Release old swap chain buffers.
             ID3D11DeviceContext_ClearState(context);
-            ID3D11RenderTargetView_Release(render_target_view);
-            ID3D11DepthStencilView_Release(depth_stencil_view);
-            render_target_view = NULL;
+            ID3D11RenderTargetView_Release(*render_target_view);
+            ID3D11DepthStencilView_Release(*depth_stencil_view);
+            *render_target_view = NULL;
         }
 
         // NOTE: Resize to new size for non-zero size.
@@ -306,6 +305,7 @@ void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width
             ID3D11Texture2D* back_buffer = 0;
 
             hresult = IDXGISwapChain1_ResizeBuffers(swap_chain, 0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+
             if (FAILED(hresult))
             {
                 ASSERT((char*)"Failed to resize swap chain!");
@@ -313,10 +313,8 @@ void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width
 
             // NOTE: Create RenderTarget view for new backbuffer texture.
             IDXGISwapChain1_GetBuffer(swap_chain, 0, &IID_ID3D11Texture2D, (void**)&back_buffer);
-            ID3D11Device_CreateRenderTargetView(device, (ID3D11Resource*)back_buffer, NULL, &render_target_view);
+            ID3D11Device_CreateRenderTargetView(device, (ID3D11Resource*)back_buffer, NULL, render_target_view);
             ID3D11Texture2D_Release(back_buffer);
-
-            OS_LOG_DEBUG("RESIZE SWAP CHAIN");
 
             {
                 ID3D11Texture2D* depth = 0;
@@ -334,14 +332,82 @@ void win32_graphics_resize_swap_chain(Win32Graphics* graphics, i32 initial_width
 
                 // NOTE: Create new depth stencil texture & DepthStencil view.
                 ID3D11Device_CreateTexture2D(device, &depth_desc, NULL, &depth);
-                ID3D11Device_CreateDepthStencilView(device, (ID3D11Resource*)depth, NULL, &depth_stencil_view);
+                ID3D11Device_CreateDepthStencilView(device, (ID3D11Resource*)depth, NULL, depth_stencil_view);
                 ID3D11Texture2D_Release(depth);
             }
         }
-        
-        win32_window_set_position(win32_window_get_window_from((uptr)graphics->handle),
-                                  x, y, width, height);
     }
+}
+
+void win32_graphics_draw(Win32Graphics* graphics)
+{
+    ID3D11DeviceContext* context = graphics->context;
+    ID3D11SamplerState* sampler_state = graphics->sampler_state;
+    ID3D11BlendState* blend_state = graphics->blend_state;
+    ID3D11RasterizerState* rasterizer_state = graphics->rasterizer_state;
+    ID3D11DepthStencilState* depth_state = graphics->depth_state;
+    ID3D11RenderTargetView** render_target_view = &graphics->render_target_view;
+    ID3D11DepthStencilView* depth_stencil_view = graphics->depth_stencil_view;
+    IDXGISwapChain1* swap_chain = graphics->swap_chain;
+    ID3D11InputLayout* input_layout = graphics->input_layout;
+    ID3D11VertexShader* vertex_shader = graphics->vertex_shader;
+    ID3D11PixelShader* pixel_shader = graphics->pixel_shader;
+    // ID3D11ShaderResourceView* texture_view = graphics->texture_view;
+
+    // NOTE: Can render only if window size is non-zero - we must have backbuffer & RenderTarget view created.
+    if (*render_target_view)
+    {
+        i32 x, y, width, height = 0;
+
+        win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle),
+                                  &x, &y, &width, &height);
+
+        // NOTE: Output viewport covering all client area of window.
+        D3D11_VIEWPORT viewport =
+        {
+            .TopLeftX = (FLOAT)x,
+            .TopLeftY = (FLOAT)y,
+            .Width = (FLOAT)width,
+            .Height = (FLOAT)height,
+            .MinDepth = 0,
+            .MaxDepth = 1,
+        };
+
+        // NOTE: Clear screen.
+        FLOAT color[] = { 0.392f, 0.584f, 0.929f, 1.f };
+        ID3D11DeviceContext_ClearRenderTargetView(context, *render_target_view, color);
+        ID3D11DeviceContext_ClearDepthStencilView(context, depth_stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+
+        // NOTE: Input Assembler.
+        ID3D11DeviceContext_IASetInputLayout(context, input_layout);
+        ID3D11DeviceContext_IASetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        UINT stride = sizeof(Vertex);
+        UINT offset = 0;
+        ID3D11DeviceContext_IASetVertexBuffers(context, 0, 1, &vertex_buffer, &stride, &offset);
+
+        // NOTE: Vertex Shader.
+        // ID3D11DeviceContext_VSSetConstantBuffers(context, 0, 1, &vertex_buffer);
+        ID3D11DeviceContext_VSSetShader(context, vertex_shader, NULL, 0);
+
+        // NOTE: Rasterizer Stage.
+        ID3D11DeviceContext_RSSetViewports(context, 1, &viewport);
+        ID3D11DeviceContext_RSSetState(context, rasterizer_state);
+
+        // NOTE: Pixel Shader.
+        ID3D11DeviceContext_PSSetSamplers(context, 0, 1, &sampler_state);
+        // ID3D11DeviceContext_PSSetShaderResources(context, 0, 1, &texture_view);
+        ID3D11DeviceContext_PSSetShader(context, pixel_shader, NULL, 0);
+
+        // NOTE: Output Merger.
+        ID3D11DeviceContext_OMSetBlendState(context, blend_state, NULL, ~0U);
+        ID3D11DeviceContext_OMSetDepthStencilState(context, depth_state, 0);
+        ID3D11DeviceContext_OMSetRenderTargets(context, 1, render_target_view, depth_stencil_view);
+
+        // NOTE: Draw 3 vertices.
+        ID3D11DeviceContext_Draw(context, 3, 0);
+        IDXGISwapChain1_Present(swap_chain, 0, 0);
+    }
+
 }
 
 Win32Graphics* win32_graphics_init(uptr handle_pointer)

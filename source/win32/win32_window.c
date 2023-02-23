@@ -325,27 +325,32 @@ static b32 has_autohide_appbar(UINT edge, RECT monitor)
 
 static void handle_nccalcsize(Win32Window* window, WPARAM wparam, LPARAM lparam)
 {
-    HMONITOR monitor = { 0 };
-    MONITORINFO monitor_info = { 0 };
     RECT nonclient = { 0 };
-    RECT client = { 0 };
 	union
     {
 		LPARAM lparam;
 		RECT* rect;
 	} params = { .lparam = lparam };
 
+    // TODO: Now it seems okay but We should check this. Maybe this should not be here?
+    win32_graphics_resize_swap_chain(window->graphics_handle, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
+
     // NOTE: DefWindowProc must be called in both the maximized and
     // non-maximized cases, otherwise tile/cascade windows won't work.
 	nonclient = *params.rect;
-    DefWindowProcW(window->handle, WM_NCCALCSIZE, wparam, params.lparam);
-	client = *params.rect;
+    UNUSED_VARIABLE(wparam);
+    DefWindowProc(window->handle, WM_NCCALCSIZE, wparam, params.lparam);
 
-	if (IsMaximized(window->handle))
+    if (IsMaximized(window->handle))
     {
-		WINDOWINFO window_info = { .cbSize = sizeof(window_info) };
+        HMONITOR monitor = { 0 };
+        MONITORINFO monitor_info = { 0 };
+        WINDOWINFO window_info = { .cbSize = sizeof(window_info) };
+        RECT client = { 0 };
 
 		GetWindowInfo(window->handle, &window_info);
+
+        client = *params.rect;
 
         // NOTE: Maximized windows always have a non-client border
         // that hangs over the edge of the screen, so the size
@@ -487,6 +492,7 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
             {
                 result = DefWindowProc(handle, message, wparam, lparam);
             }
+
         }
         break;
         case WM_LBUTTONDOWN:
@@ -494,7 +500,7 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
             if (wparam & MK_SHIFT)
             {
                 ReleaseCapture();
-                SendMessageW(handle, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+                SendMessage(handle, WM_NCLBUTTONDOWN, HTCAPTION, 0);
             }
         }
         break;
@@ -508,8 +514,21 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         case WM_SIZE:
         {
             Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
-            OS_LOG_DEBUG("WM_SIZE");
+
             win32_graphics_resize_swap_chain(window->graphics_handle, window->width, window->height);
+
+            window->width = GET_X_LPARAM(lparam);
+            window->height = GET_Y_LPARAM(lparam);
+        }
+        break;
+        case WM_PAINT:
+        {
+            PAINTSTRUCT paint_struct = { 0 };
+            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
+
+            BeginPaint(handle, &paint_struct);
+            win32_graphics_draw(window->graphics_handle);
+            EndPaint(handle, &paint_struct);
         }
         break;
         default:
@@ -778,7 +797,7 @@ b32 win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i
     BOOL result = 0;
 
     ASSERT(window && window->handle);
-    result = GetWindowRect(window->handle, &rect);
+    result = GetClientRect(window->handle, &rect);
     ASSERT(result);
 
     if (result)
@@ -800,14 +819,6 @@ b32 win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 
     ASSERT(window && window->handle);
     result = SetWindowPos(window->handle, 0, x, y, width, height, SWP_SHOWWINDOW);
     ASSERT(result);
-
-    if (result)
-    {
-        window->x = x;
-        window->y = y;
-        window->width = width;
-        window->height = height;
-    }
 
     return !!result;
 }

@@ -5,7 +5,7 @@
 static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
-    OSWindowHandle os_window_handle2 = 0;
+    // OSWindowHandle os_window_handle2 = 0;
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
@@ -13,10 +13,10 @@ static void application(void)
 
     os_init();
     os_window_handle = os_window_open("Application Window", 10, 10, 640, 480, FALSE);
-    os_window_handle2 = os_window_open("Application Window2", 20, 20, 640, 480, TRUE);
+    // os_window_handle2 = os_window_open("Application Window2", 20, 20, 640, 480, TRUE);
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
-    os_window_set_position(os_window_handle2, x + width, y, width, height);
+    // os_window_set_position(os_window_handle2, x + width, y, width, height);
 
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
 
