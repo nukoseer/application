@@ -2,6 +2,20 @@
 #include "test.h"
 #include "os.h"
 
+typedef struct Vertex
+{
+    f32 position[2];
+    f32 uv[2];
+    f32 color[3];
+} Vertex;
+
+static Vertex vertices[] =
+{
+    { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
+    { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
+    { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },  
+};
+
 static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
@@ -20,6 +34,18 @@ static void application(void)
 
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
 
+    os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices));
+
+    {
+        const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
+        u32 input_layout_offsets[] = { OFFSETOF(Vertex, position), OFFSETOF(Vertex, uv), OFFSETOF(Vertex, color) };
+        u32 input_layout_formats[] = { 2, 2, 3 };
+
+        os_graphics_set_vertex_input_layouts(os_window_handle,
+                                             input_layout_names, input_layout_offsets, input_layout_formats,
+                                             sizeof(Vertex), ARRAY_COUNT(input_layout_names));
+    }
+    
     while (!os_should_quit())
     {
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();

@@ -333,7 +333,7 @@ static void handle_nccalcsize(Win32Window* window, WPARAM wparam, LPARAM lparam)
 	} params = { .lparam = lparam };
 
     // TODO: Now it seems okay but We should check this. Maybe this should not be here?
-    win32_graphics_resize_swap_chain(window->graphics_handle, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
+    win32_graphics_resize_swap_chain((uptr)window->graphics_handle, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
 
     // NOTE: DefWindowProc must be called in both the maximized and
     // non-maximized cases, otherwise tile/cascade windows won't work.
@@ -515,7 +515,7 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
         {
             Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
 
-            win32_graphics_resize_swap_chain(window->graphics_handle, window->width, window->height);
+            win32_graphics_resize_swap_chain((uptr)window->graphics_handle, window->width, window->height);
 
             window->width = GET_X_LPARAM(lparam);
             window->height = GET_Y_LPARAM(lparam);
@@ -527,7 +527,7 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
             Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
 
             BeginPaint(handle, &paint_struct);
-            win32_graphics_draw(window->graphics_handle);
+            win32_graphics_draw((uptr)window->graphics_handle);
             EndPaint(handle, &paint_struct);
         }
         break;
@@ -777,6 +777,17 @@ uptr win32_window_get_window_from(uptr handle_pointer)
     ASSERT(window);
 
     return (uptr)window;
+}
+
+uptr win32_window_get_graphics_handle_from(uptr handle_pointer)
+{
+    Win32Graphics* graphics = 0;
+    Win32Window* window = (Win32Window*)win32_window_get_window_from(handle_pointer);
+
+    ASSERT(window->graphics_handle);
+    graphics = window->graphics_handle;
+
+    return (uptr)graphics;
 }
 
 void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
