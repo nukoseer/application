@@ -7,6 +7,7 @@ typedef uptr OSWindowOpen(const char* title, i32 x, i32 y, i32 width, i32 height
 typedef b32  OSWindowClose(uptr window_pointer);
 typedef uptr OSWindowGetHandleFrom(uptr window_pointer);
 typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
+typedef uptr OSWindowGetGraphicsHandleFrom(uptr window_pointer);
 typedef void OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
 typedef b32  OSWindowGetPosition(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
 typedef b32  OsWindowSetPosition(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
@@ -19,6 +20,7 @@ typedef struct OSWindow
     OSWindowClose* close;
     OSWindowGetHandleFrom* get_handle_from_window;
     OSWindowGetWindowFrom* get_window_from_handle;
+    OSWindowGetGraphicsHandleFrom* get_graphics_handle_from_window;
     OSWindowGetEventList* get_event_list;
     OSWindowGetPosition* get_position;
     OsWindowSetPosition* set_position;
@@ -34,6 +36,7 @@ static OSWindow os_window =
     .close = &win32_window_close,
     .get_handle_from_window = &win32_window_get_handle_from,
     .get_window_from_handle = &win32_window_get_window_from,
+    .get_graphics_handle_from_window = &win32_window_get_graphics_handle_from,
     .get_event_list = &win32_window_get_event_list,
     .get_position = &win32_window_get_position,
     .set_position = &win32_window_set_position,
@@ -76,6 +79,30 @@ static uptr get_window_from_handle(uptr handle)
     }
     
     return window;
+}
+
+static uptr get_graphics_handle_from_window(uptr window)
+{
+    uptr graphics_handle = 0;
+
+    ASSERT(os_window.get_graphics_handle_from_window);
+    graphics_handle = os_window.get_graphics_handle_from_window(window);
+    ASSERT(graphics_handle);
+
+    return graphics_handle;
+}
+
+uptr os_window_get_graphics_handle(OSWindowHandle os_window_handle)
+{
+    uptr graphics_handle = 0;
+    uptr window = get_window_from_handle(os_window_handle);
+
+    if (window)
+    {
+        graphics_handle = get_graphics_handle_from_window(window);
+    }
+    
+    return graphics_handle;
 }
 
 OSEventList os_window_get_events(void)

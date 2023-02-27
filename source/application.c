@@ -26,8 +26,8 @@ static void application(void)
     i32 height = 0;
 
     os_init();
-    os_window_handle = os_window_open("Application Window", 10, 10, 640, 480, FALSE);
-    // os_window_handle2 = os_window_open("Application Window2", 20, 20, 640, 480, TRUE);
+    os_window_handle = os_window_open("Application Window", 30, 30, 640, 480, FALSE);
+    // os_window_handle2 = os_window_open("Application Window2", 50, 50, 640, 480, TRUE);
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     // os_window_set_position(os_window_handle2, x + width, y, width, height);
@@ -78,6 +78,8 @@ static void application(void)
             // os_window_set_title(os_window_handle, milliseconds_string);
             // os_window_set_title(os_window_handle2, milliseconds_string);
         }
+
+        os_graphics_draw(os_window_handle);
     }
 
     os_destroy();

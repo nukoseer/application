@@ -26,7 +26,9 @@
 #define WM_NCUAHDRAWFRAME (0x00AF)
 #endif
 
+typedef struct Win32Graphics Win32Graphics;
 typedef struct Win32Window Win32Window;
+
 struct Win32Window
 {
     HANDLE semaphore_handle;
@@ -333,7 +335,7 @@ static void handle_nccalcsize(Win32Window* window, WPARAM wparam, LPARAM lparam)
 	} params = { .lparam = lparam };
 
     // TODO: Now it seems okay but We should check this. Maybe this should not be here?
-    win32_graphics_resize_swap_chain((uptr)window->graphics_handle, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
+    // win32_graphics_resize_swap_chain((uptr)window->graphics_handle, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
 
     // NOTE: DefWindowProc must be called in both the maximized and
     // non-maximized cases, otherwise tile/cascade windows won't work.
@@ -511,26 +513,6 @@ static LRESULT CALLBACK window_proc(HWND handle, UINT message, WPARAM wparam, LP
             send_mparam(handle, message, wparam, lparam);
         }
         break;
-        case WM_SIZE:
-        {
-            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
-
-            win32_graphics_resize_swap_chain((uptr)window->graphics_handle, window->width, window->height);
-
-            window->width = GET_X_LPARAM(lparam);
-            window->height = GET_Y_LPARAM(lparam);
-        }
-        break;
-        case WM_PAINT:
-        {
-            PAINTSTRUCT paint_struct = { 0 };
-            Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(handle, GWLP_USERDATA));
-
-            BeginPaint(handle, &paint_struct);
-            win32_graphics_draw((uptr)window->graphics_handle);
-            EndPaint(handle, &paint_struct);
-        }
-        break;
         default:
         {
             result = DefWindowProc(handle, message, wparam, lparam);
@@ -579,7 +561,7 @@ static void window_open(Win32Window* win32_window)
         update_region(win32_window);
     }
 
-    win32_window->graphics_handle = win32_graphics_init((uptr)handle);
+    win32_window->graphics_handle = (Win32Graphics*)win32_graphics_init((uptr)handle);
 
     ShowWindow(handle, SW_SHOW);
 
@@ -779,12 +761,12 @@ uptr win32_window_get_window_from(uptr handle_pointer)
     return (uptr)window;
 }
 
-uptr win32_window_get_graphics_handle_from(uptr handle_pointer)
+uptr win32_window_get_graphics_handle_from(uptr window_pointer)
 {
     Win32Graphics* graphics = 0;
-    Win32Window* window = (Win32Window*)win32_window_get_window_from(handle_pointer);
+    Win32Window* window = (Win32Window*)window_pointer;
 
-    ASSERT(window->graphics_handle);
+    ASSERT(window && window->graphics_handle);
     graphics = window->graphics_handle;
 
     return (uptr)graphics;
