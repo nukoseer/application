@@ -45,6 +45,7 @@ typedef struct Win32Graphics
     ID3D11Buffer* vertex_buffer;
     void* vertex_buffer_data;
     u32 vertex_buffer_size;
+    FLOAT clear_color[4];
     PADDING(4);
 } Win32Graphics;
 
@@ -392,22 +393,14 @@ static void resize_swap_chain(Win32Graphics* graphics)
     }
 }
 
-static void win32_graphics_clear_screen(Win32Graphics* graphics)
+static void clear_screen(Win32Graphics* graphics)
 {
-    // TODO: This must be paramaterized!
-    FLOAT color[] = { 0.392f, 0.584f, 0.929f, 1.f };
+    ID3D11DeviceContext_ClearRenderTargetView(graphics->context, graphics->render_target_view, graphics->clear_color);
+    ID3D11DeviceContext_ClearDepthStencilView(graphics->context, graphics->depth_stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);    
+}    
 
-    ID3D11DeviceContext_ClearRenderTargetView(graphics->context, graphics->render_target_view, color);
-    ID3D11DeviceContext_ClearDepthStencilView(graphics->context, graphics->depth_stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-}
-
-void win32_graphics_draw(uptr graphics_pointer)
+static void draw(Win32Graphics* graphics)
 {
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-
-    // NOTE: Resize the swap chain if size changed.
-    resize_swap_chain(graphics);
-
     // NOTE: Can render only if window size is non-zero - we must have backbuffer & RenderTarget view created.
     if (graphics->render_target_view)
     {
@@ -436,7 +429,7 @@ void win32_graphics_draw(uptr graphics_pointer)
         };
 
         // NOTE: Clear screen.
-        win32_graphics_clear_screen(graphics);
+        clear_screen(graphics);
 
         // NOTE: Input Assembler.
         ID3D11DeviceContext_IASetInputLayout(context, input_layout);
@@ -476,7 +469,7 @@ void win32_graphics_draw(uptr graphics_pointer)
         ID3D11DeviceContext_Draw(context, graphics->vertex_buffer_size / graphics->input_stride, 0);
         IDXGISwapChain1_Present(swap_chain, 0, 0);
     }
-
+    
 }
 
 void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const char** names, u32* offsets, u32*formats, u32 stride, u32 layout_count)
@@ -503,6 +496,27 @@ void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, void* vertex_b
 
     graphics->vertex_buffer_data = vertex_buffer_data;
     graphics->vertex_buffer_size = vertex_buffer_size;
+}
+
+void win32_graphics_clear(uptr graphics_pointer, f32 r, f32 g, f32 b, f32 a)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+
+    graphics->clear_color[0] = r;
+    graphics->clear_color[1] = g;
+    graphics->clear_color[2] = b;
+    graphics->clear_color[3] = a;
+}
+
+void win32_graphics_draw(uptr graphics_pointer)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+
+    // NOTE: Resize the swap chain if size changed.
+    resize_swap_chain(graphics);
+
+    // NOTE: Draw everything.
+    draw(graphics);
 }
 
 uptr win32_graphics_init(uptr handle_pointer)

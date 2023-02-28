@@ -13,7 +13,11 @@ static Vertex vertices[] =
 {
     { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
     { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },  
+    { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
+
+    { { -0.75f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
+    { { +0.75f, +0.75f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
+    { { -0.00f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },  
 };
 
 static void application(void)
@@ -79,6 +83,7 @@ static void application(void)
             // os_window_set_title(os_window_handle2, milliseconds_string);
         }
 
+        os_graphics_clear(os_window_handle, 0.392f, 0.584f, 0.929f, 1.0f);
         os_graphics_draw(os_window_handle);
     }
 
