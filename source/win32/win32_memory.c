@@ -67,21 +67,21 @@ b32 win32_memory_release(void* memory)
     return !!result;
 }
 
-void* win32_memory_heap_allocate(memory_size size)
+void* win32_memory_heap_allocate(memory_size size, b32 zero_init)
 {
     void* result = NULL;
 
-    result = HeapAlloc(GetProcessHeap(), 0, size);
+    result = HeapAlloc(GetProcessHeap(), zero_init ? HEAP_ZERO_MEMORY : 0, size);
     ASSERT(result);
 
     return result;
 }
 
-void* win32_memory_heap_reallocate(void* memory, memory_size size)
+void* win32_memory_heap_reallocate(void* memory, memory_size size, b32 zero_init)
 {
     void* result = NULL;
 
-    result = HeapReAlloc(GetProcessHeap(), 0, memory, size);
+    result = HeapReAlloc(GetProcessHeap(), zero_init ? HEAP_ZERO_MEMORY : 0, memory, size);
     ASSERT(result);
 
     return result;

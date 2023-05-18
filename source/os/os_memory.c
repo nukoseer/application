@@ -6,8 +6,8 @@ typedef void* OSMemoryReserve(memory_size size);
 typedef void* OSMemoryCommit(void* memory, memory_size size);
 typedef b32   OSMemoryDecommit(void* memory, memory_size size);
 typedef b32   OSMemoryRelease(void* memory);
-typedef void* OSMemoryHeapAllocate(memory_size size);
-typedef void* OSMemoryHeapReallocate(void* memory, memory_size size);
+typedef void* OSMemoryHeapAllocate(memory_size size, b32 zero_init);
+typedef void* OSMemoryHeapReallocate(void* memory, memory_size size, b32 zero_init);
 typedef b32   OSMemoryHeapRelease(void* memory);
 
 typedef struct OSMemory
@@ -89,22 +89,22 @@ b32 os_memory_release(void* memory)
     return result;
 }
 
-void* os_memory_heap_allocate(memory_size size)
+void* os_memory_heap_allocate(memory_size size, b32 zero_init)
 {
     void* result = NULL;
     
     ASSERT(os_memory.heap_allocate);
-    result = os_memory.heap_allocate(size);
+    result = os_memory.heap_allocate(size, zero_init);
 
     return result;
 }
 
-void* os_memory_heap_reallocate(void* memory, memory_size size)
+void* os_memory_heap_reallocate(void* memory, memory_size size, b32 zero_init)
 {
     void* result = NULL;
 
     ASSERT(os_memory.heap_reallocate);
-    result = os_memory.heap_reallocate(memory, size);
+    result = os_memory.heap_reallocate(memory, size, zero_init);
 
     return result;
 }

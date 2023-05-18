@@ -238,7 +238,7 @@ uptr win32_io_file_find_begin(const char* file_name, u32* file_count)
     Win32IOFileFindInfo* file_find_info = 0;
     u32 find_count = 0;
 
-    file_find_info = (Win32IOFileFindInfo*)win32_memory_heap_allocate(sizeof(Win32IOFileFindInfo));
+    file_find_info = (Win32IOFileFindInfo*)win32_memory_heap_allocate(sizeof(Win32IOFileFindInfo), TRUE);
     ASSERT(file_find_info);
 
     file_find_info->handle = FindFirstFile(file_name, &file_find_info->data);

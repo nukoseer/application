@@ -73,12 +73,12 @@ inline void* buffer__grow(void* buffer, i64 new_capacity, i64 element_size)
 
     if (!buffer)
     {
-        buffer_header = (BufferHeader*)os_memory_heap_allocate((memory_size)size);
+        buffer_header = (BufferHeader*)os_memory_heap_allocate((memory_size)size, FALSE);
         buffer_header->len = 0;
     }
     else
     {
-        buffer_header = (BufferHeader*)os_memory_heap_reallocate(BUFF__BASE(buffer), (memory_size)size);
+        buffer_header = (BufferHeader*)os_memory_heap_reallocate(BUFF__BASE(buffer), (memory_size)size, FALSE);
     }
 
     buffer_header->cap = capacity;
