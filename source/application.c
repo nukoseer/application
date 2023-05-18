@@ -17,28 +17,29 @@ static Vertex vertices[] =
 
     { { -0.75f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
     { { +0.75f, +0.75f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    { { -0.00f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },  
+    { { -0.00f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
 };
 
 static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
-    // OSWindowHandle os_window_handle2 = 0;
+    OSWindowHandle os_window_handle2 = 0;
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
     i32 height = 0;
 
     os_init();
-    os_window_handle = os_window_open("Application Window", 30, 30, 640, 480, FALSE);
-    // os_window_handle2 = os_window_open("Application Window2", 50, 50, 640, 480, TRUE);
+    os_window_handle = os_window_open("Application Window", 60, 60, 640, 480, FALSE);
+    os_window_handle2 = os_window_open("Application Window2", 80, 80, 640, 480, FALSE);
 
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
-    // os_window_set_position(os_window_handle2, x + width, y, width, height);
+    os_window_set_position(os_window_handle2, x + width, y, width, height);
 
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
 
-    os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices));
+    os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
+    os_graphics_set_vertex_buffer_data(os_window_handle2, vertices + 3, sizeof(vertices) / 2);
 
     {
         const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
@@ -46,10 +47,18 @@ static void application(void)
         u32 input_layout_formats[] = { 2, 2, 3 };
 
         os_graphics_set_vertex_input_layouts(os_window_handle,
-                                             input_layout_names, input_layout_offsets, input_layout_formats,
+                                             input_layout_names,
+                                             input_layout_offsets,
+                                             input_layout_formats,
+                                             sizeof(Vertex), ARRAY_COUNT(input_layout_names));
+
+        os_graphics_set_vertex_input_layouts(os_window_handle2,
+                                             input_layout_names,
+                                             input_layout_offsets,
+                                             input_layout_formats,
                                              sizeof(Vertex), ARRAY_COUNT(input_layout_names));
     }
-    
+
     while (!os_should_quit())
     {
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
@@ -78,13 +87,16 @@ static void application(void)
             f64 milliseconds = os_time_end_tick(os_time_tick_handle);
 
             sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
-            
+
             // os_window_set_title(os_window_handle, milliseconds_string);
             // os_window_set_title(os_window_handle2, milliseconds_string);
         }
 
         os_graphics_clear(os_window_handle, 0.392f, 0.584f, 0.929f, 1.0f);
         os_graphics_draw(os_window_handle);
+
+        os_graphics_clear(os_window_handle2, 0.666f, 0.584f, 0.929f, 1.0f);
+        os_graphics_draw(os_window_handle2);
     }
 
     os_destroy();

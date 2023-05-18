@@ -12,6 +12,7 @@
 
 #include "types.h"
 #include "utils.h"
+#include "mem.h"
 #include "win32_window.h"
 #include "win32_graphics.h"
 
@@ -49,44 +50,52 @@ typedef struct Win32Graphics
     PADDING(4);
 } Win32Graphics;
 
+static ID3D11Device* graphics_device;
+static ID3D11DeviceContext* graphics_context;
+
 static void create_device_and_context(Win32Graphics* graphics)
 {
-    ID3D11Device** device = &graphics->device;
-    ID3D11DeviceContext** context = &graphics->context;
-    D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0 };
-    UINT flags = 0;
-    HRESULT hresult = 0;
-
-    // NOTE: Create D3D11 device & context.
-#ifndef NDEBUG
-    // NOTE: This enables VERY USEFUL debug messages in debugger output.
-    flags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-
-    hresult = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL,
-                                flags, levels, ARRAY_COUNT(levels),
-                                D3D11_SDK_VERSION, device, NULL, context);
-    // NOTE: Make sure device creation succeeeds before continuing
-    // for simple application you could retry device creation with
-    // D3D_DRIVER_TYPE_WARP driver type which enables software
-    // rendering (could be useful on broken drivers or remote
-    // desktop situations).
-    ASSERT(SUCCEEDED(hresult));
-
-#ifndef NDEBUG
-    // NOTE: For debug builds enable VERY USEFUL debug break on API errors.
+    if (!graphics_device)
     {
-        ID3D11InfoQueue* info = 0;
+        
+        D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0 };
+        UINT flags = 0;
+        HRESULT hresult = 0;
 
-        ID3D11Device_QueryInterface(*device, &IID_ID3D11InfoQueue, (void**)&info);
-        ID3D11InfoQueue_SetBreakOnSeverity(info, D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-        ID3D11InfoQueue_SetBreakOnSeverity(info, D3D11_MESSAGE_SEVERITY_ERROR, TRUE);
-        ID3D11InfoQueue_Release(info);
-    }
-    // NOTE: After this there is no need to check for any errors on
-    // device functions manually so all HRESULT return values in this
-    // code will be ignored debugger will break on errors anyway.
+        // NOTE: Create D3D11 device & context.
+#ifndef NDEBUG
+        // NOTE: This enables VERY USEFUL debug messages in debugger output.
+        flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
+
+        hresult = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL,
+                                    flags, levels, ARRAY_COUNT(levels),
+                                    D3D11_SDK_VERSION, &graphics_device, NULL, &graphics_context);
+        // NOTE: Make sure device creation succeeeds before continuing
+        // for simple application you could retry device creation with
+        // D3D_DRIVER_TYPE_WARP driver type which enables software
+        // rendering (could be useful on broken drivers or remote
+        // desktop situations).
+        ASSERT(SUCCEEDED(hresult));
+
+#ifndef NDEBUG
+        // NOTE: For debug builds enable VERY USEFUL debug break on API errors.
+        {
+            ID3D11InfoQueue* info = 0;
+
+            ID3D11Device_QueryInterface(graphics_device, &IID_ID3D11InfoQueue, (void**)&info);
+            ID3D11InfoQueue_SetBreakOnSeverity(info, D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+            ID3D11InfoQueue_SetBreakOnSeverity(info, D3D11_MESSAGE_SEVERITY_ERROR, TRUE);
+            ID3D11InfoQueue_Release(info);
+        }
+        // NOTE: After this there is no need to check for any errors on
+        // device functions manually so all HRESULT return values in this
+        // code will be ignored debugger will break on errors anyway.
+#endif
+    }
+
+    graphics->device = graphics_device;
+    graphics->context = graphics_context;
 }
 
 static void create_swap_chain(Win32Graphics* graphics)
@@ -521,18 +530,19 @@ void win32_graphics_draw(uptr graphics_pointer)
 
 uptr win32_graphics_init(uptr handle_pointer)
 {
-    // TODO: Probably we should allocate dynamically for every call.
-    static Win32Graphics graphics = { 0 };
+    // TODO: Do we need different way to allocate? Arena etc.
+    Win32Graphics* graphics = (Win32Graphics*)os_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
+    
     HWND handle = (HWND)handle_pointer;
     // ID3D11Device** device = &graphics.device;
     // ID3D11ShaderResourceView** texture_view = &graphics.texture_view;
     // ID3D11Buffer* buffer = 0;
 
-    graphics.handle = handle;
-
-    create_device_and_context(&graphics);
-    create_swap_chain(&graphics);
-    create_shaders(&graphics);
+    graphics->handle = handle;
+    
+    create_device_and_context(graphics);
+    create_swap_chain(graphics);
+    create_shaders(graphics);
 
     // {
     //     D3D11_BUFFER_DESC desc =
@@ -582,12 +592,12 @@ uptr win32_graphics_init(uptr handle_pointer)
     //     ID3D11Texture2D_Release(texture);
     // }
 
-    create_sampler_state(&graphics);
-    create_blend_state(&graphics);
-    create_rasterizer_state(&graphics);
-    create_depth_state(&graphics);
+    create_sampler_state(graphics);
+    create_blend_state(graphics);
+    create_rasterizer_state(graphics);
+    create_depth_state(graphics);
 
-    return (uptr)&graphics;
+    return (uptr)graphics;
 }
 
 
