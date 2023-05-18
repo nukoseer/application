@@ -790,7 +790,7 @@ b32 win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i
     BOOL result = 0;
 
     ASSERT(window && window->handle);
-    result = GetClientRect(window->handle, &rect);
+    result = GetWindowRect(window->handle, &rect);
     ASSERT(result);
 
     if (result)
