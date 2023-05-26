@@ -60,13 +60,20 @@ static void application(void)
     }
 
     {
-        u32 texture_buffer[] =
+        u32 texture_buffer0[] =
         {
             0x80000000, 0xFFFFFFFF,
             0xFFFFFFFF, 0x80000000,
         };
-
-        os_graphics_create_texture(os_window_handle, texture_buffer, 2, 2);
+        
+        u32 texture_buffer1[] =
+        {
+            0xFFFFFFFF, 0xFFFFFFFF,
+            0xFFFFFFFF, 0xFFFFFFFF,
+        };
+        
+        os_graphics_create_texture(os_window_handle, texture_buffer0, 2, 2);
+        os_graphics_create_texture(os_window_handle, texture_buffer1, 2, 2);
     }
 
     while (!os_should_quit())

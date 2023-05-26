@@ -26,6 +26,9 @@ sampler sampler0 : register(s0);
 // NOTE: t0 = shader resource bound to slot 0.
 Texture2D<float4> texture0 : register(t0);
 
+// NOTE: t1 = shader resource bound to slot 1.
+Texture2D<float4> texture1 : register(t1);
+
 PS_INPUT vs(VS_INPUT input)
 {
     PS_INPUT output;

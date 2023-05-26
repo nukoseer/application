@@ -6,7 +6,7 @@
 
 typedef void OSGraphicsSetVertexBufferData(uptr graphics, void* vertex_buffer_data, u32 vertex_buffer_size);
 typedef void OSGraphicsSetVertexInputLayouts(uptr graphics, const char** names, u32* offsets, u32* formats, u32 stride, u32 layout_count);
-typedef void OSGraphicsCreateTexture(uptr graphics, u32* texture_buffer, u32 width, u32 height);
+typedef void OSGraphicsCreateTexture(uptr graphics, const u32* texture_buffer, u32 width, u32 height);
 typedef void OSGraphicsClear(uptr graphics, f32 r, f32 g, f32 b, f32 a);
 typedef void OSGraphicsDraw(uptr graphics);
 
@@ -67,7 +67,7 @@ void os_graphics_set_vertex_input_layouts(OSWindowHandle os_window_handle,
     }
 }
 
-void os_graphics_create_texture(OSWindowHandle os_window_handle, u32* texture_buffer, u32 width, u32 height)
+void os_graphics_create_texture(OSWindowHandle os_window_handle, const u32* texture_buffer, u32 width, u32 height)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 

@@ -22,12 +22,15 @@ extern const BYTE d3d11_pixel_shader[];
 #include "d3d11_vertex_shader.h"
 #include "d3d11_pixel_shader.h"
 
+// TODO: We should check the alignment and padding of this struct.
 typedef struct Win32Graphics
 {
     HWND handle;
     ID3D11Device* device;
     ID3D11DeviceContext* context;
-    ID3D11ShaderResourceView* texture_view;
+    // TODO: What should we do with this?
+    ID3D11ShaderResourceView* texture_view[2];
+    u64 texture_count;
     ID3D11SamplerState* sampler_state;
     ID3D11BlendState* blend_state;
     ID3D11RasterizerState* rasterizer_state;
@@ -422,7 +425,8 @@ static void draw(Win32Graphics* graphics)
         ID3D11VertexShader* vertex_shader = graphics->vertex_shader;
         ID3D11PixelShader* pixel_shader = graphics->pixel_shader;
         ID3D11Buffer** vertex_buffer = &graphics->vertex_buffer;
-        ID3D11ShaderResourceView* texture_view = graphics->texture_view;
+        ID3D11ShaderResourceView** texture_view = graphics->texture_view;
+        u64 texture_count = graphics->texture_count;
         D3D11_VIEWPORT viewport = { 0 };
 
         // NOTE: Output viewport covering all client area of window.
@@ -465,7 +469,7 @@ static void draw(Win32Graphics* graphics)
 
         // NOTE: Pixel Shader.
         ID3D11DeviceContext_PSSetSamplers(context, 0, 1, &sampler_state);
-        ID3D11DeviceContext_PSSetShaderResources(context, 0, 1, &texture_view);
+        ID3D11DeviceContext_PSSetShaderResources(context, 0, (u32)texture_count, texture_view);
         ID3D11DeviceContext_PSSetShader(context, pixel_shader, NULL, 0);
 
         // NOTE: Output Merger.
@@ -528,11 +532,11 @@ void win32_graphics_draw(uptr graphics_pointer)
 }
 
 // TODO: Probably we need to handle ID3D11Device_CreateShaderResourceView function differently.
-void win32_graphics_create_texture(uptr graphics_pointer, u32* texture_buffer, u32 width, u32 height)
+void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buffer, u32 width, u32 height)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
-    ID3D11ShaderResourceView** texture_view = &graphics->texture_view;
+    ID3D11ShaderResourceView** texture_view = graphics->texture_view + graphics->texture_count++;
     
     D3D11_TEXTURE2D_DESC desc =
     {
