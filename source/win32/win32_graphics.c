@@ -57,7 +57,6 @@ static void create_device_and_context(Win32Graphics* graphics)
 {
     if (!graphics_device)
     {
-        
         D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0 };
         UINT flags = 0;
         HRESULT hresult = 0;
@@ -423,8 +422,8 @@ static void draw(Win32Graphics* graphics)
         ID3D11VertexShader* vertex_shader = graphics->vertex_shader;
         ID3D11PixelShader* pixel_shader = graphics->pixel_shader;
         ID3D11Buffer** vertex_buffer = &graphics->vertex_buffer;
+        ID3D11ShaderResourceView* texture_view = graphics->texture_view;
         D3D11_VIEWPORT viewport = { 0 };
-        // ID3D11ShaderResourceView* texture_view = graphics->texture_view;
 
         // NOTE: Output viewport covering all client area of window.
         viewport = (D3D11_VIEWPORT)
@@ -466,7 +465,7 @@ static void draw(Win32Graphics* graphics)
 
         // NOTE: Pixel Shader.
         ID3D11DeviceContext_PSSetSamplers(context, 0, 1, &sampler_state);
-        // ID3D11DeviceContext_PSSetShaderResources(context, 0, 1, &texture_view);
+        ID3D11DeviceContext_PSSetShaderResources(context, 0, 1, &texture_view);
         ID3D11DeviceContext_PSSetShader(context, pixel_shader, NULL, 0);
 
         // NOTE: Output Merger.
@@ -526,6 +525,54 @@ void win32_graphics_draw(uptr graphics_pointer)
 
     // NOTE: Draw everything.
     draw(graphics);
+}
+
+void win32_graphics_create_texture(uptr graphics_pointer)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    ID3D11Device* device = graphics->device;
+    ID3D11ShaderResourceView** texture_view = &graphics->texture_view;
+    static u32 pixel0 = 0x80000000;
+    static u32 pixel1 = 0xFFFFFFFF;
+    
+    // u32 pixels[] =
+    // {
+    //     0x80000000, 0xffffffff,
+    //     0xffffffff, 0x80000000,
+    // };
+
+    u32 pixels[] =
+    {
+        pixel0++, pixel1,
+        pixel1++, pixel0,
+    };
+
+    UINT width = 2;
+    UINT height = 2;
+
+    D3D11_TEXTURE2D_DESC desc =
+    {
+        .Width = width,
+        .Height = height,
+        .MipLevels = 1,
+        .ArraySize = 1,
+        .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+        .SampleDesc = { 1, 0 },
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_SHADER_RESOURCE,
+    };
+
+    D3D11_SUBRESOURCE_DATA data =
+    {
+        .pSysMem = pixels,
+        .SysMemPitch = width * sizeof(unsigned int),
+    };
+
+    ID3D11Texture2D* texture = 0;
+
+    ID3D11Device_CreateTexture2D(device, &desc, &data, &texture);
+    ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource*)texture, NULL, texture_view);
+    ID3D11Texture2D_Release(texture);
 }
 
 uptr win32_graphics_init(uptr handle_pointer)

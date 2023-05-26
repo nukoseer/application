@@ -34,6 +34,7 @@ void end_temporary_memory(TemporaryMemory temporary_memory)
     temporary_memory.memory_arena->used_size = temporary_memory.initial_size;
 }
 
+// TODO: Probably, we should also handle alignment in these functions.
 void* push_size(MemoryArena* memory_arena, memory_size size)
 {
     void* result = 0;

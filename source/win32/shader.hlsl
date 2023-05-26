@@ -24,7 +24,7 @@ struct PS_INPUT
 sampler sampler0 : register(s0);
 
 // NOTE: t0 = shader resource bound to slot 0.
-// Texture2D<float4> texture0 : register(t0);
+Texture2D<float4> texture0 : register(t0);
 
 PS_INPUT vs(VS_INPUT input)
 {
@@ -38,7 +38,6 @@ PS_INPUT vs(VS_INPUT input)
 
 float4 ps(PS_INPUT input) : SV_TARGET
 {
-    // float4 tex = texture0.Sample(sampler0, input.uv);
-    // return input.color * tex;
-    return input.color;
+    float4 tex = texture0.Sample(sampler0, input.uv);
+    return input.color * tex;
 }

@@ -64,6 +64,16 @@ void os_graphics_set_vertex_input_layouts(OSWindowHandle os_window_handle,
     }
 }
 
+void os_graphics_create_texture(OSWindowHandle os_window_handle)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+
+    if (graphics_handle)
+    {
+        win32_graphics_create_texture(graphics_handle);
+    }
+}
+
 void os_graphics_clear(OSWindowHandle os_window_handle, f32 r, f32 g, f32 b, f32 a)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);

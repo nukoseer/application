@@ -65,7 +65,9 @@ static void application(void)
         OSEventList event_list = os_window_get_events();
 
         os_time_sleep(16);
-
+        
+        os_graphics_create_texture(os_window_handle);
+    
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
