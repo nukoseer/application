@@ -531,7 +531,16 @@ void win32_graphics_draw(uptr graphics_pointer)
     draw(graphics);
 }
 
-// TODO: Probably we need to handle ID3D11Device_CreateShaderResourceView function differently.
+// TODO: We should be able to create (constant?) buffer.
+// void win32_graphics_create_buffer(uptr graphics_pointer)
+// {
+    
+// }
+
+// TODO: Probably we need to handle
+// ID3D11Device_CreateShaderResourceView function differently.
+// TODO: We should think about D3D11_USAGE_IMMUTABLE but probably it
+// is okay for textures.
 void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buffer, u32 width, u32 height)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
@@ -569,8 +578,6 @@ uptr win32_graphics_init(uptr handle_pointer)
     Win32Graphics* graphics = (Win32Graphics*)os_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
     
     HWND handle = (HWND)handle_pointer;
-    // ID3D11Device** device = &graphics.device;
-    // ID3D11ShaderResourceView** texture_view = &graphics.texture_view;
     // ID3D11Buffer* buffer = 0;
 
     graphics->handle = handle;
@@ -589,42 +596,6 @@ uptr win32_graphics_init(uptr handle_pointer)
     //         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
     //     };
     //     ID3D11Device_CreateBuffer(*device, &desc, NULL, &buffer);
-    // }
-
-    // {
-    //     // NOTE: Checkerboard texture, with 50% transparency on black colors.
-    //     u32 pixels[] =
-    //     {
-    //         0x80000000, 0xffffffff,
-    //         0xffffffff, 0x80000000,
-    //     };
-
-    //     UINT width = 2;
-    //     UINT height = 2;
-
-    //     D3D11_TEXTURE2D_DESC desc =
-    //     {
-    //         .Width = width,
-    //         .Height = height,
-    //         .MipLevels = 1,
-    //         .ArraySize = 1,
-    //         .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-    //         .SampleDesc = { 1, 0 },
-    //         .Usage = D3D11_USAGE_IMMUTABLE,
-    //         .BindFlags = D3D11_BIND_SHADER_RESOURCE,
-    //     };
-
-    //     D3D11_SUBRESOURCE_DATA data =
-    //     {
-    //         .pSysMem = pixels,
-    //         .SysMemPitch = width * sizeof(unsigned int),
-    //     };
-
-    //     ID3D11Texture2D* texture = 0;
-
-    //     ID3D11Device_CreateTexture2D(*device, &desc, &data, &texture);
-    //     ID3D11Device_CreateShaderResourceView(*device, (ID3D11Resource*)texture, NULL, texture_view);
-    //     ID3D11Texture2D_Release(texture);
     // }
 
     create_sampler_state(graphics);
