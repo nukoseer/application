@@ -59,15 +59,23 @@ static void application(void)
                                              sizeof(Vertex), ARRAY_COUNT(input_layout_names));
     }
 
+    {
+        u32 texture_buffer[] =
+        {
+            0x80000000, 0xFFFFFFFF,
+            0xFFFFFFFF, 0x80000000,
+        };
+
+        os_graphics_create_texture(os_window_handle, texture_buffer, 2, 2);
+    }
+
     while (!os_should_quit())
     {
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
         OSEventList event_list = os_window_get_events();
 
         os_time_sleep(16);
-        
-        os_graphics_create_texture(os_window_handle);
-    
+
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)

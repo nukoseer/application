@@ -527,29 +527,13 @@ void win32_graphics_draw(uptr graphics_pointer)
     draw(graphics);
 }
 
-void win32_graphics_create_texture(uptr graphics_pointer)
+// TODO: Probably we need to handle ID3D11Device_CreateShaderResourceView function differently.
+void win32_graphics_create_texture(uptr graphics_pointer, u32* texture_buffer, u32 width, u32 height)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
     ID3D11ShaderResourceView** texture_view = &graphics->texture_view;
-    static u32 pixel0 = 0x80000000;
-    static u32 pixel1 = 0xFFFFFFFF;
     
-    // u32 pixels[] =
-    // {
-    //     0x80000000, 0xffffffff,
-    //     0xffffffff, 0x80000000,
-    // };
-
-    u32 pixels[] =
-    {
-        pixel0++, pixel1,
-        pixel1++, pixel0,
-    };
-
-    UINT width = 2;
-    UINT height = 2;
-
     D3D11_TEXTURE2D_DESC desc =
     {
         .Width = width,
@@ -564,8 +548,8 @@ void win32_graphics_create_texture(uptr graphics_pointer)
 
     D3D11_SUBRESOURCE_DATA data =
     {
-        .pSysMem = pixels,
-        .SysMemPitch = width * sizeof(unsigned int),
+        .pSysMem = texture_buffer,
+        .SysMemPitch = width * sizeof(u32),
     };
 
     ID3D11Texture2D* texture = 0;
