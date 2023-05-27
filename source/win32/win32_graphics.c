@@ -16,12 +16,6 @@
 #include "win32_window.h"
 #include "win32_graphics.h"
 
-extern const BYTE d3d11_vertex_shader[];
-extern const BYTE d3d11_pixel_shader[];
-
-#include "d3d11_vertex_shader.h"
-#include "d3d11_pixel_shader.h"
-
 // TODO: We should check the alignment and padding of this struct.
 typedef struct Win32Graphics
 {
@@ -196,65 +190,6 @@ static void set_vertex_input_layout(Win32Graphics* graphics, const char* name, u
     graphics->input_descs[graphics->input_desc_count++] = (D3D11_INPUT_ELEMENT_DESC){ name, 0, dxgi_format, 0, offset, D3D11_INPUT_PER_VERTEX_DATA, 0 };
 }
 
-static void create_shaders(Win32Graphics* graphics)
-{
-    ID3D11Device* device = graphics->device;
-    // NOTE: Vertex & pixel shaders for drawing triangle.
-    ID3D11VertexShader** vertex_shader = &graphics->vertex_shader;
-    ID3D11PixelShader** pixel_shader = &graphics->pixel_shader;
-    // NOTE: These must match vertex shader input layout (VS_INPUT in vertex shader source below).
-    // D3D11_INPUT_ELEMENT_DESC descs[3] = { 0 };
-
-
-    // {
-    //     Vertex data[] =
-    //     {
-    //         { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
-    //         { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    //         { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
-    //     };
-
-    //     D3D11_BUFFER_DESC desc =
-    //     {
-    //         .ByteWidth = sizeof(data),
-    //         .Usage = D3D11_USAGE_IMMUTABLE,
-    //         .BindFlags = D3D11_BIND_VERTEX_BUFFER,
-    //     };
-
-    //     D3D11_SUBRESOURCE_DATA initial_data = { .pSysMem = data };
-
-    //     ID3D11Device_CreateBuffer(device, &desc, &initial_data, &vertex_buffer);
-    // }
-
-    // Vertex data[] =
-    // {
-    //     { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
-    //     { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    //     { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
-    // };
-
-    create_vertex_buffer(graphics);
-
-    // descs[0] = (D3D11_INPUT_ELEMENT_DESC){ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(Vertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 };
-    // descs[1] = (D3D11_INPUT_ELEMENT_DESC){ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, OFFSETOF(Vertex, uv),       D3D11_INPUT_PER_VERTEX_DATA, 0 };
-    // descs[2] = (D3D11_INPUT_ELEMENT_DESC){ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, OFFSETOF(Vertex, color),    D3D11_INPUT_PER_VERTEX_DATA, 0 };
-
-    // NOTE: Alternative to hlsl compilation at runtime is to precompile shaders offline
-    // it improves startup time - no need to parse hlsl files at runtime!
-    // and it allows to remove runtime dependency on d3dcompiler dll file
-    // a) save shader source code into "shader.hlsl" file
-    // b) run hlsl compiler to compile shader, these run compilation with optimizations and without debug info:
-    // fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_vertex_shader.h /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
-    // fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_pixel_shader.h /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
-    // You can also use "/Fo d3d11_*shader.bin" argument to save compiled shader as binary file to store with your assets
-    // then provide binary data for Create*Shader functions below without need to include shader bytes in C.
-
-    {
-        ID3D11Device_CreateVertexShader(device, d3d11_vertex_shader, sizeof(d3d11_vertex_shader), NULL, vertex_shader);
-        ID3D11Device_CreatePixelShader(device, d3d11_pixel_shader, sizeof(d3d11_pixel_shader), NULL, pixel_shader);
-    }
-}
-
 static void create_sampler_state(Win32Graphics* graphics)
 {
     ID3D11Device* device = graphics->device;
@@ -407,8 +342,8 @@ static void resize_swap_chain(Win32Graphics* graphics)
 static void clear_screen(Win32Graphics* graphics)
 {
     ID3D11DeviceContext_ClearRenderTargetView(graphics->context, graphics->render_target_view, graphics->clear_color);
-    ID3D11DeviceContext_ClearDepthStencilView(graphics->context, graphics->depth_stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);    
-}    
+    ID3D11DeviceContext_ClearDepthStencilView(graphics->context, graphics->depth_stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+}
 
 static void draw(Win32Graphics* graphics)
 {
@@ -481,10 +416,11 @@ static void draw(Win32Graphics* graphics)
         ID3D11DeviceContext_Draw(context, graphics->vertex_buffer_size / graphics->input_stride, 0);
         IDXGISwapChain1_Present(swap_chain, 0, 0);
     }
-    
+
 }
 
-void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const char** names, u32* offsets, u32*formats, u32 stride, u32 layout_count)
+void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
+                                             const char** names, u32* offsets, u32* formats, u32 stride, u32 layout_count)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     // NOTE: Input layout for vertex input.
@@ -499,7 +435,7 @@ void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const char**
     graphics->input_stride = stride;
 
     ID3D11Device_CreateInputLayout(graphics->device, graphics->input_descs, graphics->input_desc_count,
-                                   d3d11_vertex_shader, sizeof(d3d11_vertex_shader), input_layout);
+                                   vertex_shader_buffer, vertex_shader_buffer_size, input_layout);
 }
 
 void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, void* vertex_buffer_data, u32 vertex_buffer_size)
@@ -534,7 +470,7 @@ void win32_graphics_draw(uptr graphics_pointer)
 // TODO: We should be able to create (constant?) buffer.
 // void win32_graphics_create_buffer(uptr graphics_pointer)
 // {
-    
+
 // }
 
 // TODO: Probably we need to handle
@@ -546,7 +482,7 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
     ID3D11ShaderResourceView** texture_view = graphics->texture_view + graphics->texture_count++;
-    
+
     D3D11_TEXTURE2D_DESC desc =
     {
         .Width = width,
@@ -572,19 +508,50 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
     ID3D11Texture2D_Release(texture);
 }
 
+void win32_graphics_create_vertex_shader(uptr graphics_pointer, u8* shader_buffer, u32 shader_buffer_size)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    ID3D11Device* device = graphics->device;
+    ID3D11VertexShader** vertex_shader = &graphics->vertex_shader;
+
+    create_vertex_buffer(graphics);
+
+    // NOTE: Alternative to hlsl compilation at runtime is to precompile shaders offline
+    // it improves startup time - no need to parse hlsl files at runtime!
+    // and it allows to remove runtime dependency on d3dcompiler dll file
+    // a) save shader source code into "shader.hlsl" file
+    // b) run hlsl compiler to compile shader, these run compilation with optimizations and without debug info:
+    // fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_vertex_shader.h /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+    // fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_pixel_shader.h /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+    // You can also use "/Fo d3d11_*shader.bin" argument to save compiled shader as binary file to store with your assets
+    // then provide binary data for Create*Shader functions below without need to include shader bytes in C.
+
+    ID3D11Device_CreateVertexShader(device, shader_buffer, shader_buffer_size,
+                                    NULL, vertex_shader);
+}
+
+void win32_graphics_create_pixel_shader(uptr graphics_pointer, u8* shader_buffer, u32 shader_buffer_size)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    ID3D11Device* device = graphics->device;
+    ID3D11PixelShader** pixel_shader = &graphics->pixel_shader;
+
+    ID3D11Device_CreatePixelShader(device, shader_buffer, shader_buffer_size,
+                                   NULL, pixel_shader);
+}
+
 uptr win32_graphics_init(uptr handle_pointer)
 {
     // TODO: Do we need different way to allocate? Arena etc.
     Win32Graphics* graphics = (Win32Graphics*)os_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
-    
+
     HWND handle = (HWND)handle_pointer;
     // ID3D11Buffer* buffer = 0;
 
     graphics->handle = handle;
-    
+
     create_device_and_context(graphics);
     create_swap_chain(graphics);
-    create_shaders(graphics);
 
     // {
     //     D3D11_BUFFER_DESC desc =

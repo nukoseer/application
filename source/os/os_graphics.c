@@ -5,8 +5,11 @@
 #include "os_graphics.h"
 
 typedef void OSGraphicsSetVertexBufferData(uptr graphics, void* vertex_buffer_data, u32 vertex_buffer_size);
-typedef void OSGraphicsSetVertexInputLayouts(uptr graphics, const char** names, u32* offsets, u32* formats, u32 stride, u32 layout_count);
+typedef void OSGraphicsSetVertexInputLayouts(uptr graphics, u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
+                                             const char** names, u32* offsets, u32* formats, u32 stride, u32 layout_count);
 typedef void OSGraphicsCreateTexture(uptr graphics, const u32* texture_buffer, u32 width, u32 height);
+typedef void OSGraphicsCreateVertexShader(uptr graphics_pointer, u8* shader_buffer, u32 shader_buffer_size);
+typedef void OSGraphicsCreatePixelShader(uptr graphics_pointer, u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsClear(uptr graphics, f32 r, f32 g, f32 b, f32 a);
 typedef void OSGraphicsDraw(uptr graphics);
 
@@ -15,6 +18,8 @@ typedef struct OSGraphics
     OSGraphicsSetVertexBufferData* set_vertex_buffer_data;
     OSGraphicsSetVertexInputLayouts* set_vertex_input_layouts;
     OSGraphicsCreateTexture* create_texture;
+    OSGraphicsCreateVertexShader* create_vertex_shader;
+    OSGraphicsCreatePixelShader* create_pixel_shader;
     OSGraphicsClear* clear;
     OSGraphicsDraw* draw;
 } OSGraphics;
@@ -28,6 +33,8 @@ static OSGraphics os_graphics =
     .set_vertex_buffer_data = &win32_graphics_set_vertex_buffer_data,
     .set_vertex_input_layouts = &win32_graphics_set_vertex_input_layouts,
     .create_texture = &win32_graphics_create_texture,
+    .create_vertex_shader = &win32_graphics_create_vertex_shader,
+    .create_pixel_shader = &win32_graphics_create_pixel_shader,
     .clear = &win32_graphics_clear,
     .draw = &win32_graphics_draw,
 };
@@ -55,7 +62,7 @@ void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, void* v
     }
 }
 
-void os_graphics_set_vertex_input_layouts(OSWindowHandle os_window_handle,
+void os_graphics_set_vertex_input_layouts(OSWindowHandle os_window_handle, u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                           const char** names, u32* offsets, u32* formats, u32 stride, u32 layout_count)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
@@ -63,7 +70,8 @@ void os_graphics_set_vertex_input_layouts(OSWindowHandle os_window_handle,
     if (graphics_handle)
     {
         ASSERT(os_graphics.set_vertex_input_layouts);
-        os_graphics.set_vertex_input_layouts(graphics_handle, names, offsets, formats, stride, layout_count);   
+        os_graphics.set_vertex_input_layouts(graphics_handle, vertex_shader_buffer, vertex_shader_buffer_size,
+                                             names, offsets, formats, stride, layout_count);   
     }
 }
 
@@ -75,6 +83,28 @@ void os_graphics_create_texture(OSWindowHandle os_window_handle, const u32* text
     {
         ASSERT(os_graphics.create_texture);
         os_graphics.create_texture(graphics_handle, texture_buffer, width, height);
+    }
+}
+
+void os_graphics_create_vertex_shader(OSWindowHandle os_window_handle, u8* shader_buffer, u32 shader_buffer_size)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+    
+    if (graphics_handle)
+    {
+        ASSERT(os_graphics.create_vertex_shader);
+        os_graphics.create_vertex_shader(graphics_handle, shader_buffer, shader_buffer_size);
+    }
+}
+
+void os_graphics_create_pixel_shader(OSWindowHandle os_window_handle, u8* shader_buffer, u32 shader_buffer_size)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+
+    if (graphics_handle)
+    {
+        ASSERT(os_graphics.create_pixel_shader);
+        os_graphics.create_pixel_shader(graphics_handle, shader_buffer, shader_buffer_size);
     }
 }
 

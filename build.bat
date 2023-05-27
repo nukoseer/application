@@ -66,9 +66,9 @@ set win32_include=/I..\source\win32\include\
 set os_include=/I..\source\os\include\
 set all_include=%common_include% %win32_include% %os_include%
 
-fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_vertex_shader.h /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fo d3d11_vertex_shader.o /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
 
-fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_pixel_shader.h /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fo d3d11_pixel_shader.o /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
 
 %compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %os_include% %test_include% %common_include% ..\source\common\mem.c ..\source\test\test.c
 
