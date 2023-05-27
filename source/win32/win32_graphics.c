@@ -419,8 +419,8 @@ static void draw(Win32Graphics* graphics)
 
 }
 
-void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
-                                             const char** names, u32* offsets, u32* formats, u32 stride, u32 layout_count)
+void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
+                                             const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     // NOTE: Input layout for vertex input.
@@ -508,7 +508,7 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
     ID3D11Texture2D_Release(texture);
 }
 
-void win32_graphics_create_vertex_shader(uptr graphics_pointer, u8* shader_buffer, u32 shader_buffer_size)
+void win32_graphics_create_vertex_shader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
@@ -530,7 +530,7 @@ void win32_graphics_create_vertex_shader(uptr graphics_pointer, u8* shader_buffe
                                     NULL, vertex_shader);
 }
 
-void win32_graphics_create_pixel_shader(uptr graphics_pointer, u8* shader_buffer, u32 shader_buffer_size)
+void win32_graphics_create_pixel_shader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
