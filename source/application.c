@@ -2,58 +2,16 @@
 #include "test.h"
 #include "os.h"
 
-typedef struct Vertex
+static f32 vertices[] =
 {
-    f32 position[2];
-    f32 uv[2];
-    f32 color[3];
-} Vertex;
-
-static Vertex vertices[] =
-{
-    { { -0.00f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
-    { { +0.75f, -0.50f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    { { -0.75f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
-
-    { { -0.75f, +0.75f }, { 25.0f, 50.0f }, { 1, 0, 0 } },
-    { { +0.75f, +0.75f }, {  0.0f,  0.0f }, { 0, 1, 0 } },
-    { { -0.00f, -0.50f }, { 50.0f,  0.0f }, { 0, 0, 1 } },
+     -0.00f, +0.75f,     1.0f, 0.0f, 0.0f,     25.0f, 50.0f,
+     +0.75f, -0.50f,     0.0f, 1.0f, 0.0f,      0.0f,  0.0f,
+     -0.75f, -0.50f,     0.0f, 0.0f, 1.0f,     50.0f,  0.0f,
+                                              
+     -0.75f, +0.75f,     1.0f, 0.0f, 0.0f,     25.0f, 50.0f,
+     +0.75f, +0.75f,     0.0f, 1.0f, 0.0f,      0.0f,  0.0f,
+     -0.00f, -0.50f,     0.0f, 0.0f, 1.0f,     50.0f,  0.0f,
 };
-
-static void init_shaders(OSWindowHandle os_window_handle,
-                         const char* vertex_shader_file_name,
-                         const char* pixel_shader_file_name)
-{
-    const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
-    u32 input_layout_offsets[] = { OFFSETOF(Vertex, position), OFFSETOF(Vertex, uv), OFFSETOF(Vertex, color) };
-    u32 input_layout_formats[] = { 2, 2, 3 };
-    OSIOFileHandle vertex_shader_file = os_io_file_open(vertex_shader_file_name, OS_IO_FILE_ACCESS_MODE_READ);
-    u32 vertex_shader_buffer_size = os_io_file_size(vertex_shader_file);
-    u8* vertex_shader_buffer = os_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
-    OSIOFileHandle pixel_shader_file = os_io_file_open(pixel_shader_file_name, OS_IO_FILE_ACCESS_MODE_READ);
-    u32 pixel_shader_buffer_size = os_io_file_size(pixel_shader_file);
-    u8* pixel_shader_buffer = os_memory_heap_allocate(pixel_shader_buffer_size, FALSE);
-
-    // TODO: Check size of read bytes?
-    os_io_file_read(vertex_shader_file, (char*)vertex_shader_buffer, vertex_shader_buffer_size);
-    os_io_file_read(pixel_shader_file, (char*)pixel_shader_buffer, pixel_shader_buffer_size);
-
-    os_graphics_create_vertex_shader(os_window_handle, vertex_shader_buffer, vertex_shader_buffer_size);
-    os_graphics_create_pixel_shader(os_window_handle, pixel_shader_buffer, pixel_shader_buffer_size);
-
-    os_graphics_set_vertex_input_layouts(os_window_handle,
-                                         vertex_shader_buffer,
-                                         vertex_shader_buffer_size,
-                                         input_layout_names,
-                                         input_layout_offsets,
-                                         input_layout_formats,
-                                         sizeof(Vertex), ARRAY_COUNT(input_layout_names));
-
-    os_memory_heap_release(vertex_shader_buffer);
-    os_memory_heap_release(pixel_shader_buffer);
-    os_io_file_close(vertex_shader_file);
-    os_io_file_close(pixel_shader_file);
-}
 
 static void application(void)
 {
@@ -73,11 +31,8 @@ static void application(void)
 
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
 
-    init_shaders(os_window_handle, "d3d11_vertex_shader.o", "d3d11_pixel_shader.o");
-    init_shaders(os_window_handle2, "d3d11_vertex_shader.o", "d3d11_pixel_shader.o");
-
     os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
-    os_graphics_set_vertex_buffer_data(os_window_handle2, vertices + 3, sizeof(vertices) / 2);
+    os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
 
     {
         u32 texture_buffer0[] =
@@ -91,7 +46,9 @@ static void application(void)
             0xFFFFFFFF, 0xFFFFFFFF,
             0xFFFFFFFF, 0xFFFFFFFF,
         };
-        
+
+        // TODO: Maybe, we should not associate textures with windows,
+        // they are not directly related with windows but shaders?
         os_graphics_create_texture(os_window_handle, texture_buffer0, 2, 2);
         os_graphics_create_texture(os_window_handle, texture_buffer1, 2, 2);
     }

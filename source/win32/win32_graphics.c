@@ -12,9 +12,14 @@
 
 #include "types.h"
 #include "utils.h"
-#include "mem.h"
+#include "win32_io.h"
+#include "win32_memory.h"
 #include "win32_window.h"
 #include "win32_graphics.h"
+
+// TODO: MOST OF THE FUNCTIONS IN THIS FILE DO NOT RETURN ANYTHING.
+// IS IT A GOOD IDEA TO LEAVE THEM AS THEY ARE OR SHOULD THEY RETURN
+// SOMETHING FOR ERROR CHECKING/ASSERTING?
 
 // TODO: We should check the alignment and padding of this struct.
 typedef struct Win32Graphics
@@ -416,8 +421,44 @@ static void draw(Win32Graphics* graphics)
         ID3D11DeviceContext_Draw(context, graphics->vertex_buffer_size / graphics->input_stride, 0);
         IDXGISwapChain1_Present(swap_chain, 0, 0);
     }
-
 }
+
+// TODO: Our default shader? Not sure about TEXCOORD, uv.
+static void graphics_init(Win32Graphics* graphics)
+{
+    const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
+    const char* input_layout_names[] = { "POSITION", "COLOR", "TEXCOORD" };
+    struct Vertex { f32 position[2]; f32 color[3]; f32 uv[2]; };
+    u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, color), OFFSETOF(struct Vertex, uv) };
+    u32 input_layout_formats[] = { 2, 3, 2 };
+    uptr vertex_shader_file = win32_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
+    u32 vertex_shader_buffer_size = win32_io_file_size(vertex_shader_file);
+    u8* vertex_shader_buffer = win32_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
+    uptr pixel_shader_file = win32_io_file_open(shader_file_names[1], 1); // NOTE: Read mode
+    u32 pixel_shader_buffer_size = win32_io_file_size(pixel_shader_file);
+    u8* pixel_shader_buffer = win32_memory_heap_allocate(pixel_shader_buffer_size, FALSE);
+
+    // TODO: Check size of read bytes?
+    win32_io_file_read(vertex_shader_file, (char*)vertex_shader_buffer, vertex_shader_buffer_size);
+    win32_io_file_read(pixel_shader_file, (char*)pixel_shader_buffer, pixel_shader_buffer_size);
+
+    win32_graphics_create_vertex_shader((uptr)graphics, vertex_shader_buffer, vertex_shader_buffer_size);
+    win32_graphics_create_pixel_shader((uptr)graphics, pixel_shader_buffer, pixel_shader_buffer_size);
+
+    win32_graphics_set_vertex_input_layouts((uptr)graphics,
+                                            vertex_shader_buffer,
+                                            vertex_shader_buffer_size,
+                                            input_layout_names,
+                                            input_layout_offsets,
+                                            input_layout_formats,
+                                            sizeof(struct Vertex), ARRAY_COUNT(input_layout_names));
+
+    win32_memory_heap_release(vertex_shader_buffer);
+    win32_memory_heap_release(pixel_shader_buffer);
+    win32_io_file_close(vertex_shader_file);
+    win32_io_file_close(pixel_shader_file);
+}
+
 
 void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                              const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
@@ -543,8 +584,7 @@ void win32_graphics_create_pixel_shader(uptr graphics_pointer, const u8* shader_
 uptr win32_graphics_init(uptr handle_pointer)
 {
     // TODO: Do we need different way to allocate? Arena etc.
-    Win32Graphics* graphics = (Win32Graphics*)os_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
-
+    Win32Graphics* graphics = (Win32Graphics*)win32_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
     HWND handle = (HWND)handle_pointer;
     // ID3D11Buffer* buffer = 0;
 
@@ -569,7 +609,8 @@ uptr win32_graphics_init(uptr handle_pointer)
     create_blend_state(graphics);
     create_rasterizer_state(graphics);
     create_depth_state(graphics);
-
+    graphics_init(graphics);
+    
     return (uptr)graphics;
 }
 

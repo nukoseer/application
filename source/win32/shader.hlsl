@@ -2,16 +2,16 @@
 struct VS_INPUT
 {
     float2 pos   : POSITION;
-    float2 uv    : TEXCOORD;
     float3 color : COLOR;
+    float2 uv    : TEXCOORD;
 };
 
 // NOTE: These names do not matter, except SV_... ones.
 struct PS_INPUT
 {
     float4 pos   : SV_POSITION;
-    float2 uv    : TEXCOORD;
     float4 color : COLOR;
+    float2 uv    : TEXCOORD;
 };
 
 // // NOTE: b0 = constant buffer bound to slot 0.
