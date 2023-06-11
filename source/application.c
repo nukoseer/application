@@ -34,6 +34,9 @@ static void application(void)
     os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
     os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
 
+    // TODO: We should be able to pass arguments with screen coordinates.
+    // os_graphics_draw_rectangle(os_window_handle, -0.75f, -0.50f, 1.5f, 1.25f, 1.0f, 0.0f, 0.0f);
+
     {
         u32 texture_buffer0[] =
         {

@@ -4,14 +4,15 @@
 #include "os_window.h"
 #include "os_graphics.h"
 
-typedef void OSGraphicsSetVertexBufferData(uptr graphics, void* vertex_buffer_data, u32 vertex_buffer_size);
-typedef void OSGraphicsSetVertexInputLayouts(uptr graphics, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
+typedef void OSGraphicsSetVertexBufferData(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size);
+typedef void OSGraphicsSetVertexInputLayouts(uptr graphics_pointer, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                              const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count);
-typedef void OSGraphicsCreateTexture(uptr graphics, const u32* texture_buffer, u32 width, u32 height);
+typedef void OSGraphicsCreateTexture(uptr graphics_pointer, const u32* texture_buffer, u32 width, u32 height);
 typedef void OSGraphicsCreateVertexShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsCreatePixelShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
-typedef void OSGraphicsClear(uptr graphics, f32 r, f32 g, f32 b, f32 a);
-typedef void OSGraphicsDraw(uptr graphics);
+typedef void OSGraphicsClear(uptr graphics_pointer, f32 r, f32 g, f32 b, f32 a);
+typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, f32 x, f32 y, f32 width, f32 height, f32 r, f32 g, f32 b);
+typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphics
 {
@@ -21,6 +22,7 @@ typedef struct OSGraphics
     OSGraphicsCreateVertexShader* create_vertex_shader;
     OSGraphicsCreatePixelShader* create_pixel_shader;
     OSGraphicsClear* clear;
+    OSGraphicsDrawRectangle* draw_rectangle;
     OSGraphicsDraw* draw;
 } OSGraphics;
 
@@ -36,6 +38,7 @@ static OSGraphics os_graphics =
     .create_vertex_shader = &win32_graphics_create_vertex_shader,
     .create_pixel_shader = &win32_graphics_create_pixel_shader,
     .clear = &win32_graphics_clear,
+    .draw_rectangle = &win32_graphics_draw_rectangle,
     .draw = &win32_graphics_draw,
 };
 
@@ -118,6 +121,17 @@ void os_graphics_clear(OSWindowHandle os_window_handle, f32 r, f32 g, f32 b, f32
         ASSERT(os_graphics.clear);
         os_graphics.clear(graphics_handle, r, g, b, a);
     }
+}
+
+void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, f32 x, f32 y, f32 width, f32 height, f32 r, f32 g, f32 b)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+
+    if (graphics_handle)
+    {
+        ASSERT(os_graphics.draw_rectangle);
+        os_graphics.draw_rectangle(graphics_handle, x, y, width, height, r, g, b);
+    }    
 }
 
 void os_graphics_draw(OSWindowHandle os_window_handle)

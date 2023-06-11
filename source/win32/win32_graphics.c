@@ -457,6 +457,10 @@ static void graphics_init(Win32Graphics* graphics)
     win32_memory_heap_release(pixel_shader_buffer);
     win32_io_file_close(vertex_shader_file);
     win32_io_file_close(pixel_shader_file);
+
+    // TODO: 1MB?
+    graphics->vertex_buffer_data = win32_memory_heap_allocate(1024 * 1024, TRUE);
+    graphics->vertex_buffer_size = 0;
 }
 
 
@@ -479,11 +483,11 @@ void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const u8* ve
                                    vertex_shader_buffer, vertex_shader_buffer_size, input_layout);
 }
 
-void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, void* vertex_buffer_data, u32 vertex_buffer_size)
+void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
 
-    graphics->vertex_buffer_data = vertex_buffer_data;
+    memcpy(graphics->vertex_buffer_data, vertex_buffer_data, vertex_buffer_size);
     graphics->vertex_buffer_size = vertex_buffer_size;
 }
 
@@ -495,6 +499,23 @@ void win32_graphics_clear(uptr graphics_pointer, f32 r, f32 g, f32 b, f32 a)
     graphics->clear_color[1] = g;
     graphics->clear_color[2] = b;
     graphics->clear_color[3] = a;
+}
+
+void win32_graphics_draw_rectangle(uptr graphics_pointer, f32 x, f32 y, f32 width, f32 height, f32 r, f32 g, f32 b)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    const f32 rectangle_buffer[] = 
+    {
+        x,         y,          r, g, b, 1.0f, 1.0f,
+        x + width, y,          r, g, b, 1.0f, 1.0f,
+        x,         y + height, r, g, b, 1.0f, 1.0f,
+        x,         y + height, r, g, b, 1.0f, 1.0f,
+        x + width, y,          r, g, b, 1.0f, 1.0f,
+        x + width, y + height, r, g, b, 1.0f, 1.0f,
+    };
+
+    memcpy(graphics->vertex_buffer_data, rectangle_buffer, sizeof(rectangle_buffer));
+    graphics->vertex_buffer_size += sizeof(rectangle_buffer);
 }
 
 void win32_graphics_draw(uptr graphics_pointer)
