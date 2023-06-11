@@ -1,17 +1,17 @@
-## OS layer for building application
-It is a little hobby project. I implement new things when I feel I need them. I also want to port it to Linux but for now it only supports WIN32.
+# Application
+Platform abstraction for building graphics applications. (Windows only for now.)
 
-### List of features
+## Features
 - Window operations
   - Create/close window
   - Multiple windows support
   - Window input events
   - Borderless window option
-  - ~~Draw to window~~
+  - Draw to window
 - I/O operations
   - Write to console
   - Open/create file
-  - ~~Other primitive file operations~~
+  - Read/write to file
 - Memory operations
   - Reserve/commit/decommit from virtual address space
   - Heap allocate/release
@@ -21,7 +21,7 @@ It is a little hobby project. I implement new things when I feel I need them. I 
   - Sleep
   - Tick/frequency
   - ~~Timer support~~
-- Threading
+- Threads
   - Create/suspend thread
   - Helper functions for waiting threads
 - Atomics
@@ -32,9 +32,13 @@ It is a little hobby project. I implement new things when I feel I need them. I 
   - 5 different log level
   - Log filter
   - ~~Callback for logs~~
-- Graphics (D3D11 - very early)
+- Graphics (D3D11)
+  - Vertex shader
+  - Pixel shader
+  - Textures
+  - Default pipeline for putting pixels to windows
   - ~~Compile shaders~~
-  - ~~Vertex buffer/index buffer support~~
-  - ~~Default pipeline for putting pixels to windows~~
 
-<sub>~~line~~ means in-progress</sub>
+## Media
+![](media/windows-little.png)
+![](media/windows.png)
