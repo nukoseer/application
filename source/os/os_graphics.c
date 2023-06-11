@@ -54,7 +54,7 @@ static uptr get_graphics_handle_from_window(OSWindowHandle os_window_handle)
     return graphics_handle;
 }
 
-void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, void* vertices, u32 vertex_count)
+void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertices, u32 vertex_count)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
