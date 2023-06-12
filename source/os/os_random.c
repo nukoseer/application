@@ -3,7 +3,8 @@
 
 #include "os_random.h"
 
-#define MAX_RANDOM_NUMBER 0xFFFFFFFF
+#define RANDOM_EXPONENT_MASK     0x3F800000U // Exponent: 127    -> 0011 1111 1000 0000 0000 0000 0000 0000
+#define RANDOM_MANTISSA_MASK     0x007FFFFFU // Mantissa: 23-bit -> 0000 0000 0111 1111 1111 1111 1111 1111
 
 static const u32 os_random_number_sequence[] =
 {
@@ -149,6 +150,7 @@ static u32 next_random_seed(OSRandomHandle os_random_handle)
     return seed;
 }
 
+// TODO: We should check distribution of numbers to see if we have any calculation bug.
 static u32 xorwow_random(u32 seed)
 {
     static u32 y = 362436069;
@@ -168,15 +170,14 @@ static u32 xorwow_random(u32 seed)
 
     return d + v;
 }
-// 7    F    8    0    0    0    0    0
-// 0111 1111 1000 0000 0000 0000 0000 0000
-// TODO: Find the correct way to calculate random f32.
+
+// NOTE: 23-bit (mantissa size) randomness for f32.
 f32 os_random_unilateral(OSRandomHandle os_random_handle)
 {
-    u32 mantissa_mask = 0x3F800000U;
-    f32 result = (f32)(mantissa_mask | (xorwow_random(next_random_seed(os_random_handle)) & 0x3FFFFFFFU));
+    u32 xorwow = xorwow_random(next_random_seed(os_random_handle));
+    u32 result = (xorwow & RANDOM_MANTISSA_MASK) | RANDOM_EXPONENT_MASK; // 0011 1111 1xxx xxxx xxxx xxxx xxxx
 
-    return result - 1.0f;
+    return *(f32*)&result - 1.0f; // [1.0f, 2.0f) -> [0.0f, 1.0f)
 }
 
 u32 os_random_next_u32(OSRandomHandle os_random_handle)

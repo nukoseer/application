@@ -39,7 +39,7 @@ static void application(void)
     // os_graphics_draw_rectangle(os_window_handle, -0.75f, -0.50f, 1.5f, 1.25f, 1.0f, 0.0f, 0.0f);
 
     os_random_handle = os_random_init(22);
-    OS_LOG_DEBUG("os_random_unilateral: %.2f", os_random_unilateral(os_random_handle));
+    OS_LOG_DEBUG("os_random_unilateral: %f", os_random_unilateral(os_random_handle));
     
     {
         u32 texture_buffer0[] =
