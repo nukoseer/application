@@ -6,6 +6,7 @@ typedef struct OSRandomHandle
 } OSRandomHandle;
 
 f32 os_random_unilateral(OSRandomHandle os_random_handle);
+f32 os_random_bilateral(OSRandomHandle os_random_handle);
 u32 os_random_next_u32(OSRandomHandle os_random_handle);
 OSRandomHandle os_random_init(u32 value);
 

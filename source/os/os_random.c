@@ -172,12 +172,26 @@ static u32 xorwow_random(u32 seed)
 }
 
 // NOTE: 23-bit (mantissa size) randomness for f32.
-f32 os_random_unilateral(OSRandomHandle os_random_handle)
+static f32 xorwow_random_f32(u32 seed)
 {
-    u32 xorwow = xorwow_random(next_random_seed(os_random_handle));
+    u32 xorwow = xorwow_random(seed);
     u32 result = (xorwow & RANDOM_MANTISSA_MASK) | RANDOM_EXPONENT_MASK; // 0011 1111 1xxx xxxx xxxx xxxx xxxx
 
-    return *(f32*)&result - 1.0f; // [1.0f, 2.0f) -> [0.0f, 1.0f)
+    return *(f32*)&result; // [1.0f, 2.0f)
+}
+
+f32 os_random_unilateral(OSRandomHandle os_random_handle)
+{
+    f32 result = xorwow_random_f32(next_random_seed(os_random_handle)) - 1.0f; // [1.0f, 2.0f) -> [0.0f, 1.0f)
+
+    return result;
+}
+
+f32 os_random_bilateral(OSRandomHandle os_random_handle)
+{
+    f32 result = 2.0f * os_random_unilateral(os_random_handle) -1.0f; // [0.0f, 1.0f) -> [-1.0f, 1.0f)
+
+    return result;
 }
 
 u32 os_random_next_u32(OSRandomHandle os_random_handle)
