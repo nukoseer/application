@@ -27,6 +27,7 @@ typedef struct Win32Graphics
     HWND handle;
     ID3D11Device* device;
     ID3D11DeviceContext* context;
+    ID3D11Buffer* screen_buffer;
     // TODO: What should we do with this?
     ID3D11ShaderResourceView* texture_view[2];
     u64 texture_count;
@@ -106,7 +107,24 @@ static void create_swap_chain(Win32Graphics* graphics)
     HWND handle = graphics->handle;
     IDXGIFactory2* factory = 0;
     DXGI_SWAP_CHAIN_DESC1 desc = { 0 };
+    D3D11_BUFFER_DESC screen_desc = { 0 };
+    ID3D11Buffer** screen_buffer = &graphics->screen_buffer;
     HRESULT hresult = 0;
+    i32 x, y, width, height = 0;
+
+    win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle), &x, &y, &width, &height);
+
+    graphics->swap_chain_width = width;
+    graphics->swap_chain_height = height;
+
+    screen_desc = (D3D11_BUFFER_DESC)
+    {
+        .ByteWidth = 4 * sizeof(f32), // TODO: D3D11 says it must be multiple of 16?
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+    };
+    ID3D11Device_CreateBuffer(device, &screen_desc, 0, screen_buffer);
 
     // NOTE: Create DXGI 1.2 factory for creating swap chain.
     hresult = CreateDXGIFactory(&IID_IDXGIFactory2, (void**)&factory);
@@ -344,6 +362,12 @@ static void resize_swap_chain(Win32Graphics* graphics)
     }
 }
 
+static void clear_vertex_buffer_data(Win32Graphics* graphics)
+{
+    // TODO: Not sure to do this?
+    graphics->vertex_buffer_size = 0;
+}
+
 static void clear_screen(Win32Graphics* graphics)
 {
     ID3D11DeviceContext_ClearRenderTargetView(graphics->context, graphics->render_target_view, graphics->clear_color);
@@ -365,9 +389,11 @@ static void draw(Win32Graphics* graphics)
         ID3D11VertexShader* vertex_shader = graphics->vertex_shader;
         ID3D11PixelShader* pixel_shader = graphics->pixel_shader;
         ID3D11Buffer** vertex_buffer = &graphics->vertex_buffer;
+        ID3D11Buffer** screen_buffer = &graphics->screen_buffer;
         ID3D11ShaderResourceView** texture_view = graphics->texture_view;
         u64 texture_count = graphics->texture_count;
-        D3D11_VIEWPORT viewport = { 0 };
+        D3D11_VIEWPORT viewport;
+        D3D11_MAPPED_SUBRESOURCE mapped;
 
         // NOTE: Output viewport covering all client area of window.
         viewport = (D3D11_VIEWPORT)
@@ -388,9 +414,13 @@ static void draw(Win32Graphics* graphics)
         ID3D11DeviceContext_IASetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         {
-            D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
             UINT stride = graphics->input_stride;
             UINT offset = 0;
+            f32 screen[] = { 1.0f / (f32)graphics->swap_chain_width, 1.0f / (f32)graphics->swap_chain_height, 0.0f, 0.0f };
+
+            ID3D11DeviceContext_Map(context, (ID3D11Resource*)*screen_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            memcpy(mapped.pData, screen, sizeof(screen));
+            ID3D11DeviceContext_Unmap(context, (ID3D11Resource*)*screen_buffer, 0);
 
             ID3D11DeviceContext_Map(context, (ID3D11Resource*)*vertex_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
             memcpy(mapped.pData, graphics->vertex_buffer_data, graphics->vertex_buffer_size);
@@ -400,7 +430,7 @@ static void draw(Win32Graphics* graphics)
         }
 
         // NOTE: Vertex Shader.
-        // ID3D11DeviceContext_VSSetConstantBuffers(context, 0, 1, &vertex_buffer);
+        ID3D11DeviceContext_VSSetConstantBuffers(context, 0, 1, screen_buffer);
         ID3D11DeviceContext_VSSetShader(context, vertex_shader, NULL, 0);
 
         // NOTE: Rasterizer Stage.
@@ -420,6 +450,8 @@ static void draw(Win32Graphics* graphics)
         // NOTE: Draw 3 vertices.
         ID3D11DeviceContext_Draw(context, graphics->vertex_buffer_size / graphics->input_stride, 0);
         IDXGISwapChain1_Present(swap_chain, 0, 0);
+
+        // clear_vertex_buffer_data(graphics);
     }
 }
 
@@ -501,17 +533,19 @@ void win32_graphics_clear(uptr graphics_pointer, f32 r, f32 g, f32 b, f32 a)
     graphics->clear_color[3] = a;
 }
 
-void win32_graphics_draw_rectangle(uptr graphics_pointer, f32 x, f32 y, f32 width, f32 height, f32 r, f32 g, f32 b)
+// TODO: u32?
+void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    // TODO: Alpha channel?
     const f32 rectangle_buffer[] = 
     {
-        x,         y,          r, g, b, 1.0f, 1.0f,
-        x + width, y,          r, g, b, 1.0f, 1.0f,
-        x,         y + height, r, g, b, 1.0f, 1.0f,
-        x,         y + height, r, g, b, 1.0f, 1.0f,
-        x + width, y,          r, g, b, 1.0f, 1.0f,
-        x + width, y + height, r, g, b, 1.0f, 1.0f,
+        (f32)x,         (f32)y,          r, g, b, 1, 1,
+        (f32)x + width, (f32)y,          r, g, b, 1, 1,
+        (f32)x,         (f32)y + height, r, g, b, 1, 1,
+        (f32)x,         (f32)y + height, r, g, b, 1, 1,
+        (f32)x + width, (f32)y,          r, g, b, 1, 1,
+        (f32)x + width, (f32)y + height, r, g, b, 1, 1,
     };
 
     memcpy(graphics->vertex_buffer_data, rectangle_buffer, sizeof(rectangle_buffer));
@@ -530,9 +564,20 @@ void win32_graphics_draw(uptr graphics_pointer)
 }
 
 // TODO: We should be able to create (constant?) buffer.
-// void win32_graphics_create_buffer(uptr graphics_pointer)
+// void win32_graphics_create_const_buffer(uptr graphics_pointer, u8* buffer, u32 buffer_size)
 // {
+//     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+//     ID3D11Device* device = graphics->device;
+//     ID3D11Buffer** const_buffer = &graphics->vertex_buffer;
+//     D3D11_BUFFER_DESC desc =
+//     {
+//         .ByteWidth = buffer_size,
+//         .Usage = D3D11_USAGE_DYNAMIC,
+//         .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+//         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+//     };
 
+//     ID3D11Device_CreateBuffer(device, &desc, buffer, const_buffer);
 // }
 
 // TODO: Probably we need to handle
@@ -613,19 +658,6 @@ uptr win32_graphics_init(uptr handle_pointer)
 
     create_device_and_context(graphics);
     create_swap_chain(graphics);
-
-    // {
-    //     D3D11_BUFFER_DESC desc =
-    //     {
-    //         // NOTE: Space for 4x4 float matrix (cbuffer0 from pixel shader).
-    //         .ByteWidth = 4 * 4 * sizeof(float),
-    //         .Usage = D3D11_USAGE_DYNAMIC,
-    //         .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-    //         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-    //     };
-    //     ID3D11Device_CreateBuffer(*device, &desc, NULL, &buffer);
-    // }
-
     create_sampler_state(graphics);
     create_blend_state(graphics);
     create_rasterizer_state(graphics);

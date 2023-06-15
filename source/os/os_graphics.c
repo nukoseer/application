@@ -11,7 +11,7 @@ typedef void OSGraphicsCreateTexture(uptr graphics_pointer, const u32* texture_b
 typedef void OSGraphicsCreateVertexShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsCreatePixelShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsClear(uptr graphics_pointer, f32 r, f32 g, f32 b, f32 a);
-typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, f32 x, f32 y, f32 width, f32 height, f32 r, f32 g, f32 b);
+typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphics
@@ -123,7 +123,7 @@ void os_graphics_clear(OSWindowHandle os_window_handle, f32 r, f32 g, f32 b, f32
     }
 }
 
-void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, f32 x, f32 y, f32 width, f32 height, f32 r, f32 g, f32 b)
+void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
