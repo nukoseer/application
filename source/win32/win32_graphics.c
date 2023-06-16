@@ -208,6 +208,11 @@ static void set_vertex_input_layout(Win32Graphics* graphics, const char* name, u
             dxgi_format = DXGI_FORMAT_R32G32B32_FLOAT;
         }
         break;
+        case 4:
+        {
+            dxgi_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        }
+        break;
     }
 
     graphics->input_descs[graphics->input_desc_count++] = (D3D11_INPUT_ELEMENT_DESC){ name, 0, dxgi_format, 0, offset, D3D11_INPUT_PER_VERTEX_DATA, 0 };
@@ -459,10 +464,10 @@ static void draw(Win32Graphics* graphics)
 static void graphics_init(Win32Graphics* graphics)
 {
     const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
-    const char* input_layout_names[] = { "POSITION", "COLOR", "TEXCOORD" };
-    struct Vertex { f32 position[2]; f32 color[3]; f32 uv[2]; };
+    const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
+    struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
     u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, color), OFFSETOF(struct Vertex, uv) };
-    u32 input_layout_formats[] = { 2, 3, 2 };
+    u32 input_layout_formats[] = { 2, 2, 4 };
     uptr vertex_shader_file = win32_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
     u32 vertex_shader_buffer_size = win32_io_file_size(vertex_shader_file);
     u8* vertex_shader_buffer = win32_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
@@ -523,29 +528,36 @@ void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, const void* ve
     graphics->vertex_buffer_size = vertex_buffer_size;
 }
 
-void win32_graphics_clear(uptr graphics_pointer, f32 r, f32 g, f32 b, f32 a)
+void win32_graphics_clear(uptr graphics_pointer, u8 r, u8 g, u8 b, u8 a)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
 
-    graphics->clear_color[0] = r;
-    graphics->clear_color[1] = g;
-    graphics->clear_color[2] = b;
-    graphics->clear_color[3] = a;
+    graphics->clear_color[0] = (r + 0.5f) / 255.0f;
+    graphics->clear_color[1] = (g + 0.5f) / 255.0f;
+    graphics->clear_color[2] = (b + 0.5f) / 255.0f;
+    graphics->clear_color[3] = (a + 0.5f) / 255.0f;
 }
 
-// TODO: u32?
-void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b)
+void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    // TODO: Alpha channel?
+    f32 xf = (f32)x;
+    f32 yf = (f32)y;
+    f32 wf = (f32)width;
+    f32 hf = (f32)height;
+    f32 rf = (f32)r;
+    f32 gf = (f32)g;
+    f32 bf = (f32)b;
+    f32 af = (f32)a;
+    // TODO: What to do with tex coords?
     const f32 rectangle_buffer[] = 
     {
-        (f32)x,         (f32)y,          r, g, b, 1, 1,
-        (f32)x + width, (f32)y,          r, g, b, 1, 1,
-        (f32)x,         (f32)y + height, r, g, b, 1, 1,
-        (f32)x,         (f32)y + height, r, g, b, 1, 1,
-        (f32)x + width, (f32)y,          r, g, b, 1, 1,
-        (f32)x + width, (f32)y + height, r, g, b, 1, 1,
+        xf,      yf,      rf, gf, bf, af, 1, 1,
+        xf + wf, yf,      rf, gf, bf, af, 1, 1,
+        xf,      yf + hf, rf, gf, bf, af, 1, 1,
+        xf,      yf + hf, rf, gf, bf, af, 1, 1,
+        xf + wf, yf,      rf, gf, bf, af, 1, 1,
+        xf + wf, yf + hf, rf, gf, bf, af, 1, 1,
     };
 
     memcpy(graphics->vertex_buffer_data, rectangle_buffer, sizeof(rectangle_buffer));
@@ -584,7 +596,7 @@ void win32_graphics_draw(uptr graphics_pointer)
 // ID3D11Device_CreateShaderResourceView function differently.
 // TODO: We should think about D3D11_USAGE_IMMUTABLE but probably it
 // is okay for textures.
-void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buffer, u32 width, u32 height)
+void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
@@ -592,8 +604,8 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
 
     D3D11_TEXTURE2D_DESC desc =
     {
-        .Width = width,
-        .Height = height,
+        .Width = (UINT)width,
+        .Height = (UINT)height,
         .MipLevels = 1,
         .ArraySize = 1,
         .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -605,7 +617,7 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
     D3D11_SUBRESOURCE_DATA data =
     {
         .pSysMem = texture_buffer,
-        .SysMemPitch = width * sizeof(u32),
+        .SysMemPitch = (u32)width * sizeof(u32),
     };
 
     ID3D11Texture2D* texture = 0;

@@ -2,16 +2,16 @@
 struct VS_INPUT
 {
     float2 pos   : POSITION;
-    float3 color : COLOR;
     float2 uv    : TEXCOORD;
+    float4 color : COLOR;
 };
 
 // NOTE: These names do not matter, except SV_... ones.
 struct PS_INPUT
 {
     float4 pos   : SV_POSITION;
-    float4 color : COLOR;
     float2 uv    : TEXCOORD;
+    float4 color : COLOR;
 };
 
 // NOTE: b0 = constant buffer bound to slot 0.
@@ -36,7 +36,7 @@ PS_INPUT vs(VS_INPUT input)
     // output.pos = float4(2.0f * (input.pos / a) - 1.0f, 0.0f, 1.0f);
     output.pos = float4((2.0f * u_screen.xy * input.pos) - 1.0f, 0.0f, 1.0f);
     output.uv = input.uv;
-    output.color = float4(clamp(1.0f / 255.0f * input.color, 0.0f, 1.0f), 1.0f);
+    output.color = clamp(1.0f / 255.0f * input.color, 0.0f, 1.0f);
     return output;
 }
 

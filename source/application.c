@@ -4,13 +4,13 @@
 
 static f32 vertices[] =
 {
-     -0.00f, +0.75f,     1.0f, 0.0f, 0.0f,     25.0f, 50.0f,
-     +0.75f, -0.50f,     0.0f, 1.0f, 0.0f,      0.0f,  0.0f,
-     -0.75f, -0.50f,     0.0f, 0.0f, 1.0f,     50.0f,  0.0f,
-                                              
-     -0.00f, -0.50f,     1.0f, 0.0f, 0.0f,     25.0f, 50.0f,
-     -0.75f, +0.75f,     0.0f, 1.0f, 0.0f,      0.0f,  0.0f,
-     +0.75f, +0.75f,     0.0f, 0.0f, 1.0f,     50.0f,  0.0f,
+     -0.00f, +0.75f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
+     +0.75f, -0.50f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
+     -0.75f, -0.50f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
+
+     -0.00f, -0.50f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
+     -0.75f, +0.75f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
+     +0.75f, +0.75f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
 };
 
 static void application(void)
@@ -35,8 +35,8 @@ static void application(void)
     // os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
     // os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
 
-    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, 255, 0, 0);
-    os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, 0, 255, 0);
+    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, 255, 0, 0, 255);
+    os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, 0, 255, 0, 255);
 
     os_random_handle = os_random_init(44);
     OS_LOG_DEBUG("os_random_unilateral: %f", os_random_unilateral(os_random_handle));
@@ -94,10 +94,10 @@ static void application(void)
             // os_window_set_title(os_window_handle2, milliseconds_string);
         }
 
-        os_graphics_clear(os_window_handle, 0.392f, 0.584f, 0.929f, 1.0f);
+        os_graphics_clear(os_window_handle, 100, 149, 237, 255);
         os_graphics_draw(os_window_handle);
 
-        os_graphics_clear(os_window_handle2, 0.666f, 0.584f, 0.929f, 1.0f);
+        os_graphics_clear(os_window_handle2, 170, 149, 237, 255);
         os_graphics_draw(os_window_handle2);
     }
 
