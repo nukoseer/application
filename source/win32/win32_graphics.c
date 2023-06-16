@@ -466,7 +466,7 @@ static void graphics_init(Win32Graphics* graphics)
     const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
     const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
     struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
-    u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, color), OFFSETOF(struct Vertex, uv) };
+    u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, uv), OFFSETOF(struct Vertex, color) };
     u32 input_layout_formats[] = { 2, 2, 4 };
     uptr vertex_shader_file = win32_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
     u32 vertex_shader_buffer_size = win32_io_file_size(vertex_shader_file);
@@ -541,26 +541,21 @@ void win32_graphics_clear(uptr graphics_pointer, u8 r, u8 g, u8 b, u8 a)
 void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    f32 xf = (f32)x;
-    f32 yf = (f32)y;
-    f32 wf = (f32)width;
-    f32 hf = (f32)height;
-    f32 rf = (f32)r;
-    f32 gf = (f32)g;
-    f32 bf = (f32)b;
-    f32 af = (f32)a;
+    f32 xf = (f32)x; f32 yf = (f32)y; f32 wf = (f32)width; f32 hf = (f32)height;
+    f32 rf = (f32)r; f32 gf = (f32)g; f32 bf = (f32)b; f32 af = (f32)a;
     // TODO: What to do with tex coords?
     const f32 rectangle_buffer[] = 
     {
-        xf,      yf,      rf, gf, bf, af, 1, 1,
-        xf + wf, yf,      rf, gf, bf, af, 1, 1,
-        xf,      yf + hf, rf, gf, bf, af, 1, 1,
-        xf,      yf + hf, rf, gf, bf, af, 1, 1,
-        xf + wf, yf,      rf, gf, bf, af, 1, 1,
-        xf + wf, yf + hf, rf, gf, bf, af, 1, 1,
+        xf,      yf,      1, 1, rf, gf, bf, af,
+        xf + wf, yf,      1, 1, rf, gf, bf, af,
+        xf,      yf + hf, 1, 1, rf, gf, bf, af,
+        xf,      yf + hf, 1, 1, rf, gf, bf, af,
+        xf + wf, yf,      1, 1, rf, gf, bf, af,
+        xf + wf, yf + hf, 1, 1, rf, gf, bf, af,
     };
 
-    memcpy(graphics->vertex_buffer_data, rectangle_buffer, sizeof(rectangle_buffer));
+    // TODO: Sanity check?
+    memcpy((u8*)graphics->vertex_buffer_data + graphics->vertex_buffer_size, rectangle_buffer, sizeof(rectangle_buffer));
     graphics->vertex_buffer_size += sizeof(rectangle_buffer);
 }
 

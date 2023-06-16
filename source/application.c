@@ -4,14 +4,25 @@
 
 static f32 vertices[] =
 {
-     -0.00f, +0.75f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
-     +0.75f, -0.50f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
-     -0.75f, -0.50f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
+     320.0f, 420.0f,     1.0f, 1.0f,     255.0f, 0.0f,   0.0f,   255.0f,
+     560.0f, 120.0f,     1.0f, 1.0f,     0.0f,   255.0f, 0.0f,   255.0f,
+     80.0f,  120.0f,     1.0f, 1.0f,     0.0f,   0.0f,    255.0f, 255.0f,
 
-     -0.00f, -0.50f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
-     -0.75f, +0.75f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
-     +0.75f, +0.75f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
+     320.0f, 120.0f,     1.0f, 1.0f,     255.0f, 0.0f,   0.0f,   255.0f,
+     80.0f,  420.0f,     1.0f, 1.0f,     0.0f,   255.0f, 0.0f,   255.0f,
+     560.0f, 420.0f,     1.0f, 1.0f,     0.0f,   0.0f,    255.0f, 255.0f,
 };
+
+// static f32 vertices[] =
+// {
+//      -0.00f, +0.75f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
+//      +0.75f, -0.50f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
+//      -0.75f, -0.50f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
+
+//      -0.00f, -0.50f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
+//      -0.75f, +0.75f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
+//      +0.75f, +0.75f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
+// };
 
 static void application(void)
 {
@@ -32,8 +43,8 @@ static void application(void)
 
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
 
-    // os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
-    // os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
+    os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
+    os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
 
     os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, 255, 0, 0, 255);
     os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, 0, 255, 0, 255);
