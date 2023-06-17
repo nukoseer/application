@@ -500,6 +500,12 @@ static void graphics_init(Win32Graphics* graphics)
     graphics->vertex_buffer_size = 0;
 }
 
+static void add_vertex_data(Win32Graphics* graphics, const u8* vertex_buffer_data, u32 vertex_buffer_size)
+{
+    // TODO: Sanity check?
+    memcpy((u8*)graphics->vertex_buffer_data + graphics->vertex_buffer_size, vertex_buffer_data, vertex_buffer_size);
+    graphics->vertex_buffer_size += vertex_buffer_size;
+}
 
 void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                              const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
@@ -554,9 +560,23 @@ void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 widt
         xf + wf, yf + hf, 1, 1, rf, gf, bf, af,
     };
 
-    // TODO: Sanity check?
-    memcpy((u8*)graphics->vertex_buffer_data + graphics->vertex_buffer_size, rectangle_buffer, sizeof(rectangle_buffer));
-    graphics->vertex_buffer_size += sizeof(rectangle_buffer);
+    add_vertex_data(graphics, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
+}
+
+void win32_graphics_draw_triangle(uptr graphics_pointer, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
+                                  u8 r, u8 g, u8 b, u8 a)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    f32 rf = (f32)r; f32 gf = (f32)g; f32 bf = (f32)b; f32 af = (f32)a;
+    // TODO: What to do with tex coords?
+    const f32 triangle_buffer[] =
+    {
+        v1x, v1y, 1, 1, rf, gf, bf, af,
+        v2x, v2y, 1, 1, rf, gf, bf, af,
+        v3x, v3y, 1, 1, rf, gf, bf, af,
+    };
+
+    add_vertex_data(graphics, (const u8*)triangle_buffer, sizeof(triangle_buffer));
 }
 
 void win32_graphics_draw(uptr graphics_pointer)

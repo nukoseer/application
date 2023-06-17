@@ -12,6 +12,8 @@ typedef void OSGraphicsCreateVertexShader(uptr graphics_pointer, const u8* shade
 typedef void OSGraphicsCreatePixelShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsClear(uptr graphics_pointer, u8 r, u8 g, u8 b, u8 a);
 typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a);
+typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
+                                    u8 r, u8 g, u8 b, u8 a);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphics
@@ -23,6 +25,7 @@ typedef struct OSGraphics
     OSGraphicsCreatePixelShader* create_pixel_shader;
     OSGraphicsClear* clear;
     OSGraphicsDrawRectangle* draw_rectangle;
+    OSGraphicsDrawTriangle* draw_triangle;
     OSGraphicsDraw* draw;
 } OSGraphics;
 
@@ -39,6 +42,7 @@ static OSGraphics os_graphics =
     .create_pixel_shader = &win32_graphics_create_pixel_shader,
     .clear = &win32_graphics_clear,
     .draw_rectangle = &win32_graphics_draw_rectangle,
+    .draw_triangle = &win32_graphics_draw_triangle,
     .draw = &win32_graphics_draw,
 };
 
@@ -131,6 +135,18 @@ void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i
     {
         ASSERT(os_graphics.draw_rectangle);
         os_graphics.draw_rectangle(graphics_handle, x, y, width, height, r, g, b, a);
+    }    
+}
+
+void os_graphics_draw_triangle(OSWindowHandle os_window_handle, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
+                               u8 r, u8 g, u8 b, u8 a)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+
+    if (graphics_handle)
+    {
+        ASSERT(os_graphics.draw_triangle);
+        os_graphics.draw_triangle(graphics_handle, v1x, v1y, v2x, v2y, v3x, v3y, r, g, b, a);
     }    
 }
 
