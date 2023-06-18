@@ -12,6 +12,8 @@
 
 #include "types.h"
 #include "utils.h"
+#include "maths.h"
+
 #include "win32_io.h"
 #include "win32_memory.h"
 #include "win32_window.h"
@@ -577,6 +579,51 @@ void win32_graphics_draw_triangle(uptr graphics_pointer, f32 v1x, f32 v1y, f32 v
     };
 
     add_vertex_data(graphics, (const u8*)triangle_buffer, sizeof(triangle_buffer));
+}
+
+void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, u8 r, u8 g, u8 b, u8 a)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    i32 segments = 36;
+    f32 steps = 360.0f / (f32)segments;
+    f32 angle = 0.0f;
+    i32 i = 0;
+    f32 circle_buffer[8];
+
+    for (i = 0; i < segments; ++i)
+    {
+        circle_buffer[0] = (f32)center_x;
+        circle_buffer[1] = (f32)center_y;
+        circle_buffer[2] = 1;
+        circle_buffer[3] = 1;
+        circle_buffer[4] = (f32)r;
+        circle_buffer[5] = (f32)g;
+        circle_buffer[6] = (f32)b;
+        circle_buffer[7] = (f32)a;
+        add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
+
+        circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * angle) * radius;
+        circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * angle) * radius;
+        circle_buffer[2] = 1;
+        circle_buffer[3] = 1;
+        circle_buffer[4] = (f32)r;
+        circle_buffer[5] = (f32)g;
+        circle_buffer[6] = (f32)b;
+        circle_buffer[7] = (f32)a;
+        add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
+
+        circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
+        circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
+        circle_buffer[2] = 1;
+        circle_buffer[3] = 1;
+        circle_buffer[4] = (f32)r;
+        circle_buffer[5] = (f32)g;
+        circle_buffer[6] = (f32)b;
+        circle_buffer[7] = (f32)a;
+        add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
+
+        angle += steps;
+    }
 }
 
 void win32_graphics_draw(uptr graphics_pointer)

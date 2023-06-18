@@ -10,6 +10,7 @@ void os_graphics_clear(OSWindowHandle os_window_handle, u8 r, u8 g, u8 b, u8 a);
 void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a);
 void os_graphics_draw_triangle(OSWindowHandle os_window_handle, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
                                u8 r, u8 g, u8 b, u8 a);
+void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius, u8 r, u8 g, u8 b, u8 a);
 void os_graphics_draw(OSWindowHandle os_window_handle);
 
 #define H_OS_GRAPHICS_H

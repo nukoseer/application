@@ -52,11 +52,12 @@ if %compiler%==clang-cl (
      if %compiler%==cl (
      	set linker=link
 	set ar=lib
-	set common_compiler_flags=%common_compiler_flags% /wd4200 /wd5045 /wd4711 /wd4710
+	set common_compiler_flags=%common_compiler_flags% /wd4200 /wd5045 /wd4711 /wd4710 /wd4201
 	REM /wd4200 MSVC does not support Flexible Array Members
 	REM /wd5045 Spectre mitigation (?) warning
 	REM /wd4711 Function selected for automatic inline expansion
 	REM /wd4710 Function not inlined
+	REM /wd4201 Nonstandard extension used: nameless struct/union
      )
 )
 

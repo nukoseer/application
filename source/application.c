@@ -51,6 +51,9 @@ static void application(void)
 
     os_graphics_draw_triangle(os_window_handle, 320, 120, 80, 420, 560, 420, 210, 39, 210, 128);
 
+    os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, 0, 0, 255, 255);
+    os_graphics_draw_circle(os_window_handle2, width / 2, height / 2, 60, 200, 66, 115, 255);
+
     os_random_handle = os_random_init(44);
     OS_LOG_DEBUG("os_random_unilateral: %f", os_random_unilateral(os_random_handle));
     OS_LOG_DEBUG("os_random_bilateral: %f", os_random_bilateral(os_random_handle));

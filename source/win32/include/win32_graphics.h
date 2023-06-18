@@ -11,6 +11,7 @@ void win32_graphics_clear(uptr graphics_pointer, u8 r, u8 g, u8 b, u8 a);
 void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a);
 void win32_graphics_draw_triangle(uptr graphics_pointer, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
                                   u8 r, u8 g, u8 b, u8 a);
+void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, u8 r, u8 g, u8 b, u8 a);
 void win32_graphics_draw(uptr graphics_pointer);
 
 #define H_WIN32_GRAPHICS_H
