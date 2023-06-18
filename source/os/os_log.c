@@ -31,6 +31,7 @@ typedef struct OSLogRingElement
     OSLogLevel log_level;
 } OSLogRingElement;
 
+// TODO: How to get rid of count?
 typedef struct OSLogRing
 {
     OSLogRingElement elements[OS_LOG_RING_SIZE];
