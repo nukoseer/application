@@ -536,52 +536,49 @@ void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, const void* ve
     graphics->vertex_buffer_size = vertex_buffer_size;
 }
 
-void win32_graphics_clear(uptr graphics_pointer, u8 r, u8 g, u8 b, u8 a)
+void win32_graphics_clear(uptr graphics_pointer, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
 
-    graphics->clear_color[0] = (r + 0.5f) / 255.0f;
-    graphics->clear_color[1] = (g + 0.5f) / 255.0f;
-    graphics->clear_color[2] = (b + 0.5f) / 255.0f;
-    graphics->clear_color[3] = (a + 0.5f) / 255.0f;
+    graphics->clear_color[0] = (color.r + 0.5f) / 255.0f;
+    graphics->clear_color[1] = (color.g + 0.5f) / 255.0f;
+    graphics->clear_color[2] = (color.b + 0.5f) / 255.0f;
+    graphics->clear_color[3] = (color.a + 0.5f) / 255.0f;
 }
 
-void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a)
+void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     f32 xf = (f32)x; f32 yf = (f32)y; f32 wf = (f32)width; f32 hf = (f32)height;
-    f32 rf = (f32)r; f32 gf = (f32)g; f32 bf = (f32)b; f32 af = (f32)a;
     // TODO: What to do with tex coords?
     const f32 rectangle_buffer[] = 
     {
-        xf,      yf,      1, 1, rf, gf, bf, af,
-        xf + wf, yf,      1, 1, rf, gf, bf, af,
-        xf,      yf + hf, 1, 1, rf, gf, bf, af,
-        xf,      yf + hf, 1, 1, rf, gf, bf, af,
-        xf + wf, yf,      1, 1, rf, gf, bf, af,
-        xf + wf, yf + hf, 1, 1, rf, gf, bf, af,
+        xf,      yf,      1, 1, color.r, color.g, color.b, color.a,
+        xf + wf, yf,      1, 1, color.r, color.g, color.b, color.a,
+        xf,      yf + hf, 1, 1, color.r, color.g, color.b, color.a,
+        xf,      yf + hf, 1, 1, color.r, color.g, color.b, color.a,
+        xf + wf, yf,      1, 1, color.r, color.g, color.b, color.a,
+        xf + wf, yf + hf, 1, 1, color.r, color.g, color.b, color.a,
     };
 
     add_vertex_data(graphics, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
 }
 
-void win32_graphics_draw_triangle(uptr graphics_pointer, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
-                                  u8 r, u8 g, u8 b, u8 a)
+void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 v3, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    f32 rf = (f32)r; f32 gf = (f32)g; f32 bf = (f32)b; f32 af = (f32)a;
     // TODO: What to do with tex coords?
     const f32 triangle_buffer[] =
     {
-        v1x, v1y, 1, 1, rf, gf, bf, af,
-        v2x, v2y, 1, 1, rf, gf, bf, af,
-        v3x, v3y, 1, 1, rf, gf, bf, af,
+        v1.x, v1.y, 1, 1, color.r, color.g, color.b, color.a,
+        v2.x, v2.y, 1, 1, color.r, color.g, color.b, color.a,
+        v3.x, v3.y, 1, 1, color.r, color.g, color.b, color.a,
     };
 
     add_vertex_data(graphics, (const u8*)triangle_buffer, sizeof(triangle_buffer));
 }
 
-void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, u8 r, u8 g, u8 b, u8 a)
+void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     i32 segments = 36;
@@ -596,30 +593,30 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
         circle_buffer[1] = (f32)center_y;
         circle_buffer[2] = 1;
         circle_buffer[3] = 1;
-        circle_buffer[4] = (f32)r;
-        circle_buffer[5] = (f32)g;
-        circle_buffer[6] = (f32)b;
-        circle_buffer[7] = (f32)a;
+        circle_buffer[4] = (f32)color.r;
+        circle_buffer[5] = (f32)color.g;
+        circle_buffer[6] = (f32)color.b;
+        circle_buffer[7] = (f32)color.a;
         add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
 
         circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * angle) * radius;
         circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * angle) * radius;
         circle_buffer[2] = 1;
         circle_buffer[3] = 1;
-        circle_buffer[4] = (f32)r;
-        circle_buffer[5] = (f32)g;
-        circle_buffer[6] = (f32)b;
-        circle_buffer[7] = (f32)a;
+        circle_buffer[4] = (f32)color.r;
+        circle_buffer[5] = (f32)color.g;
+        circle_buffer[6] = (f32)color.b;
+        circle_buffer[7] = (f32)color.a;
         add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
 
         circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
         circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
         circle_buffer[2] = 1;
         circle_buffer[3] = 1;
-        circle_buffer[4] = (f32)r;
-        circle_buffer[5] = (f32)g;
-        circle_buffer[6] = (f32)b;
-        circle_buffer[7] = (f32)a;
+        circle_buffer[4] = (f32)color.r;
+        circle_buffer[5] = (f32)color.g;
+        circle_buffer[6] = (f32)color.b;
+        circle_buffer[7] = (f32)color.a;
         add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
 
         angle += steps;

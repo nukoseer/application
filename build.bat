@@ -44,7 +44,7 @@ if %debug%==yes (
 if %compiler%==clang-cl (
    set linker=lld-link
    set ar=llvm-lib
-   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fuse-ld=lld-link /clang:-Wno-format-nonliteral /clang:-Wno-cast-qual /clang:-Wno-bad-function-cast
+   set clang_compiler_flags=/clang:-std=c99 /clang:-pedantic /clang:-fdiagnostics-format=clang /clang:-fdiagnostics-absolute-paths /clang:-fuse-ld=lld-link /clang:-Wno-format-nonliteral /clang:-Wno-cast-qual /clang:-Wno-bad-function-cast /clang:-Wno-c11-extensions
    if %debug%==yes (
    set clang_compiler_flags=!clang_compiler_flags! /clang:-fno-omit-frame-pointer
    )

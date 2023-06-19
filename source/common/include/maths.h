@@ -16,27 +16,6 @@
     #define RAD_2_DEG      (180.0f / PI)
 #endif
 
-// NOTE: /wd4201
-typedef union Vec2
-{
-    struct { f32 x, y; };
-    f32 e[2];
-} Vec2;
-
-typedef union Vec3
-{
-    struct { f32 x, y, z; };
-    struct { f32 r, g, b; };
-    f32 e[3];
-} Vec3;
-
-typedef union Vec4
-{
-    struct { f32 x, y, z, w; };
-    struct { f32 r, g, b, a; };
-    f32 e[4];
-} Vec4;
-
 static inline f32 sin_f32(f32 deg)
 {
     f32 result = sinf(deg);
@@ -66,9 +45,11 @@ static inline f64 cos_f64(f64 deg)
 }
 
 // NOTE: Dangerous or not really?
-#define  v2(_x, _y)         (Vec2) { .x = (_x), .y = (_y) }
-#define  v3(_x, _y, _z)     (Vec3) { .x = (_x), .y = (_y), .z = (_z) }
-#define  v4(_x, _y, _z, _w) (Vec4) { .x = (_x), .y = (_y), .z = (_z), .w = (_w) }
+#define Vec2(_x, _y)          (Vec2)  { .x = (_x), .y = (_y) }
+#define Vec3(_x, _y, _z)      (Vec3)  { .x = (_x), .y = (_y), .z = (_z) }
+#define Vec4(_x, _y, _z, _w)  (Vec4)  { .x = (_x), .y = (_y), .z = (_z), .w = (_w) }
+#define Color(_r, _g, _b, _a) (Color) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
+#define RGBA(_r, _g, _b, _a)  (Color) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
 
 #define H_MATHS_H
 #endif

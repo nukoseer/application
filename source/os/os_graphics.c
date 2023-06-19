@@ -10,11 +10,10 @@ typedef void OSGraphicsSetVertexInputLayouts(uptr graphics_pointer, const u8* ve
 typedef void OSGraphicsCreateTexture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
 typedef void OSGraphicsCreateVertexShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsCreatePixelShader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size);
-typedef void OSGraphicsClear(uptr graphics_pointer, u8 r, u8 g, u8 b, u8 a);
-typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a);
-typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
-                                    u8 r, u8 g, u8 b, u8 a);
-typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, u8 r, u8 g, u8 b, u8 a);
+typedef void OSGraphicsClear(uptr graphics_pointer, Color color);
+typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, Color color);
+typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 v3, Color color);
+typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphics
@@ -119,48 +118,47 @@ void os_graphics_create_pixel_shader(OSWindowHandle os_window_handle, const u8* 
     }
 }
 
-void os_graphics_clear(OSWindowHandle os_window_handle, u8 r, u8 g, u8 b, u8 a)
+void os_graphics_clear(OSWindowHandle os_window_handle, Color color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
     if (graphics_handle)
     {
         ASSERT(os_graphics.clear);
-        os_graphics.clear(graphics_handle, r, g, b, a);
+        os_graphics.clear(graphics_handle, color);
     }
 }
 
-void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height, u8 r, u8 g, u8 b, u8 a)
+void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height, Color color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
     if (graphics_handle)
     {
         ASSERT(os_graphics.draw_rectangle);
-        os_graphics.draw_rectangle(graphics_handle, x, y, width, height, r, g, b, a);
+        os_graphics.draw_rectangle(graphics_handle, x, y, width, height, color);
     }
 }
 
-void os_graphics_draw_triangle(OSWindowHandle os_window_handle, f32 v1x, f32 v1y, f32 v2x, f32 v2y, f32 v3x, f32 v3y,
-                               u8 r, u8 g, u8 b, u8 a)
+void os_graphics_draw_triangle(OSWindowHandle os_window_handle, Vec2 v1, Vec2 v2, Vec2 v3, Color color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
     if (graphics_handle)
     {
         ASSERT(os_graphics.draw_triangle);
-        os_graphics.draw_triangle(graphics_handle, v1x, v1y, v2x, v2y, v3x, v3y, r, g, b, a);
+        os_graphics.draw_triangle(graphics_handle, v1, v2, v3, color);
     }
 }
 
-void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius, u8 r, u8 g, u8 b, u8 a)
+void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius, Color color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
     if (graphics_handle)
     {
         ASSERT(os_graphics.draw_circle);
-        os_graphics.draw_circle(graphics_handle, center_x, center_y, radius, r, g, b, a);
+        os_graphics.draw_circle(graphics_handle, center_x, center_y, radius, color);
     }
 }
 

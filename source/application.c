@@ -46,18 +46,20 @@ static void application(void)
     os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
     os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
 
-    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, 255, 0, 0, 255);
-    os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, 0, 255, 0, 255);
-
-    os_graphics_draw_triangle(os_window_handle, 320, 120, 80, 420, 560, 420, 210, 39, 210, 128);
-
-    os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, 0, 0, 255, 255);
-    os_graphics_draw_circle(os_window_handle2, width / 2, height / 2, 60, 200, 66, 115, 255);
+    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, Color(255.0f, 0.0f, 0.0f, 255.0f));
+    os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, Color(0.0f, 255.0f, 0.0f, 255.0f));
+    
+    os_graphics_draw_triangle(os_window_handle,
+                              Vec2(320.0f, 120.0f), Vec2(80.0f, 420.0f), Vec2(560.0f, 420.0f),
+                              Color(210.0f, 39.0f, 210.0f, 128.0f));
+    
+    os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, Color(0.0f, 0.0f, 255.0f, 255.0f));
+    os_graphics_draw_circle(os_window_handle2, width / 2, height / 2, 60, Color(200.0f, 66.0f, 115.0f, 255.0f));
 
     os_random_handle = os_random_init(44);
-    OS_LOG_DEBUG("os_random_unilateral: %f", os_random_unilateral(os_random_handle));
-    OS_LOG_DEBUG("os_random_bilateral: %f", os_random_bilateral(os_random_handle));
-    
+    OS_LOG_DEBUG("os_random_unilateral: %f", (f64)os_random_unilateral(os_random_handle));
+    OS_LOG_DEBUG("os_random_bilateral: %f", (f64)os_random_bilateral(os_random_handle));
+
     {
         u32 texture_buffer0[] =
         {
@@ -110,10 +112,10 @@ static void application(void)
             // os_window_set_title(os_window_handle2, milliseconds_string);
         }
 
-        os_graphics_clear(os_window_handle, 100, 149, 237, 255);
+        os_graphics_clear(os_window_handle, Color(100.0f, 149.0f, 237.0f, 255.0f));
         os_graphics_draw(os_window_handle);
 
-        os_graphics_clear(os_window_handle2, 170, 149, 237, 255);
+        os_graphics_clear(os_window_handle2, Color(170.0f, 149.0f, 237.0f, 255.0f));
         os_graphics_draw(os_window_handle2);
     }
 
