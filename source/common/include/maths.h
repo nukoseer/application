@@ -37,34 +37,38 @@ typedef union Vec4
     f32 e[4];
 } Vec4;
 
-f32 sin_f32(f32 deg)
+static inline f32 sin_f32(f32 deg)
 {
     f32 result = sinf(deg);
 
     return result;
 }
 
-f64 sin_f64(f64 deg)
+static inline f64 sin_f64(f64 deg)
 {
     f64 result = sin(deg);
 
     return result;
 }
 
-f32 cos_f32(f32 deg)
+static inline f32 cos_f32(f32 deg)
 {
     f32 result = cosf(deg);
 
     return result;
 }
 
-f64 cos_f64(f64 deg)
+static inline f64 cos_f64(f64 deg)
 {
     f64 result = cos(deg);
 
     return result;
 }
 
+// NOTE: Dangerous or not really?
+#define  v2(_x, _y)         (Vec2) { .x = (_x), .y = (_y) }
+#define  v3(_x, _y, _z)     (Vec3) { .x = (_x), .y = (_y), .z = (_z) }
+#define  v4(_x, _y, _z, _w) (Vec4) { .x = (_x), .y = (_y), .z = (_z), .w = (_w) }
 
 #define H_MATHS_H
 #endif
