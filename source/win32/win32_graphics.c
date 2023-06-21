@@ -553,12 +553,12 @@ void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 widt
     // TODO: What to do with tex coords?
     const f32 rectangle_buffer[] = 
     {
-        xf,      yf,      1, 1, color.r, color.g, color.b, color.a,
-        xf + wf, yf,      1, 1, color.r, color.g, color.b, color.a,
-        xf,      yf + hf, 1, 1, color.r, color.g, color.b, color.a,
-        xf,      yf + hf, 1, 1, color.r, color.g, color.b, color.a,
-        xf + wf, yf,      1, 1, color.r, color.g, color.b, color.a,
-        xf + wf, yf + hf, 1, 1, color.r, color.g, color.b, color.a,
+        xf,      yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf + wf, yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf,      yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf,      yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf + wf, yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf + wf, yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
     };
 
     add_vertex_data(graphics, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
@@ -570,14 +570,15 @@ void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 
     // TODO: What to do with tex coords?
     const f32 triangle_buffer[] =
     {
-        v1.x, v1.y, 1, 1, color.r, color.g, color.b, color.a,
-        v2.x, v2.y, 1, 1, color.r, color.g, color.b, color.a,
-        v3.x, v3.y, 1, 1, color.r, color.g, color.b, color.a,
+        v1.x, v1.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        v2.x, v2.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        v3.x, v3.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
     };
 
     add_vertex_data(graphics, (const u8*)triangle_buffer, sizeof(triangle_buffer));
 }
 
+// TODO: Support also drawing circle section rather than whole circle.
 void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
@@ -591,8 +592,8 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
     {
         circle_buffer[0] = (f32)center_x;
         circle_buffer[1] = (f32)center_y;
-        circle_buffer[2] = 1;
-        circle_buffer[3] = 1;
+        circle_buffer[2] = -1.0f;
+        circle_buffer[3] = -1.0f;
         circle_buffer[4] = (f32)color.r;
         circle_buffer[5] = (f32)color.g;
         circle_buffer[6] = (f32)color.b;
@@ -601,8 +602,8 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
 
         circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * angle) * radius;
         circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * angle) * radius;
-        circle_buffer[2] = 1;
-        circle_buffer[3] = 1;
+        circle_buffer[2] = -1.0f;
+        circle_buffer[3] = -1.0f;
         circle_buffer[4] = (f32)color.r;
         circle_buffer[5] = (f32)color.g;
         circle_buffer[6] = (f32)color.b;
@@ -611,8 +612,8 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
 
         circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
         circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
-        circle_buffer[2] = 1;
-        circle_buffer[3] = 1;
+        circle_buffer[2] = -1.0f;
+        circle_buffer[3] = -1.0f;
         circle_buffer[4] = (f32)color.r;
         circle_buffer[5] = (f32)color.g;
         circle_buffer[6] = (f32)color.b;
