@@ -3,11 +3,11 @@
 
 #include "types.h"
 #include "utils.h"
+#include "atomic.h"
 #include "os_time.h"
 #include "os_io.h"
 #include "os_log.h"
 #include "os_thread.h"
-#include "os_atomic.h"
 
 #define OS_LOG_RING_SIZE 32
 #define OS_LOG_RING_MASK OS_LOG_RING_SIZE - 1
@@ -57,7 +57,7 @@ static os_thread_callback_return os_log_thread_procedure(os_thread_callback_para
         i32 tail = 0;
         i32 count = 0;
         
-        while ((count = os_atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count)) > 0)
+        while ((count = atomic_compare_exchange(&os_log_ring.count, os_log_ring.count, os_log_ring.count)) > 0)
         {
             tail = log_ring_buffer_pop();
             {
@@ -86,12 +86,12 @@ static i32 log_ring_buffer_push(void)
     i32 head = 0;
     i32 masked_head = 0;
 
-    head = os_atomic_increment(&os_log_ring.head);
+    head = atomic_increment(&os_log_ring.head);
     masked_head = head & OS_LOG_RING_MASK;
 
     if (head & OS_LOG_RING_SIZE)
     {
-        os_atomic_and(&os_log_ring.head, ~OS_LOG_RING_SIZE);
+        atomic_and(&os_log_ring.head, ~OS_LOG_RING_SIZE);
     }
 
     return masked_head;
@@ -99,7 +99,7 @@ static i32 log_ring_buffer_push(void)
 
 static void log_ring_buffer_push_commit(void)
 {
-    os_atomic_increment(&os_log_ring.count);
+    atomic_increment(&os_log_ring.count);
 }
 
 static i32 log_ring_buffer_pop(void)
@@ -107,12 +107,12 @@ static i32 log_ring_buffer_pop(void)
     i32 tail = 0;
     i32 masked_tail = 0;
     
-    tail = os_atomic_increment(&os_log_ring.tail);
+    tail = atomic_increment(&os_log_ring.tail);
     masked_tail = tail & OS_LOG_RING_MASK;
 
     if (tail & OS_LOG_RING_SIZE)
     {
-        os_atomic_and(&os_log_ring.tail, ~OS_LOG_RING_SIZE);
+        atomic_and(&os_log_ring.tail, ~OS_LOG_RING_SIZE);
     }
 
     return masked_tail;
@@ -120,7 +120,7 @@ static i32 log_ring_buffer_pop(void)
 
 static void log_ring_buffer_pop_commit(void)
 {
-    os_atomic_decrement(&os_log_ring.count);
+    atomic_decrement(&os_log_ring.count);
 }
 
 void os_log_set_level(OSLogLevel log_level)
