@@ -578,15 +578,26 @@ void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 
     add_vertex_data(graphics, (const u8*)triangle_buffer, sizeof(triangle_buffer));
 }
 
-// TODO: Support also drawing circle section rather than whole circle.
-void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color)
+// TODO: We should test this function with different(unusual) angles.
+void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
+                                        f32 start_angle, f32 end_angle, i32 segments, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    i32 segments = 36;
-    f32 steps = 360.0f / (f32)segments;
-    f32 angle = 0.0f;
+    f32 angle = 0;
+    f32 steps = 0;
     i32 i = 0;
     f32 circle_buffer[8];
+
+    if (end_angle < start_angle)
+    {
+        f32 temp;
+        temp = start_angle;
+        start_angle = end_angle;
+        end_angle = temp;
+    }
+
+    steps = (end_angle - start_angle) / (f32)segments;
+    angle = start_angle;
 
     for (i = 0; i < segments; ++i)
     {
@@ -600,8 +611,8 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
         circle_buffer[7] = (f32)color.a;
         add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
 
-        circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * angle) * radius;
-        circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * angle) * radius;
+        circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * angle) * radius;
+        circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * angle) * radius;
         circle_buffer[2] = -1.0f;
         circle_buffer[3] = -1.0f;
         circle_buffer[4] = (f32)color.r;
@@ -610,8 +621,8 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
         circle_buffer[7] = (f32)color.a;
         add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
 
-        circle_buffer[0] = (f32)center_x + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
-        circle_buffer[1] = (f32)center_y + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
+        circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
+        circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
         circle_buffer[2] = -1.0f;
         circle_buffer[3] = -1.0f;
         circle_buffer[4] = (f32)color.r;
@@ -621,7 +632,12 @@ void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_
         add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
 
         angle += steps;
-    }
+    }    
+}
+
+void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color)
+{
+    win32_graphics_draw_circle_section(graphics_pointer, center_x, center_y, radius, 0.0f, 360.0f, 36, color);
 }
 
 void win32_graphics_draw(uptr graphics_pointer)

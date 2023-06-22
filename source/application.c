@@ -54,7 +54,7 @@ static void application(void)
                               Color(210.0f, 39.0f, 210.0f, 128.0f));
     
     os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, Color(0.0f, 0.0f, 255.0f, 255.0f));
-    os_graphics_draw_circle(os_window_handle2, width / 2, height / 2, 60, Color(200.0f, 66.0f, 115.0f, 255.0f));
+    os_graphics_draw_circle_section(os_window_handle2, width / 2, height / 2, 60, 90.0f, 270.0f, 18, Color(200.0f, 66.0f, 115.0f, 255.0f));
 
     os_random_handle = os_random_init(44);
     OS_LOG_DEBUG("os_random_unilateral: %f", (f64)os_random_unilateral(os_random_handle));
