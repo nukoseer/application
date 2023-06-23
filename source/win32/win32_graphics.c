@@ -596,6 +596,12 @@ void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32
         end_angle = temp;
     }
 
+    if (segments == 0)
+    {
+        // TODO: If 0 what?
+        segments = 1;
+    }
+
     steps = (end_angle - start_angle) / (f32)segments;
     angle = start_angle;
 
