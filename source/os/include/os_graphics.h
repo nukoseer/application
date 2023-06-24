@@ -12,6 +12,7 @@ void os_graphics_draw_circle_section(OSWindowHandle os_window_handle, i32 center
                                      f32 start_angle, f32 end_angle, i32 segments, Color color);
 void os_graphics_draw_triangle(OSWindowHandle os_window_handle, Vec2 v1, Vec2 v2, Vec2 v3, Color color);
 void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius, Color color);
+void os_graphics_draw_pixel(OSWindowHandle os_window_handle, i32 x, i32 y, Color color);
 void os_graphics_draw(OSWindowHandle os_window_handle);
 
 #define H_OS_GRAPHICS_H

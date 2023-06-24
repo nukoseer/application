@@ -13,6 +13,7 @@ void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 
 void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
                                         f32 start_angle, f32 end_angle, i32 segments, Color color);
 void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color);
+void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, Color color);
 void win32_graphics_draw(uptr graphics_pointer);
 
 #define H_WIN32_GRAPHICS_H

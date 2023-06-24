@@ -16,6 +16,7 @@ typedef void OSGraphicsDrawCircleSection(uptr graphics_pointer, i32 center_x, i3
                                          f32 start_angle, f32 end_angle, i32 segments, Color color);
 typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 v3, Color color);
 typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color);
+typedef void OSGraphicsDrawPixel(uptr graphics_pointer, i32 x, i32 y, Color color);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphics
@@ -30,6 +31,7 @@ typedef struct OSGraphics
     OSGraphicsDrawTriangle* draw_triangle;
     OSGraphicsDrawCircleSection* draw_circle_section;
     OSGraphicsDrawCircle* draw_circle;
+    OSGraphicsDrawPixel* draw_pixel;
     OSGraphicsDraw* draw;
 } OSGraphics;
 
@@ -49,6 +51,7 @@ static OSGraphics os_graphics =
     .draw_triangle = &win32_graphics_draw_triangle,
     .draw_circle_section = &win32_graphics_draw_circle_section,
     .draw_circle = &win32_graphics_draw_circle,
+    .draw_pixel = &win32_graphics_draw_pixel,
     .draw = &win32_graphics_draw,
 };
 
@@ -175,6 +178,17 @@ void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 
     {
         ASSERT(os_graphics.draw_circle);
         os_graphics.draw_circle(graphics_handle, center_x, center_y, radius, color);
+    }
+}
+
+void os_graphics_draw_pixel(OSWindowHandle os_window_handle, i32 x, i32 y, Color color)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+
+    if (graphics_handle)
+    {
+        ASSERT(os_graphics.draw_pixel);
+        os_graphics.draw_pixel(graphics_handle, x, y, color);
     }
 }
 

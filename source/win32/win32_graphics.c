@@ -498,7 +498,7 @@ static void graphics_init(Win32Graphics* graphics)
     win32_io_file_close(pixel_shader_file);
 
     // TODO: 1MB?
-    graphics->vertex_buffer_data = win32_memory_heap_allocate(1024 * 1024, TRUE);
+    graphics->vertex_buffer_data = win32_memory_heap_allocate(MEGABYTES(1), TRUE);
     graphics->vertex_buffer_size = 0;
 }
 
@@ -644,6 +644,24 @@ void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32
 void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color)
 {
     win32_graphics_draw_circle_section(graphics_pointer, center_x, center_y, radius, 0.0f, 360.0f, 36, color);
+}
+
+void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, Color color)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    f32 xf = (f32)x; f32 yf = (f32)y;
+    // TODO: What to do with tex coords?
+    const f32 pixel_buffer[] = 
+    {
+        xf,        yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf + 1.0f, yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf,        yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf,        yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf + 1.0f, yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        xf + 1.0f, yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+    };
+
+    add_vertex_data(graphics, (const u8*)pixel_buffer, sizeof(pixel_buffer));
 }
 
 void win32_graphics_draw(uptr graphics_pointer)
