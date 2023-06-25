@@ -44,30 +44,30 @@ static inline f64 cos_f64(f64 deg)
     return result;
 }
 
-static inline f32 asin_f32(f32 deg)
+static inline f32 asin_f32(f32 value)
 {
-    f32 result = asinf(deg);
+    f32 result = asinf(value);
 
     return result;
 }
 
-static inline f64 asin_f64(f64 deg)
+static inline f64 asin_f64(f64 value)
 {
-    f64 result = asin(deg);
+    f64 result = asin(value);
 
     return result;
 }
 
-static inline f32 acos_f32(f32 deg)
+static inline f32 acos_f32(f32 value)
 {
-    f32 result = acosf(deg);
+    f32 result = acosf(value);
 
     return result;
 }
 
-static inline f64 acos_f64(f64 deg)
+static inline f64 acos_f64(f64 value)
 {
-    f64 result = acos(deg);
+    f64 result = acos(value);
 
     return result;
 }
