@@ -44,6 +44,34 @@ static inline f64 cos_f64(f64 deg)
     return result;
 }
 
+static inline f32 asin_f32(f32 deg)
+{
+    f32 result = asinf(deg);
+
+    return result;
+}
+
+static inline f64 asin_f64(f64 deg)
+{
+    f64 result = asin(deg);
+
+    return result;
+}
+
+static inline f32 acos_f32(f32 deg)
+{
+    f32 result = acosf(deg);
+
+    return result;
+}
+
+static inline f64 acos_f64(f64 deg)
+{
+    f64 result = acos(deg);
+
+    return result;
+}
+
 // NOTE: Dangerous or not really?
 #define Vec2(_x, _y)          (Vec2)  { .x = (_x), .y = (_y) }
 #define Vec3(_x, _y, _z)      (Vec3)  { .x = (_x), .y = (_y), .z = (_z) }
