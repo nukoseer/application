@@ -72,6 +72,34 @@ static inline f64 acos_f64(f64 value)
     return result;
 }
 
+static inline f32 ceil_f32(f32 value)
+{
+    f32 result = ceilf(value);
+
+    return result;
+}
+
+static inline f64 ceil_f64(f64 value)
+{
+    f64 result = ceil(value);
+
+    return result;
+}
+
+static inline f32 floor_f32(f32 value)
+{
+    f32 result = floorf(value);
+
+    return result;
+}
+
+static inline f64 floor_f64(f64 value)
+{
+    f64 result = floor(value);
+
+    return result;
+}
+
 // NOTE: Dangerous or not really?
 #define Vec2(_x, _y)          (Vec2)  { .x = (_x), .y = (_y) }
 #define Vec3(_x, _y, _z)      (Vec3)  { .x = (_x), .y = (_y), .z = (_z) }
