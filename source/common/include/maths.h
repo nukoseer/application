@@ -100,12 +100,16 @@ static inline f64 floor_f64(f64 value)
     return result;
 }
 
+#undef RGB
+#undef RGBA
+
 // NOTE: Dangerous or not really?
 #define Vec2(_x, _y)          (Vec2)  { .x = (_x), .y = (_y) }
 #define Vec3(_x, _y, _z)      (Vec3)  { .x = (_x), .y = (_y), .z = (_z) }
 #define Vec4(_x, _y, _z, _w)  (Vec4)  { .x = (_x), .y = (_y), .z = (_z), .w = (_w) }
 #define Color(_r, _g, _b, _a) (Color) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
 #define RGBA(_r, _g, _b, _a)  (Color) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
+#define RGB(_r, _g, _b)       RGBA(_r, _g, _b, 255.0f)
 
 #define H_MATHS_H
 #endif
