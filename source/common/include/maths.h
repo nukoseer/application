@@ -100,6 +100,21 @@ static inline f64 floor_f64(f64 value)
     return result;
 }
 
+static inline f32 pow_f32(f32 value, f32 power)
+{
+    f32 result = powf(value, power);
+
+    return result;
+}
+
+static inline f64 pow_f64(f64 value, f64 power)
+{
+    f64 result = pow(value, power);
+
+    return result;
+}
+
+// NOTE: There is also RGB macro defined in Windows.h
 #undef RGB
 #undef RGBA
 
