@@ -121,6 +121,15 @@ static inline f32 lerp(f32 min, f32 value, f32 max)
     return result;
 }
 
+static inline f32 clamp(f32 min, f32 value, f32 max)
+{
+    f32 result = value < min ? min : value;
+
+    if (value > max)
+    {
+        result = max;
+    }
+
     return result;
 }
 
