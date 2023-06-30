@@ -116,7 +116,10 @@ static inline f64 pow_f64(f64 value, f64 power)
 
 static inline f32 lerp(f32 min, f32 value, f32 max)
 {
-    f32 result = min + value * (max - min)
+    f32 result = min + value * (max - min);
+
+    return result;
+}
 
     return result;
 }
