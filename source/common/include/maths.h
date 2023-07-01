@@ -133,6 +133,13 @@ static inline f32 clamp(f32 min, f32 value, f32 max)
     return result;
 }
 
+static inline f32 normalize(f32 min, f32 value, f32 max)
+{
+    f32 result = (value - min) / (max - min);
+
+    return result;
+}
+
 // NOTE: There is also RGB macro defined in Windows.h
 #undef RGB
 #undef RGBA
