@@ -19,6 +19,8 @@
 #include "win32_window.h"
 #include "win32_graphics.h"
 
+#define VERTEX_BUFFER_SIZE MEGABYTES(1)
+
 // TODO: MOST OF THE FUNCTIONS IN THIS FILE DO NOT RETURN ANYTHING.
 // IS IT A GOOD IDEA TO LEAVE THEM AS THEY ARE OR SHOULD THEY RETURN
 // SOMETHING FOR ERROR CHECKING/ASSERTING?
@@ -498,13 +500,17 @@ static void graphics_init(Win32Graphics* graphics)
     win32_io_file_close(pixel_shader_file);
 
     // TODO: 1MB?
-    graphics->vertex_buffer_data = win32_memory_heap_allocate(MEGABYTES(1), TRUE);
+    // TODO: It is possible that we need multiple vertex_buffer_data to draw
+    // different primitive topologies.
+    graphics->vertex_buffer_data = win32_memory_heap_allocate(VERTEX_BUFFER_SIZE, TRUE);
     graphics->vertex_buffer_size = 0;
 }
 
 static void add_vertex_data(Win32Graphics* graphics, const u8* vertex_buffer_data, u32 vertex_buffer_size)
 {
-    // TODO: Sanity check?
+
+    ASSERT(graphics->vertex_buffer_size + vertex_buffer_size < VERTEX_BUFFER_SIZE);
+    
     memcpy((u8*)graphics->vertex_buffer_data + graphics->vertex_buffer_size, vertex_buffer_data, vertex_buffer_size);
     graphics->vertex_buffer_size += vertex_buffer_size;
 }
@@ -701,7 +707,6 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
     ID3D11ShaderResourceView** texture_view = graphics->texture_view + graphics->texture_count++;
-
     D3D11_TEXTURE2D_DESC desc =
     {
         .Width = (UINT)width,
@@ -713,13 +718,11 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
         .Usage = D3D11_USAGE_IMMUTABLE,
         .BindFlags = D3D11_BIND_SHADER_RESOURCE,
     };
-
     D3D11_SUBRESOURCE_DATA data =
     {
         .pSysMem = texture_buffer,
         .SysMemPitch = (u32)width * sizeof(u32),
     };
-
     ID3D11Texture2D* texture = 0;
 
     ID3D11Device_CreateTexture2D(device, &desc, &data, &texture);
@@ -764,7 +767,6 @@ uptr win32_graphics_init(uptr handle_pointer)
     // TODO: Do we need different way to allocate? Arena etc.
     Win32Graphics* graphics = (Win32Graphics*)win32_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
     HWND handle = (HWND)handle_pointer;
-    // ID3D11Buffer* buffer = 0;
 
     graphics->handle = handle;
 
