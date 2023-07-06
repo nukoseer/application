@@ -5,6 +5,7 @@
 #include "os_graphics.h"
 
 typedef void OSGraphicsSetVertexBufferData(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size);
+typedef void OSGraphicsAddVertexBufferData(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size);
 typedef void OSGraphicsSetVertexInputLayouts(uptr graphics_pointer, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                              const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count);
 typedef void OSGraphicsCreateTexture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
@@ -22,6 +23,7 @@ typedef void OSGraphicsDraw(uptr graphics_pointer);
 typedef struct OSGraphics
 {
     OSGraphicsSetVertexBufferData* set_vertex_buffer_data;
+    OSGraphicsAddVertexBufferData* add_vertex_buffer_data;
     OSGraphicsSetVertexInputLayouts* set_vertex_input_layouts;
     OSGraphicsCreateTexture* create_texture;
     OSGraphicsCreateVertexShader* create_vertex_shader;
@@ -42,6 +44,7 @@ typedef struct OSGraphics
 static OSGraphics os_graphics =
 {
     .set_vertex_buffer_data = &win32_graphics_set_vertex_buffer_data,
+    .add_vertex_buffer_data = &win32_graphics_add_vertex_buffer_data,
     .set_vertex_input_layouts = &win32_graphics_set_vertex_input_layouts,
     .create_texture = &win32_graphics_create_texture,
     .create_vertex_shader = &win32_graphics_create_vertex_shader,
@@ -67,14 +70,25 @@ static uptr get_graphics_handle_from_window(OSWindowHandle os_window_handle)
     return graphics_handle;
 }
 
-void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertices, u32 vertex_count)
+void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertex_buffer_data, u32 vertex_buffer_size)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
     if (graphics_handle)
     {
         ASSERT(os_graphics.set_vertex_buffer_data);
-        os_graphics.set_vertex_buffer_data(graphics_handle, vertices, vertex_count);
+        os_graphics.set_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
+    }
+}
+
+void os_graphics_add_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertex_buffer_data, u32 vertex_buffer_size)
+{
+    uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
+
+    if (graphics_handle)
+    {
+        ASSERT(os_graphics.add_vertex_buffer_data);
+        os_graphics.add_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
     }
 }
 

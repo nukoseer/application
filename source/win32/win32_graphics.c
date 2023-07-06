@@ -542,6 +542,13 @@ void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, const void* ve
     graphics->vertex_buffer_size = vertex_buffer_size;
 }
 
+void win32_graphics_add_vertex_buffer_data(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+
+    add_vertex_data(graphics, vertex_buffer_data, vertex_buffer_size);
+}
+
 void win32_graphics_clear(uptr graphics_pointer, Color color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;

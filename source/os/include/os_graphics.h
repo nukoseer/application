@@ -1,6 +1,7 @@
 #ifndef H_OS_GRAPHICS_H
 
-void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertices, u32 vertex_count);
+void os_graphics_set_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertex_buffer_data, u32 vertex_buffer_size);
+void os_graphics_add_vertex_buffer_data(OSWindowHandle os_window_handle, const void* vertex_buffer_data, u32 vertex_buffer_size);
 void os_graphics_set_vertex_input_layouts(OSWindowHandle os_window_handle, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                           const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count);
 void os_graphics_create_texture(OSWindowHandle os_window_handle, const u32* texture_buffer, i32 width, i32 height);

@@ -44,11 +44,11 @@ static void application(void)
     os_log_set_level(OS_LOG_LEVEL_DEBUG);
 
     os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
-    os_graphics_set_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
 
     os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, Color(255.0f, 0.0f, 0.0f, 255.0f));
     os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, Color(0.0f, 255.0f, 0.0f, 255.0f));
-    
+
+    os_graphics_add_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
     os_graphics_draw_triangle(os_window_handle,
                               Vec2(320.0f, 120.0f), Vec2(80.0f, 420.0f), Vec2(560.0f, 420.0f),
                               Color(210.0f, 39.0f, 210.0f, 128.0f));
