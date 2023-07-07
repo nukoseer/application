@@ -28,7 +28,7 @@ static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
     OSWindowHandle os_window_handle2 = 0;
-    OSRandomHandle os_random_handle = { 0 };
+    RandomHandle random_handle = { 0 };
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
@@ -58,9 +58,9 @@ static void application(void)
 
     os_graphics_draw_pixel(os_window_handle, width / 2, height / 2, Color(255.0f, 255.0f, 255.0f, 255.0f));
     
-    os_random_handle = os_random_init(44);
-    OS_LOG_DEBUG("os_random_unilateral: %f", (f64)os_random_unilateral(os_random_handle));
-    OS_LOG_DEBUG("os_random_bilateral: %f", (f64)os_random_bilateral(os_random_handle));
+    random_handle = random_init(44);
+    OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random_handle));
+    OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random_handle));
 
     {
         u32 texture_buffer0[] =
