@@ -77,7 +77,7 @@ fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fo d3d11_pixel_shader.o /Vn d
 
 %ar% mem.obj random.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_graphics.obj os.obj win32_graphics.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32.obj /out:os.lib
 
-%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib Kernel32.lib User32.lib Winmm.lib Synchronization.lib Shell32.lib Dwmapi.lib Gdi32.lib D3D11.lib DXGI.lib DXGUID.lib libvcruntime.lib libucrt.lib
+%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib libvcruntime.lib
 
 REM libvcruntime.lib libucrt.lib
 

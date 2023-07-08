@@ -3,6 +3,17 @@
 #include "win32_window.h"
 #include "win32_io.h"
 
+// NOTE: Needed win32 libs.
+#pragma comment(lib, "User32")
+#pragma comment(lib, "Winmm")
+#pragma comment(lib, "Synchronization")
+#pragma comment(lib, "Shell32")
+#pragma comment(lib, "Dwmapi")
+#pragma comment(lib, "Gdi32")
+#pragma comment(lib, "D3D11")
+#pragma comment(lib, "DXGI")
+#pragma comment(lib, "DXGUID")
+
 b32 win32_should_quit(void)
 {
     return !win32_window_get_window_count();
