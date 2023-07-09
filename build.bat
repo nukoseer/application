@@ -6,14 +6,14 @@ pushd build
 
 set win32_defines=/DWIN32_LEAN_AND_MEAN
 
-set debug_compiler_flags=/Od /Zo /Z7 /RTC1 /fsanitize=address
-set release_compiler_flags=/O2
-set common_compiler_flags=/Oi /TC /MT /FC /nologo /Wall /WX /D_CRT_SECURE_NO_WARNINGS
+set debug_compiler_flags=/Od /MTd /Zo /Z7 /RTC1 /fsanitize=address
+set release_compiler_flags=/O2 
+set common_compiler_flags=/Oi /TC /FC /GS- /nologo /Wall /WX /D_CRT_SECURE_NO_WARNINGS
 set object_flags=/c /Fo
 
 set debug_linker_flags=/debug
 rem /wholearchive:clang_rt.asan-x86_64.lib
-set release_linker_flags=/fixed /opt:icf /opt:ref
+set release_linker_flags=/fixed /opt:icf /opt:ref libvcruntime.lib
 set common_linker_flags=/incremental:no /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup
 
 set debug=yes
@@ -37,7 +37,7 @@ if %debug%==yes (
    set common_linker_flags=%common_linker_flags% %debug_linker_flags%
 ) else (
    set common_compiler_flags=%common_compiler_flags% %release_compiler_flags%
-   set object_flags=%object_flags% /GS-
+   set object_flags=%object_flags%
    set common_linker_flags=%common_linker_flags% %release_linker_flags%
 )
 
@@ -87,7 +87,7 @@ REM Pack .obj files into a .lib.
 %ar% %all_object% /out:os.lib
 
 REM Compile and link the application.
-%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% /out:application.exe test.obj os.lib libvcruntime.lib
+%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% test.obj os.lib /out:application.exe 
 
 REM libvcruntime.lib libucrt.lib
 
