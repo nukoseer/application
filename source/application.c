@@ -38,6 +38,7 @@ static void application(void)
     os_window_handle = os_window_open("Application Window", 60, 60, 640, 480, FALSE);
     os_window_handle2 = os_window_open("Application Window2", 80, 80, 640, 480, TRUE);
 
+    // TODO: These functions are not matching exactly with their name?
     os_window_get_position(os_window_handle, &x, &y, &width, &height);
     os_window_set_position(os_window_handle2, x + width, y, width, height);
 
@@ -88,6 +89,7 @@ static void application(void)
 
         os_time_sleep(16);
 
+        // TODO: Still not sure how to handle input events.
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
         {
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
