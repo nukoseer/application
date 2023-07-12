@@ -41,12 +41,12 @@ typedef struct OSLogRing
     PADDING(4);
 } OSLogRing;
 
-static os_thread_callback_return os_log_thread_procedure(os_thread_callback_param parameter);
 static i32 log_ring_buffer_push(void);
-static void log_ring_buffer_push_commit(void);
 static i32 log_ring_buffer_pop(void);
-static void log_ring_buffer_pop_commit(void);
+static inline void log_ring_buffer_push_commit(void);
+static inline void log_ring_buffer_pop_commit(void);
 
+static b32 init;
 static OSLogRing os_log_ring;
 static OSLogLevel os_log_level;
 
@@ -130,7 +130,7 @@ void os_log_set_level(OSLogLevel log_level)
 
 void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, ...)
 {
-    if (log_level >= os_log_level)
+    if (init && log_level >= os_log_level)
     {
         i32 head = log_ring_buffer_push();
         {
@@ -152,8 +152,6 @@ void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, .
 
 void os_log_init(void)
 {
-    static b32 init;
-
     if (!init)
     {
         os_thread_create(&os_log_thread_procedure, 0);
