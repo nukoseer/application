@@ -783,7 +783,7 @@ void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_are
     win32_window_event_arena = 0;
 }
 
-b32 win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)
+b32 win32_window_get_position_and_size(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)
 {
     Win32Window* window = (Win32Window*)window_pointer;
     RECT rect = { 0 };
@@ -804,7 +804,7 @@ b32 win32_window_get_position(uptr window_pointer, i32* x, i32* y, i32* width, i
     return !!result;
 }
 
-b32 win32_window_set_position(uptr window_pointer, i32 x, i32 y, i32 width, i32 height)
+b32 win32_window_set_position_and_size(uptr window_pointer, i32 x, i32 y, i32 width, i32 height)
 {
     Win32Window* window = (Win32Window*)window_pointer;
     BOOL result = 0;

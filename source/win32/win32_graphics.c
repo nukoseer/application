@@ -116,7 +116,7 @@ static void create_swap_chain(Win32Graphics* graphics)
     HRESULT hresult = 0;
     i32 x, y, width, height = 0;
 
-    win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle), &x, &y, &width, &height);
+    win32_window_get_position_and_size(win32_window_get_window_from((uptr)graphics->handle), &x, &y, &width, &height);
 
     graphics->swap_chain_width = width;
     graphics->swap_chain_height = height;
@@ -311,7 +311,7 @@ static void resize_swap_chain(Win32Graphics* graphics)
 {
     i32 x, y, width, height = 0;
 
-    win32_window_get_position(win32_window_get_window_from((uptr)graphics->handle), &x, &y, &width, &height);
+    win32_window_get_position_and_size(win32_window_get_window_from((uptr)graphics->handle), &x, &y, &width, &height);
 
     if (graphics->render_target_view == NULL ||
         graphics->swap_chain_width != width || graphics->swap_chain_height != height)

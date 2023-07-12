@@ -9,9 +9,8 @@ typedef uptr OSWindowGetHandleFrom(uptr window_pointer);
 typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
 typedef uptr OSWindowGetGraphicsHandleFrom(uptr window_pointer);
 typedef void OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
-typedef b32  OSWindowGetPosition(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
-typedef b32  OsWindowSetPosition(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
-typedef b32  OsWindowSetPosition(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
+typedef b32  OSWindowGetPositionAndSize(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
+typedef b32  OSWindowSetPositionAndSize(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
 typedef b32  OSWindowSetTitle(uptr window_pointer, const char* title);
 
 typedef struct OSWindow
@@ -22,8 +21,8 @@ typedef struct OSWindow
     OSWindowGetWindowFrom* get_window_from_handle;
     OSWindowGetGraphicsHandleFrom* get_graphics_handle_from_window;
     OSWindowGetEventList* get_event_list;
-    OSWindowGetPosition* get_position;
-    OsWindowSetPosition* set_position;
+    OSWindowGetPositionAndSize* get_position_and_size;
+    OSWindowSetPositionAndSize* set_position_and_size;
     OSWindowSetTitle* set_title;
 } OSWindow;
 
@@ -38,8 +37,8 @@ static OSWindow os_window =
     .get_window_from_handle = &win32_window_get_window_from,
     .get_graphics_handle_from_window = &win32_window_get_graphics_handle_from,
     .get_event_list = &win32_window_get_event_list,
-    .get_position = &win32_window_get_position,
-    .set_position = &win32_window_set_position,
+    .get_position_and_size = &win32_window_get_position_and_size,
+    .set_position_and_size = &win32_window_set_position_and_size,
     .set_title = &win32_window_set_title,
 };
 
@@ -126,7 +125,7 @@ OSEventList os_window_get_events(void)
     return os_event_list;
 }
 
-b32 os_window_get_position(OSWindowHandle os_window_handle, i32* x, i32* y, i32* width, i32* height)
+b32 os_window_get_position_and_size(OSWindowHandle os_window_handle, i32* x, i32* y, i32* width, i32* height)
 {
     b32 result = FALSE;
     uptr window = 0;
@@ -136,14 +135,14 @@ b32 os_window_get_position(OSWindowHandle os_window_handle, i32* x, i32* y, i32*
 
     if (window)
     {
-        ASSERT(os_window.get_position);
-        result = os_window.get_position(window, x, y, width, height);
+        ASSERT(os_window.get_position_and_size);
+        result = os_window.get_position_and_size(window, x, y, width, height);
     }
 
     return result;
 }
 
-b32 os_window_set_position(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height)
+b32 os_window_set_position_and_size(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height)
 {
     b32 result = FALSE;
     uptr window = 0;
@@ -153,8 +152,8 @@ b32 os_window_set_position(OSWindowHandle os_window_handle, i32 x, i32 y, i32 wi
 
     if (window)
     {
-        ASSERT(os_window.set_position);
-        result = os_window.set_position(window, x, y, width, height);
+        ASSERT(os_window.set_position_and_size);
+        result = os_window.set_position_and_size(window, x, y, width, height);
     }
 
     return result;
