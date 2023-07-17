@@ -600,6 +600,7 @@ void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32
     f32 steps = 0;
     i32 i = 0;
     f32 circle_buffer[8];
+    i32 min_segments = (i32)ceil_f32((end_angle - start_angle) / 90.0f);
 
     if (end_angle < start_angle)
     {
@@ -609,10 +610,18 @@ void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32
         end_angle = temp;
     }
 
-    if (segments == 0)
+    if (segments < min_segments)
     {
-        // TODO: If 0 what?
-        segments = 1;
+        // NOTE: Source: https://stackoverflow.com/questions/2243668/when-drawing-an-ellipse-or-circle-with-opengl-how-many-vertices-should-we-use/2244088#2244088
+        // and raylib
+        // NOTE: Maximum angle between segments (error rate 0.5f)
+        f32 th = acos_f32(2.0f * pow_f32(1.0f - (0.5f / radius), 2.0f) - 1.0f);
+        segments = (i32)((end_angle - start_angle) * ceil_f32(2.0f * PI / th) / 360.0f);
+
+        if (segments <= 0)
+        {
+            segments = min_segments;
+        }
     }
 
     steps = (end_angle - start_angle) / (f32)segments;
