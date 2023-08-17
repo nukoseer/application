@@ -24,6 +24,19 @@ static f32 vertices[] =
 //      +0.75f, +0.75f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
 // };
 
+// TODO: Is it a good idea to have a default shader? We store
+// everything about graphics in Win32Graphics struct but probably it
+// is not good idea. If we want to create different shaders how we
+// should do it?  If we create different shaders, we can't have
+// standart way to draw vertices because we won't know data layout of
+// vertex shader, so we must also write special draw functions for
+// every shader with different data layout?  It means user should
+// write draw functions instead of having standart functions in
+// os/win32 layer.  This shows to me that maybe it is better to leave
+// it like as it is (just standart basic shader) because our purpose
+// is not to make so sophistacated renderer. If we can handle simple
+// 2D graphics it should be enough for us.
+
 static void application(void)
 {
     OSWindowHandle os_window_handle = 0;

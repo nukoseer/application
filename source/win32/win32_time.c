@@ -7,7 +7,8 @@
 
 #define TIMER_UNINITIALIZED 1
 
-i64 win32_time_get_tick(void)
+// TODO: Maybe we should use __rdtsc intrinsic directly instead of QueryPerformanceCounter()
+u64 win32_time_get_tick(void)
 {
     static MMRESULT is_time_granular = TIMER_UNINITIALIZED;
     LARGE_INTEGER tick = { 0 };
@@ -18,10 +19,10 @@ i64 win32_time_get_tick(void)
 
     QueryPerformanceCounter(&tick);
 
-    return (i64)tick.QuadPart;
+    return (u64)tick.QuadPart;
 }
 
-i64 win32_time_get_frequency(void)
+u64 win32_time_get_frequency(void)
 {
     // NOTE: Counts per second
     static LARGE_INTEGER frequency;
@@ -30,7 +31,7 @@ i64 win32_time_get_frequency(void)
         QueryPerformanceFrequency(&frequency);
     ASSERT(frequency.QuadPart);
 
-    return (i64)frequency.QuadPart;
+    return (u64)frequency.QuadPart;
 }
 
 void win32_time_sleep(u32 milliseconds)
