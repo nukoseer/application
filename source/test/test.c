@@ -189,10 +189,29 @@ static void time_test(void)
     print_time("Current time: ", &os_local_time);
 }
 
+static void defer_test(void)
+{
+    u32 x = 0;
+    u32 y = 0;
+        
+    DEFER(x += 3)
+    {
+        ASSERT(x == 0);
+    }
+    ASSERT(x == 3);
+
+    DEFER_LOOP(y += 5, y += 9)
+    {
+        ASSERT(y == 5);
+    }
+    ASSERT(y == 14);
+}
+
 void run_test(void)
 {
     stretchy_buffer_test();
     doubly_linked_list_test();
     time_test();
     file_operation_test();
+    defer_test();
 }

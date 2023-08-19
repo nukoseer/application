@@ -16,6 +16,11 @@
 #define STRINGFY_(x) #x
 #define STRINGFY(x) STRINGFY_(x)
 
+#define CONCAT_(x, y) x##y
+#define CONCAT(x, y) CONCAT_(x, y)
+
+#define UNIQUE(name) CONCAT(name, __LINE__)
+
 #define UNUSED_VARIABLE(x)  ((void)(x))
 #define ARRAY_COUNT(x)      (sizeof(x) / sizeof(*(x)))
 #define PADDING(x)          u8 padding_[x]
@@ -26,6 +31,9 @@
 #define KILOBYTES(n) ((n) << 10)
 #define MEGABYTES(n) (KILOBYTES(n) << 10)
 #define GIGABYTES(n) (MEGABYTES(n) << 10)
+
+#define DEFER_LOOP(begin, end) for (u32 UNIQUE(_i_) = ((begin), 0); UNIQUE(_i_) == 0; (++UNIQUE(_i_), (end)))
+#define DEFER(x) DEFER_LOOP(0, x)
 
 inline u32 string_length(const char* str)
 {
