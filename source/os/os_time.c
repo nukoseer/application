@@ -69,7 +69,7 @@ static OSTimeTick* find_empty_time_tick(OSTimeTickHandle* os_time_tick_handle)
     return found_time_tick;
 }
 
-f64 os_time_ticks_to_milliseconds(u64 tick)
+f64 os_time_tick_to_milliseconds(u64 tick)
 {
     u64 frequency = os_time_get_frequency();
     f64 milliseconds = 1000.0 * tick / (f64)frequency;
@@ -107,20 +107,18 @@ OSTimeTickHandle os_time_begin_tick(void)
     return os_time_tick_handle;
 }
 
-f64 os_time_end_tick(OSTimeTickHandle os_time_tick_handle)
+u64 os_time_end_tick(OSTimeTickHandle os_time_tick_handle)
 {
     OSTimeTick* os_time_tick = 0;
     u64 elapsed_ticks = 0;
-    f64 elapsed_milliseconds = 0;
 
     ASSERT(os_time_tick_handle != INVALID_TIMER_HANDLE && os_time_tick_handle < MAX_TIMER_COUNT);
 
     os_time_tick = os_time_ticks + os_time_tick_handle;
     elapsed_ticks = os_time_get_tick() - os_time_tick->tick;
-    elapsed_milliseconds = os_time_ticks_to_milliseconds(elapsed_ticks);
     os_time_tick->tick = 0;
 
-    return elapsed_milliseconds;
+    return elapsed_ticks;
 }
 
 void os_time_sleep(u32 milliseconds)

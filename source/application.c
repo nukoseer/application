@@ -120,9 +120,10 @@ static void application(void)
 
         {
             char milliseconds_string[32] = { 0 };
-            f64 milliseconds = os_time_end_tick(os_time_tick_handle);
+            u64 tick = os_time_end_tick(os_time_tick_handle);
+            f64 milliseconds = os_time_tick_to_milliseconds(tick);
 
-            sprintf(milliseconds_string, "%.8f ms. %d fps.\n", milliseconds, (i32)(1000.0 / milliseconds));
+            sprintf(milliseconds_string, "%.2f ms. %.2f fps.\n",  milliseconds, 1000.0 / milliseconds);
 
             // os_window_set_title(os_window_handle, milliseconds_string);
             // os_window_set_title(os_window_handle2, milliseconds_string);
