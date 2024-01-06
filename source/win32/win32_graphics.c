@@ -14,7 +14,6 @@
 #include "utils.h"
 #include "maths.h"
 
-#include "win32_io.h"
 #include "win32_memory.h"
 #include "win32_window.h"
 #include "win32_graphics.h"
@@ -24,6 +23,49 @@
 // TODO: MOST OF THE FUNCTIONS IN THIS FILE DO NOT RETURN ANYTHING.
 // IS IT A GOOD IDEA TO LEAVE THEM AS THEY ARE OR SHOULD THEY RETURN
 // SOMETHING FOR ERROR CHECKING/ASSERTING?
+
+typedef enum Win32GraphicsShaderType
+{
+    WIN32_GRAPHICS_SHADER_TYPE_VERTEX,
+    WIN32_GRAPHICS_SHADER_TYPE_PIXEL,
+
+    WIN32_GRAPHICS_SHADER_TYPE_COUNT,
+} Win32GraphicsShaderType;
+
+typedef struct Win32GraphicsVertexShader
+{
+    ID3D11VertexShader* shader;
+    ID3D11Buffer* buffer;
+} Win32GraphicsVertexShader;
+
+typedef struct Win32GraphicsPixelShader
+{
+    ID3D11PixelShader* shader;
+    ID3D11ShaderResourceView* texture_view[2];
+} Win32GraphicsPixelShader;
+
+typedef struct Win32GraphicsShader
+{
+    Win32GraphicsShaderType type;
+    PADDING(4);
+    union
+    {
+        Win32GraphicsVertexShader vertex_shader;
+        Win32GraphicsPixelShader pixel_shader;   
+    };
+} Win32GraphicsShader;
+
+// TODO: One input layout can be used with multiple vertex shaders that have same layout?
+// Should we associate input layout and vertex shader or input layout and vertex buffer or
+// it is enough to create an input layout and use it with particular vertex shader when it is needed. 
+typedef struct Win32GraphicsInputLayout
+{
+    ID3D11InputLayout* layout;
+    D3D11_INPUT_ELEMENT_DESC descs[16];
+    u32 desc_count;
+    // TODO: stride belongs here?
+    u32 stride;
+} Win32GraphicsInputLayout;
 
 // TODO: We should check the alignment and padding of this struct.
 typedef struct Win32Graphics
@@ -44,17 +86,12 @@ typedef struct Win32Graphics
     IDXGISwapChain1* swap_chain;
     i32 swap_chain_width;
     i32 swap_chain_height;
-    ID3D11InputLayout* input_layout;
-    ID3D11VertexShader* vertex_shader;
-    ID3D11PixelShader* pixel_shader;
-    D3D11_INPUT_ELEMENT_DESC input_descs[3];
-    u32 input_desc_count;
-    u32 input_stride;
-    ID3D11Buffer* vertex_buffer;
     void* vertex_buffer_data;
     u32 vertex_buffer_size;
     FLOAT clear_color[4];
     PADDING(4);
+    Win32GraphicsShader* shaders[WIN32_GRAPHICS_SHADER_TYPE_COUNT];
+    Win32GraphicsInputLayout* input_layout;
 } Win32Graphics;
 
 static ID3D11Device* graphics_device;
@@ -174,10 +211,11 @@ static void create_swap_chain(Win32Graphics* graphics)
     IDXGIFactory_Release(factory);
 }
 
-static void create_vertex_buffer(Win32Graphics* graphics)
+// TODO: Creating vertex buffer should be coupled with vertex shader?
+// Maybe it is okay to have 1(?) vertex buffer per vertex shader but
+// probably we also need independent way to create buffer.
+static void create_vertex_buffer(Win32GraphicsVertexShader* vertex_shader)
 {
-    ID3D11Device* device = graphics->device;
-    ID3D11Buffer** vertex_buffer = &graphics->vertex_buffer;
     D3D11_BUFFER_DESC desc =
     {
         .ByteWidth = MEGABYTES(10), // NOTE: Max 10 megabytes?
@@ -188,10 +226,10 @@ static void create_vertex_buffer(Win32Graphics* graphics)
     // D3D11_SUBRESOURCE_DATA initial_data = { .pSysMem = vertex_data };
 
     // ID3D11Device_CreateBuffer(device, &desc, &initial_data, vertex_buffer);
-    ID3D11Device_CreateBuffer(device, &desc, 0, vertex_buffer);
+    ID3D11Device_CreateBuffer(graphics_device, &desc, 0, &vertex_shader->buffer);
 }
 
-static void set_vertex_input_layout(Win32Graphics* graphics, const char* name, u32 offset, u32 format)
+static void set_vertex_input_layout(Win32GraphicsInputLayout* input_layout, const char* name, u32 offset, u32 format)
 {
     DXGI_FORMAT dxgi_format = 0;
 
@@ -219,7 +257,7 @@ static void set_vertex_input_layout(Win32Graphics* graphics, const char* name, u
         break;
     }
 
-    graphics->input_descs[graphics->input_desc_count++] = (D3D11_INPUT_ELEMENT_DESC){ name, 0, dxgi_format, 0, offset, D3D11_INPUT_PER_VERTEX_DATA, 0 };
+    input_layout->descs[input_layout->desc_count++] = (D3D11_INPUT_ELEMENT_DESC){ name, 0, dxgi_format, 0, offset, D3D11_INPUT_PER_VERTEX_DATA, 0 };
 }
 
 static void create_sampler_state(Win32Graphics* graphics)
@@ -394,10 +432,10 @@ static void draw(Win32Graphics* graphics)
         ID3D11RasterizerState* rasterizer_state = graphics->rasterizer_state;
         ID3D11DepthStencilState* depth_state = graphics->depth_state;
         IDXGISwapChain1* swap_chain = graphics->swap_chain;
-        ID3D11InputLayout* input_layout = graphics->input_layout;
-        ID3D11VertexShader* vertex_shader = graphics->vertex_shader;
-        ID3D11PixelShader* pixel_shader = graphics->pixel_shader;
-        ID3D11Buffer** vertex_buffer = &graphics->vertex_buffer;
+        ID3D11InputLayout* input_layout = graphics->input_layout->layout;
+        ID3D11VertexShader* vertex_shader = graphics->shaders[WIN32_GRAPHICS_SHADER_TYPE_VERTEX]->vertex_shader.shader;
+        ID3D11PixelShader* pixel_shader = graphics->shaders[WIN32_GRAPHICS_SHADER_TYPE_PIXEL]->pixel_shader.shader;
+        ID3D11Buffer** vertex_buffer = &graphics->shaders[WIN32_GRAPHICS_SHADER_TYPE_VERTEX]->vertex_shader.buffer;
         ID3D11Buffer** screen_buffer = &graphics->screen_buffer;
         ID3D11ShaderResourceView** texture_view = graphics->texture_view;
         u64 texture_count = graphics->texture_count;
@@ -420,10 +458,11 @@ static void draw(Win32Graphics* graphics)
 
         // NOTE: Input Assembler.
         ID3D11DeviceContext_IASetInputLayout(context, input_layout);
+        // TODO: Parameterize input layout topology?
         ID3D11DeviceContext_IASetPrimitiveTopology(context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         {
-            UINT stride = graphics->input_stride;
+            UINT stride = graphics->input_layout->stride;
             UINT offset = 0;
             f32 screen[] = { 1.0f / (f32)graphics->swap_chain_width, 1.0f / (f32)graphics->swap_chain_height, 0.0f, 0.0f };
 
@@ -457,53 +496,11 @@ static void draw(Win32Graphics* graphics)
         ID3D11DeviceContext_OMSetRenderTargets(context, 1, &graphics->render_target_view, graphics->depth_stencil_view);
 
         // NOTE: Draw 3 vertices.
-        ID3D11DeviceContext_Draw(context, graphics->vertex_buffer_size / graphics->input_stride, 0);
+        ID3D11DeviceContext_Draw(context, graphics->vertex_buffer_size / graphics->input_layout->stride, 0);
         IDXGISwapChain1_Present(swap_chain, 0, 0);
 
         // clear_vertex_buffer_data(graphics);
     }
-}
-
-// TODO: Our default shader? Not sure about TEXCOORD, uv.
-static void graphics_init(Win32Graphics* graphics)
-{
-    const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
-    const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
-    struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
-    u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, uv), OFFSETOF(struct Vertex, color) };
-    u32 input_layout_formats[] = { 2, 2, 4 };
-    uptr vertex_shader_file = win32_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
-    u32 vertex_shader_buffer_size = win32_io_file_size(vertex_shader_file);
-    u8* vertex_shader_buffer = win32_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
-    uptr pixel_shader_file = win32_io_file_open(shader_file_names[1], 1); // NOTE: Read mode
-    u32 pixel_shader_buffer_size = win32_io_file_size(pixel_shader_file);
-    u8* pixel_shader_buffer = win32_memory_heap_allocate(pixel_shader_buffer_size, FALSE);
-
-    // TODO: Check size of read bytes?
-    win32_io_file_read(vertex_shader_file, (char*)vertex_shader_buffer, vertex_shader_buffer_size);
-    win32_io_file_read(pixel_shader_file, (char*)pixel_shader_buffer, pixel_shader_buffer_size);
-
-    win32_graphics_create_vertex_shader((uptr)graphics, vertex_shader_buffer, vertex_shader_buffer_size);
-    win32_graphics_create_pixel_shader((uptr)graphics, pixel_shader_buffer, pixel_shader_buffer_size);
-
-    win32_graphics_set_vertex_input_layouts((uptr)graphics,
-                                            vertex_shader_buffer,
-                                            vertex_shader_buffer_size,
-                                            input_layout_names,
-                                            input_layout_offsets,
-                                            input_layout_formats,
-                                            sizeof(struct Vertex), ARRAY_COUNT(input_layout_names));
-
-    win32_memory_heap_release(vertex_shader_buffer);
-    win32_memory_heap_release(pixel_shader_buffer);
-    win32_io_file_close(vertex_shader_file);
-    win32_io_file_close(pixel_shader_file);
-
-    // TODO: 1MB?
-    // TODO: It is possible that we need multiple vertex_buffer_data to draw
-    // different primitive topologies.
-    graphics->vertex_buffer_data = win32_memory_heap_allocate(VERTEX_BUFFER_SIZE, TRUE);
-    graphics->vertex_buffer_size = 0;
 }
 
 static void add_vertex_data(Win32Graphics* graphics, const u8* vertex_buffer_data, u32 vertex_buffer_size)
@@ -515,23 +512,24 @@ static void add_vertex_data(Win32Graphics* graphics, const u8* vertex_buffer_dat
     graphics->vertex_buffer_size += vertex_buffer_size;
 }
 
-void win32_graphics_set_vertex_input_layouts(uptr graphics_pointer, const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
-                                             const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
+uptr win32_graphics_create_input_layout(const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
+                                        const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
 {
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    // NOTE: Input layout for vertex input.
-    ID3D11InputLayout** input_layout = &graphics->input_layout;
-    i32 i = 0;
+    Win32GraphicsInputLayout* input_layout = win32_memory_heap_allocate(sizeof(Win32GraphicsInputLayout), TRUE);
+    u32 i = 0;
 
-    for (i = 0; i < (i32)layout_count; ++i)
+    for (i = 0; i < layout_count; ++i)
     {
-        set_vertex_input_layout(graphics, names[i], offsets[i], formats[i]);
+        set_vertex_input_layout(input_layout, names[i], offsets[i], formats[i]);
     }
 
-    graphics->input_stride = stride;
+    // TODO: what to do with stride?
+    input_layout->stride = stride;
 
-    ID3D11Device_CreateInputLayout(graphics->device, graphics->input_descs, graphics->input_desc_count,
-                                   vertex_shader_buffer, vertex_shader_buffer_size, input_layout);
+    ID3D11Device_CreateInputLayout(graphics_device, input_layout->descs, input_layout->desc_count,
+                                   vertex_shader_buffer, vertex_shader_buffer_size, &input_layout->layout);
+
+    return (uptr)input_layout;
 }
 
 void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size)
@@ -558,6 +556,9 @@ void win32_graphics_clear(uptr graphics_pointer, Color color)
     graphics->clear_color[2] = (color.b + 0.5f) / 255.0f;
     graphics->clear_color[3] = (color.a + 0.5f) / 255.0f;
 }
+
+// TODO: This draw functions probably do not need to be in platform layer?
+// Determining vertices, colors etc. can be done in upper layer.
 
 void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, Color color)
 {
@@ -746,13 +747,12 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
     ID3D11Texture2D_Release(texture);
 }
 
-void win32_graphics_create_vertex_shader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size)
+uptr win32_graphics_create_vertex_shader(const u8* shader_buffer, u32 shader_buffer_size)
 {
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    ID3D11Device* device = graphics->device;
-    ID3D11VertexShader** vertex_shader = &graphics->vertex_shader;
+    Win32GraphicsShader* shader = win32_memory_heap_allocate(sizeof(Win32GraphicsShader), TRUE);
 
-    create_vertex_buffer(graphics);
+    shader->type = WIN32_GRAPHICS_SHADER_TYPE_VERTEX;
+    shader->vertex_shader.shader = 0; 
 
     // NOTE: Alternative to hlsl compilation at runtime is to precompile shaders offline
     // it improves startup time - no need to parse hlsl files at runtime!
@@ -764,18 +764,41 @@ void win32_graphics_create_vertex_shader(uptr graphics_pointer, const u8* shader
     // You can also use "/Fo d3d11_*shader.bin" argument to save compiled shader as binary file to store with your assets
     // then provide binary data for Create*Shader functions below without need to include shader bytes in C.
 
-    ID3D11Device_CreateVertexShader(device, shader_buffer, shader_buffer_size,
-                                    NULL, vertex_shader);
+    ID3D11Device_CreateVertexShader(graphics_device, shader_buffer, shader_buffer_size,
+                                    NULL, &shader->vertex_shader.shader);
+    create_vertex_buffer(&shader->vertex_shader);
+
+    return (uptr)shader;
 }
 
-void win32_graphics_create_pixel_shader(uptr graphics_pointer, const u8* shader_buffer, u32 shader_buffer_size)
+uptr win32_graphics_create_pixel_shader(const u8* shader_buffer, u32 shader_buffer_size)
+{
+    Win32GraphicsShader* shader = win32_memory_heap_allocate(sizeof(Win32GraphicsShader), TRUE);
+    
+    shader->type = WIN32_GRAPHICS_SHADER_TYPE_PIXEL;
+    shader->pixel_shader.shader = 0; 
+    
+    ID3D11Device_CreatePixelShader(graphics_device, shader_buffer, shader_buffer_size,
+                                   NULL, &shader->pixel_shader.shader);
+
+    return (uptr)shader;
+}
+
+void win32_graphics_use_shader(uptr graphics_pointer, uptr shader_pointer)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    ID3D11Device* device = graphics->device;
-    ID3D11PixelShader** pixel_shader = &graphics->pixel_shader;
+    Win32GraphicsShader* shader = (Win32GraphicsShader*)shader_pointer;
 
-    ID3D11Device_CreatePixelShader(device, shader_buffer, shader_buffer_size,
-                                   NULL, pixel_shader);
+    ASSERT(shader->type < WIN32_GRAPHICS_SHADER_TYPE_COUNT);
+    graphics->shaders[shader->type] = shader;
+}
+
+void win32_graphics_use_input_layout(uptr graphics_pointer, uptr input_layout_pointer)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    Win32GraphicsInputLayout* input_layout = (Win32GraphicsInputLayout*)input_layout_pointer;
+    
+    graphics->input_layout = input_layout;
 }
 
 uptr win32_graphics_init(uptr handle_pointer)
@@ -792,7 +815,9 @@ uptr win32_graphics_init(uptr handle_pointer)
     create_blend_state(graphics);
     create_rasterizer_state(graphics);
     create_depth_state(graphics);
-    graphics_init(graphics);
+ 
+    graphics->vertex_buffer_data = win32_memory_heap_allocate(VERTEX_BUFFER_SIZE, TRUE);
+    graphics->vertex_buffer_size = 0;
     
     return (uptr)graphics;
 }

@@ -37,6 +37,46 @@ static f32 vertices[] =
 // is not to make so sophistacated renderer. If we can handle simple
 // 2D graphics it should be enough for us.
 
+// TODO: Our default shader? Not sure about TEXCOORD, uv.
+static void graphics_init(OSWindowHandle os_window_handle)
+{
+    const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
+    const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
+    struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
+    u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, uv), OFFSETOF(struct Vertex, color) };
+    u32 input_layout_formats[] = { 2, 2, 4 };
+    OSIOFileHandle vertex_shader_file = os_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
+    u32 vertex_shader_buffer_size = os_io_file_size(vertex_shader_file);
+    u8* vertex_shader_buffer = os_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
+    OSIOFileHandle pixel_shader_file = os_io_file_open(shader_file_names[1], 1); // NOTE: Read mode
+    u32 pixel_shader_buffer_size = os_io_file_size(pixel_shader_file);
+    u8* pixel_shader_buffer = os_memory_heap_allocate(pixel_shader_buffer_size, FALSE);
+
+    // TODO: Check size of read bytes?
+    os_io_file_read(vertex_shader_file, (char*)vertex_shader_buffer, vertex_shader_buffer_size);
+    os_io_file_read(pixel_shader_file, (char*)pixel_shader_buffer, pixel_shader_buffer_size);
+
+    OSGraphicsShader vertex_shader = os_graphics_create_vertex_shader(vertex_shader_buffer, vertex_shader_buffer_size);
+    OSGraphicsShader pixel_shader = os_graphics_create_pixel_shader(pixel_shader_buffer, pixel_shader_buffer_size);
+
+    OSGraphicsInputLayout input_layout = os_graphics_create_input_layout(vertex_shader_buffer,
+                                                                         vertex_shader_buffer_size,
+                                                                         input_layout_names,
+                                                                         input_layout_offsets,
+                                                                         input_layout_formats,
+                                                                         sizeof(struct Vertex), ARRAY_COUNT(input_layout_names));
+
+    os_graphics_use_shader(os_window_handle, vertex_shader);
+    os_graphics_use_shader(os_window_handle, pixel_shader);
+    os_graphics_use_input_layout(os_window_handle, input_layout);
+
+    os_memory_heap_release(vertex_shader_buffer);
+    os_memory_heap_release(pixel_shader_buffer);
+    os_io_file_close(vertex_shader_file);
+    os_io_file_close(pixel_shader_file);
+}
+
+
 static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
@@ -51,6 +91,9 @@ static void application(void)
     os_window_handle = os_window_open("Application Window", 60, 60, 640, 480, FALSE);
     os_window_handle2 = os_window_open("Application Window2", 80, 80, 640, 480, TRUE);
 
+    graphics_init(os_window_handle);
+    graphics_init(os_window_handle2);
+    
     os_window_get_position_and_size(os_window_handle, &x, &y, &width, &height);
     os_window_set_position_and_size(os_window_handle2, x + width, y, width, height);
 
