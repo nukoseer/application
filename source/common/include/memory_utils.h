@@ -27,6 +27,7 @@ typedef struct TemporaryMemory
     memory_size initial_size;
 } TemporaryMemory;
 
+memory_size get_alignment_offset(MemoryArena* arena, memory_size alignment);
 MemoryArena* allocate_memory_arena(memory_size max_size);
 void release_memory_arena(MemoryArena* memory_arena);
 TemporaryMemory begin_temporary_memory(MemoryArena* memory_arena);

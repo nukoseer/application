@@ -159,7 +159,7 @@ static void application(void)
 
             sprintf(milliseconds_string, "%.2f ms. %.2f fps.\n",  milliseconds, 1000.0 / milliseconds);
 
-            // os_window_set_title(os_window_handle, milliseconds_string);
+            os_window_set_title(os_window_handle, milliseconds_string);
         }
 
         os_graphics_clear(os_window_handle, RGBA(100.0f, 149.0f, 237.0f, 255.0f));

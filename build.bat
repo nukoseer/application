@@ -1,15 +1,25 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+REM TODO: !!!! MAKE THIS BUILD SCRIPT SIMPLER AND SHORTER !!!!
+
 IF NOT EXIST build mkdir build
 pushd build
 
+set object_folder=objects
+IF NOT EXIST %object_folder% mkdir %object_folder%
+del /F /Q %object_folder%\*
+
 set win32_defines=/DWIN32_LEAN_AND_MEAN
 
+REM /MTd
+REM clang-cl: error: invalid argument '/MTd' not allowed with '-fsanitize=address'
+REM clang-cl: note: AddressSanitizer doesn't support linking with debug runtime libraries yet
 set debug_compiler_flags=/Od /MTd /Zo /Z7 /RTC1 /fsanitize=address
 set release_compiler_flags=/O2 
 set common_compiler_flags=/Oi /TC /FC /GS- /nologo /Wall /WX /D_CRT_SECURE_NO_WARNINGS
-set object_flags=/c /Fo
+set object_flags=/c /Fo%object_folder%\
+
 
 set debug_linker_flags=/debug
 rem /wholearchive:clang_rt.asan-x86_64.lib
@@ -24,6 +34,7 @@ set env_cache=env_cache.cmd
 if exist "!env_cache!" (
    call "!env_cache!"
 ) else (
+   REM TODO: Maybe add logic to find the vcvarsall.bat
    call vcvarsall.bat x64
 
    echo set INCLUDE=!INCLUDE!> "!env_cache!"
@@ -67,12 +78,13 @@ set win32_include=/I..\source\win32\include\
 set os_include=/I..\source\os\include\
 set all_include=%common_include% %win32_include% %os_include% %test_include%
 
-set common_source=..\source\common\memory_utils.c ..\source\common\random.c ..\source\test\test.c
-set win32_source=..\source\win32\win32_graphics.c ..\source\win32\win32_thread.c ..\source\win32\win32_io.c ..\source\win32\win32_time.c ..\source\win32\win32_memory.c ..\source\win32\win32_window.c ..\source\win32\win32.c
-set os_source=..\source\os\os_thread.c ..\source\os\os_log.c ..\source\os\os_io.c ..\source\os\os_time.c ..\source\os\os_memory.c ..\source\os\os_window.c ..\source\os\os_graphics.c ..\source\os\os.c
-set all_source=%common_source% %win32_source% %os_source%
+set test_source=..\source\test\*.c
+set common_source=..\source\common\*.c
+set win32_source=..\source\win32\*.c
+set os_source=..\source\os\*.c
+set all_source=%common_source% %win32_source% %os_source% %test_source%
 
-set all_object=memory_utils.obj random.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_graphics.obj os.obj win32_graphics.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32.obj
+set all_object=%object_folder%\*.obj
 
 REM Compile vertex shader to a object file
 fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fo d3d11_vertex_shader.o /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
@@ -87,7 +99,7 @@ REM Pack .obj files into a .lib.
 %ar% %all_object% /out:os.lib
 
 REM Compile and link the application.
-%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% test.obj os.lib /out:application.exe 
+%compiler% %common_compiler_flags% %clang_compiler_flags% %os_include% %common_include% %test_include% ..\source\application.c /link %common_linker_flags% %object_folder%\test.obj os.lib /out:application.exe 
 
 REM libvcruntime.lib libucrt.lib
 
