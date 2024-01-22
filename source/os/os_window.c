@@ -1,6 +1,6 @@
 #include "types.h"
 #include "utils.h"
-#include "mem.h"
+#include "memory_utils.h"
 #include "os_window.h"
 
 typedef uptr OSWindowOpen(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless);

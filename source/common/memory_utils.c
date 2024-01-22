@@ -1,7 +1,7 @@
 #include "types.h"
 #include "utils.h"
 #include "os_memory.h"
-#include "mem.h"
+#include "memory_utils.h"
 
 // NOTE: Alignment must be power of 2.
 memory_size get_alignment_offset(MemoryArena* arena, memory_size alignment)

@@ -3,7 +3,7 @@
 #include "test.h"
 #include "types.h"
 #include "utils.h"
-#include "mem.h"
+#include "memory_utils.h"
 #include "os.h"
 
 static void stretchy_buffer_test(void)

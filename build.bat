@@ -67,12 +67,12 @@ set win32_include=/I..\source\win32\include\
 set os_include=/I..\source\os\include\
 set all_include=%common_include% %win32_include% %os_include% %test_include%
 
-set common_source=..\source\common\mem.c ..\source\common\random.c ..\source\test\test.c
+set common_source=..\source\common\memory_utils.c ..\source\common\random.c ..\source\test\test.c
 set win32_source=..\source\win32\win32_graphics.c ..\source\win32\win32_thread.c ..\source\win32\win32_io.c ..\source\win32\win32_time.c ..\source\win32\win32_memory.c ..\source\win32\win32_window.c ..\source\win32\win32.c
 set os_source=..\source\os\os_thread.c ..\source\os\os_log.c ..\source\os\os_io.c ..\source\os\os_time.c ..\source\os\os_memory.c ..\source\os\os_window.c ..\source\os\os_graphics.c ..\source\os\os.c
 set all_source=%common_source% %win32_source% %os_source%
 
-set all_object=mem.obj random.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_graphics.obj os.obj win32_graphics.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32.obj
+set all_object=memory_utils.obj random.obj os_thread.obj os_log.obj os_io.obj os_time.obj os_memory.obj os_window.obj os_graphics.obj os.obj win32_graphics.obj win32_thread.obj win32_io.obj win32_time.obj win32_memory.obj win32_window.obj win32.obj
 
 REM Compile vertex shader to a object file
 fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fo d3d11_vertex_shader.o /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
