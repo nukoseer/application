@@ -76,11 +76,9 @@ static void graphics_init(OSWindowHandle os_window_handle)
     os_io_file_close(pixel_shader_file);
 }
 
-
 static void application(void)
 {
     OSWindowHandle os_window_handle = 0;
-    OSWindowHandle os_window_handle2 = 0;
     RandomHandle random_handle = { 0 };
     i32 x = 0;
     i32 y = 0;
@@ -88,59 +86,53 @@ static void application(void)
     i32 height = 0;
 
     os_init();
-    os_window_handle = os_window_open("Application Window", 60, 60, 640, 480, FALSE);
-    os_window_handle2 = os_window_open("Application Window2", 80, 80, 640, 480, TRUE);
+    os_window_handle = os_window_open("Application", 60, 60, 640, 480, FALSE);
 
     graphics_init(os_window_handle);
-    graphics_init(os_window_handle2);
     
     os_window_get_position_and_size(os_window_handle, &x, &y, &width, &height);
-    os_window_set_position_and_size(os_window_handle2, x + width, y, width, height);
 
-    os_log_set_level(OS_LOG_LEVEL_DEBUG);
+    os_log_set_level(OS_LOG_LEVEL_TRACE);
 
     os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
-
-    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, Color(255.0f, 0.0f, 0.0f, 255.0f));
-    os_graphics_draw_rectangle(os_window_handle2, 160, 120, 320, 240, Color(0.0f, 255.0f, 0.0f, 255.0f));
-
-    os_graphics_add_vertex_buffer_data(os_window_handle2, (u8*)vertices + sizeof(vertices) / 2, sizeof(vertices) / 2);
+    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, RGBA(255.0f, 0.0f, 0.0f, 255.0f));
     os_graphics_draw_triangle(os_window_handle,
-                              Vec2(320.0f, 120.0f), Vec2(80.0f, 420.0f), Vec2(560.0f, 420.0f),
-                              Color(210.0f, 39.0f, 210.0f, 128.0f));
-    
-    os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, Color(0.0f, 0.0f, 255.0f, 255.0f));
-    os_graphics_draw_circle_section(os_window_handle2, width / 2, height / 2, 60, 90.0f, 270.0f, 18, Color(200.0f, 66.0f, 115.0f, 255.0f));
-
-    os_graphics_draw_pixel(os_window_handle, width / 2, height / 2, Color(255.0f, 255.0f, 255.0f, 255.0f));
+                              V2(320.0f, 120.0f), V2(80.0f, 420.0f), V2(560.0f, 420.0f),
+                              RGBA(210.0f, 39.0f, 210.0f, 128.0f));
+    os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, RGBA(0.0f, 0.0f, 255.0f, 255.0f));
+    os_graphics_draw_circle_section(os_window_handle, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
+    os_graphics_draw_pixel(os_window_handle, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
     
     random_handle = random_init(44);
     OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random_handle));
     OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random_handle));
 
-    {
-        u32 texture_buffer0[] =
-        {
-            0x80000000, 0xFFFFFFFF,
-            0xFFFFFFFF, 0x80000000,
-        };
+    // {
+    //     u32 texture_buffer0[] =
+    //     {
+    //         0x80000000, 0xFFFFFFFF,
+    //         0xFFFFFFFF, 0x80000000,
+    //     };
         
-        u32 texture_buffer1[] =
-        {
-            0xFFFFFFFF, 0xFFFFFFFF,
-            0xFFFFFFFF, 0xFFFFFFFF,
-        };
+    //     u32 texture_buffer1[] =
+    //     {
+    //         0xFFFFFFFF, 0xFFFFFFFF,
+    //         0xFFFFFFFF, 0xFFFFFFFF,
+    //     };
 
-        // TODO: Maybe, we should not associate textures with windows,
-        // they are not directly related with windows but shaders?
-        os_graphics_create_texture(os_window_handle, texture_buffer0, 2, 2);
-        os_graphics_create_texture(os_window_handle, texture_buffer1, 2, 2);
-    }
+    //     // TODO: Maybe, we should not associate textures with windows,
+    //     // they are not directly related with windows but shaders?
+    //     os_graphics_create_texture(os_window_handle, texture_buffer0, 2, 2);
+    //     os_graphics_create_texture(os_window_handle, texture_buffer1, 2, 2);
+    // }
+
+    MemoryArena* frame_arena = allocate_memory_arena(KILOBYTES(2));
 
     while (!os_should_quit())
     {
+        TemporaryMemory frame_memory = begin_temporary_memory(frame_arena);
         OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
-        OSEventList event_list = os_window_get_events();
+        OSEventList event_list = os_window_get_events(frame_memory.arena);
 
         os_time_sleep(16);
 
@@ -159,7 +151,6 @@ static void application(void)
         }
 
         // os_window_get_position(os_window_handle, &x, &y, &width, &height);
-        // os_window_set_position(os_window_handle2, x + width, y, width, height);
 
         {
             char milliseconds_string[32] = { 0 };
@@ -169,14 +160,12 @@ static void application(void)
             sprintf(milliseconds_string, "%.2f ms. %.2f fps.\n",  milliseconds, 1000.0 / milliseconds);
 
             // os_window_set_title(os_window_handle, milliseconds_string);
-            // os_window_set_title(os_window_handle2, milliseconds_string);
         }
 
-        os_graphics_clear(os_window_handle, Color(100.0f, 149.0f, 237.0f, 255.0f));
+        os_graphics_clear(os_window_handle, RGBA(100.0f, 149.0f, 237.0f, 255.0f));
         os_graphics_draw(os_window_handle);
 
-        os_graphics_clear(os_window_handle2, Color(170.0f, 149.0f, 237.0f, 255.0f));
-        os_graphics_draw(os_window_handle2);
+        end_temporary_memory(frame_memory);
     }
 
     os_destroy();

@@ -15,7 +15,7 @@ typedef struct MemoryArena
 
 typedef struct TemporaryMemory
 {
-    MemoryArena* memory_arena;
+    MemoryArena* arena;
     memory_size initial_size;
 } TemporaryMemory;
 

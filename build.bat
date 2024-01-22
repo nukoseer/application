@@ -13,7 +13,7 @@ set object_flags=/c /Fo
 
 set debug_linker_flags=/debug
 rem /wholearchive:clang_rt.asan-x86_64.lib
-set release_linker_flags=/fixed /opt:icf /opt:ref libvcruntime.lib
+set release_linker_flags=/fixed /opt:icf /opt:ref libvcruntime.lib libucrt.lib
 set common_linker_flags=/incremental:no /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup
 
 set debug=yes

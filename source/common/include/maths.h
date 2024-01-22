@@ -145,12 +145,11 @@ static inline f32 normalize(f32 min, f32 value, f32 max)
 #undef RGBA
 
 // NOTE: Dangerous or not really?
-#define Vec2(_x, _y)          (Vec2)  { .x = (_x), .y = (_y) }
-#define Vec3(_x, _y, _z)      (Vec3)  { .x = (_x), .y = (_y), .z = (_z) }
-#define Vec4(_x, _y, _z, _w)  (Vec4)  { .x = (_x), .y = (_y), .z = (_z), .w = (_w) }
-#define Color(_r, _g, _b, _a) (Color) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
-#define RGBA(_r, _g, _b, _a)  (Color) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
-#define RGB(_r, _g, _b)       RGBA(_r, _g, _b, 255.0f)
+#define V2(_x, _y)            (V2)  { .x = (_x), .y = (_y) }
+#define V3(_x, _y, _z)        (V3)  { .x = (_x), .y = (_y), .z = (_z) }
+#define V4(_x, _y, _z, _w)    (V4)  { .x = (_x), .y = (_y), .z = (_z), .w = (_w) }
+#define RGBA(_r, _g, _b, _a)  (RGBA) { .r = (_r), .g = (_g), .b = (_b), .a = (_a) }
+#define RGB(_r, _g, _b)       (RGB) { .r = (_r), .g = (_g), .b = (_b) }
 
 #define H_MATHS_H
 #endif

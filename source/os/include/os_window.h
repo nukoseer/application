@@ -124,7 +124,7 @@ typedef struct OSEventList
 } OSEventList;
 
 uptr os_window_get_graphics_handle(OSWindowHandle os_window_handle);
-OSEventList os_window_get_events(void);
+OSEventList os_window_get_events(MemoryArena* arena);
 b32 os_window_get_position_and_size(OSWindowHandle os_window_handle, i32* x, i32* y, i32* width, i32* height);
 b32 os_window_set_position_and_size(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height);
 b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title);

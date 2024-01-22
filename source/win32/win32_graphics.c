@@ -547,7 +547,7 @@ void win32_graphics_add_vertex_buffer_data(uptr graphics_pointer, const void* ve
     add_vertex_data(graphics, vertex_buffer_data, vertex_buffer_size);
 }
 
-void win32_graphics_clear(uptr graphics_pointer, Color color)
+void win32_graphics_clear(uptr graphics_pointer, RGBA color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
 
@@ -560,7 +560,7 @@ void win32_graphics_clear(uptr graphics_pointer, Color color)
 // TODO: This draw functions probably do not need to be in platform layer?
 // Determining vertices, colors etc. can be done in upper layer.
 
-void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, Color color)
+void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, RGBA color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     f32 xf = (f32)x; f32 yf = (f32)y; f32 wf = (f32)width; f32 hf = (f32)height;
@@ -578,7 +578,7 @@ void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 widt
     add_vertex_data(graphics, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
 }
 
-void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 v3, Color color)
+void win32_graphics_draw_triangle(uptr graphics_pointer, V2 v1, V2 v2, V2 v3, RGBA color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     // TODO: What to do with tex coords?
@@ -594,7 +594,7 @@ void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 
 
 // TODO: We should test this function with different(unusual) angles.
 void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
-                                        f32 start_angle, f32 end_angle, i32 segments, Color color)
+                                        f32 start_angle, f32 end_angle, i32 segments, RGBA color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     f32 angle = 0;
@@ -664,12 +664,12 @@ void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32
     }    
 }
 
-void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color)
+void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, RGBA color)
 {
     win32_graphics_draw_circle_section(graphics_pointer, center_x, center_y, radius, 0.0f, 360.0f, 36, color);
 }
 
-void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, Color color)
+void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, RGBA color)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     f32 xf = (f32)x; f32 yf = (f32)y;

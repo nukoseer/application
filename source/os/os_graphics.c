@@ -1,5 +1,6 @@
 #include "types.h"
 #include "utils.h"
+#include "mem.h"
 
 #include "os_window.h"
 #include "os_graphics.h"
@@ -13,13 +14,13 @@ typedef OSGraphicsInputLayout OSGraphicsCreateInputLayout(const u8* vertex_shade
 typedef void OSGraphicsCreateTexture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
 typedef OSGraphicsShader OSGraphicsCreateVertexShader(const u8* shader_buffer, u32 shader_buffer_size);
 typedef OSGraphicsShader OSGraphicsCreatePixelShader(const u8* shader_buffer, u32 shader_buffer_size);
-typedef void OSGraphicsClear(uptr graphics_pointer, Color color);
-typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, Color color);
+typedef void OSGraphicsClear(uptr graphics_pointer, RGBA color);
+typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, RGBA color);
 typedef void OSGraphicsDrawCircleSection(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
-                                         f32 start_angle, f32 end_angle, i32 segments, Color color);
-typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 v3, Color color);
-typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color);
-typedef void OSGraphicsDrawPixel(uptr graphics_pointer, i32 x, i32 y, Color color);
+                                         f32 start_angle, f32 end_angle, i32 segments, RGBA color);
+typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, V2 v1, V2 v2, V2 v3, RGBA color);
+typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, RGBA color);
+typedef void OSGraphicsDrawPixel(uptr graphics_pointer, i32 x, i32 y, RGBA color);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphics
@@ -164,7 +165,7 @@ OSGraphicsShader os_graphics_create_pixel_shader(const u8* shader_buffer, u32 sh
     return os_graphics_shader;
 }
 
-void os_graphics_clear(OSWindowHandle os_window_handle, Color color)
+void os_graphics_clear(OSWindowHandle os_window_handle, RGBA color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
@@ -175,7 +176,7 @@ void os_graphics_clear(OSWindowHandle os_window_handle, Color color)
     }
 }
 
-void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height, Color color)
+void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height, RGBA color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
@@ -186,7 +187,7 @@ void os_graphics_draw_rectangle(OSWindowHandle os_window_handle, i32 x, i32 y, i
     }
 }
 
-void os_graphics_draw_triangle(OSWindowHandle os_window_handle, Vec2 v1, Vec2 v2, Vec2 v3, Color color)
+void os_graphics_draw_triangle(OSWindowHandle os_window_handle, V2 v1, V2 v2, V2 v3, RGBA color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
@@ -198,7 +199,7 @@ void os_graphics_draw_triangle(OSWindowHandle os_window_handle, Vec2 v1, Vec2 v2
 }
 
 void os_graphics_draw_circle_section(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius,
-                                     f32 start_angle, f32 end_angle, i32 segments, Color color)
+                                     f32 start_angle, f32 end_angle, i32 segments, RGBA color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
@@ -209,7 +210,7 @@ void os_graphics_draw_circle_section(OSWindowHandle os_window_handle, i32 center
     }
 }
 
-void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius, Color color)
+void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 center_y, f32 radius, RGBA color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 
@@ -220,7 +221,7 @@ void os_graphics_draw_circle(OSWindowHandle os_window_handle, i32 center_x, i32 
     }
 }
 
-void os_graphics_draw_pixel(OSWindowHandle os_window_handle, i32 x, i32 y, Color color)
+void os_graphics_draw_pixel(OSWindowHandle os_window_handle, i32 x, i32 y, RGBA color)
 {
     uptr graphics_handle = get_graphics_handle_from_window(os_window_handle);
 

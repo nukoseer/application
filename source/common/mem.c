@@ -5,51 +5,51 @@
 
 MemoryArena* allocate_memory_arena(memory_size max_size)
 {
-    MemoryArena* memory_arena = (MemoryArena*)os_memory_allocate(max_size + sizeof(MemoryArena));
+    MemoryArena* arena = (MemoryArena*)os_memory_allocate(max_size + sizeof(MemoryArena));
 
-    memory_arena->memory = (u8*)memory_arena + sizeof(MemoryArena);
-    memory_arena->used_size = 0;
-    memory_arena->max_size = max_size;
+    arena->memory = (u8*)arena + sizeof(MemoryArena);
+    arena->used_size = 0;
+    arena->max_size = max_size;
 
-    return memory_arena;
+    return arena;
 }
 
-void release_memory_arena(MemoryArena* memory_arena)
+void release_memory_arena(MemoryArena* arena)
 {
-    os_memory_release(memory_arena);
+    os_memory_release(arena);
 }
 
-TemporaryMemory begin_temporary_memory(MemoryArena* memory_arena)
+TemporaryMemory begin_temporary_memory(MemoryArena* arena)
 {
     TemporaryMemory temporary_memory = { 0 };
 
-    temporary_memory.memory_arena = memory_arena;
-    temporary_memory.initial_size = memory_arena->used_size;
+    temporary_memory.arena = arena;
+    temporary_memory.initial_size = arena->used_size;
 
     return temporary_memory;
 }
 
 void end_temporary_memory(TemporaryMemory temporary_memory)
 {
-    temporary_memory.memory_arena->used_size = temporary_memory.initial_size;
+    temporary_memory.arena->used_size = temporary_memory.initial_size;
 }
 
 // TODO: Probably, we should also handle alignment in these functions.
-void* push_size(MemoryArena* memory_arena, memory_size size)
+void* push_size(MemoryArena* arena, memory_size size)
 {
     void* result = 0;
     
-    ASSERT(memory_arena->used_size + size <= memory_arena->max_size);
-    result = (u8*)memory_arena->memory + memory_arena->used_size;
+    ASSERT(arena->used_size + size <= arena->max_size);
+    result = (u8*)arena->memory + arena->used_size;
     
-    memory_arena->used_size += size;
+    arena->used_size += size;
 
     return result;
 }
 
-void* push_size_zero(MemoryArena* memory_arena, memory_size size)
+void* push_size_zero(MemoryArena* arena, memory_size size)
 {
-    void* result = push_size(memory_arena, size);
+    void* result = push_size(arena, size);
     
     memory_zero(result, size);
 

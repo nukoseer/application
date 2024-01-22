@@ -67,7 +67,7 @@ static DWORD window_thread_id;
 static MPARAMFreeList win32_window_mparam_free_list;
 static Win32Window* win32_window_free_list;
 static MemoryArena* win32_window_memory_arena;
-static OSEventList* win32_window_event_list;
+static OSEventList win32_window_event_list;
 static MemoryArena* win32_window_event_arena;
 static u32 win32_window_count;
 
@@ -138,13 +138,11 @@ static void process_message(void)
     OSEvent* event = 0;
     MemoryArena* event_arena = 0;
     OSEventList* event_list = 0;
-    TemporaryMemory temporary_memory = { 0 };
     MSG message = { 0 };
 
-    ASSERT(win32_window_event_arena && win32_window_event_list);
+    ASSERT(win32_window_event_arena);
 
-    temporary_memory = begin_temporary_memory(win32_window_event_arena);
-    event_list = win32_window_event_list;
+    event_list = &win32_window_event_list;
     event_arena = win32_window_event_arena;
 
     while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
@@ -227,11 +225,6 @@ static void process_message(void)
 
         if (mparam)
             free_mparam(mparam);
-    }
-
-    if (temporary_memory.initial_size)
-    {
-        end_temporary_memory(temporary_memory);
     }
 }
 
@@ -772,15 +765,15 @@ uptr win32_window_get_graphics_handle_from(uptr window_pointer)
     return (uptr)graphics;
 }
 
-void win32_window_get_event_list(OSEventList* event_list, MemoryArena* event_arena)
+OSEventList win32_window_get_event_list(MemoryArena* arena)
 {
-    win32_window_event_list = event_list;
-    win32_window_event_arena = event_arena;
+    STRUCT_ZERO(&win32_window_event_list, sizeof(OSEventList));
 
+    win32_window_event_arena = arena;
     process_message();
-
-    win32_window_event_list = 0;
     win32_window_event_arena = 0;
+
+    return win32_window_event_list;
 }
 
 b32 win32_window_get_position_and_size(uptr window_pointer, i32* x, i32* y, i32* width, i32* height)

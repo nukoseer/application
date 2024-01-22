@@ -21,25 +21,25 @@ typedef size_t     memory_size;
 typedef uintptr_t  uptr;
 
 // NOTE: /wd4201
-typedef union Vec2
+typedef union V2
 {
     struct { f32 x, y; };
     f32 e[2];
-} Vec2;
+} V2;
 
-typedef union Vec3
+typedef union V3
 {
     struct { f32 x, y, z; };
     struct { f32 r, g, b; };
     f32 e[3];
-} Vec3;
+} V3, RGB;
 
-typedef union Vec4
+typedef union V4
 {
     struct { f32 x, y, z, w; };
     struct { f32 r, g, b, a; };
     f32 e[4];
-} Vec4, Color;
+} V4, RGBA;
 
 #undef TRUE
 #undef FALSE

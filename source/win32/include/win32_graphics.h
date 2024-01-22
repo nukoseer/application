@@ -10,13 +10,13 @@ uptr win32_graphics_create_input_layout(const u8* vertex_shader_buffer, u32 vert
 void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
 uptr win32_graphics_create_vertex_shader(const u8* shader_buffer, u32 shader_buffer_size);
 uptr win32_graphics_create_pixel_shader(const u8* shader_buffer, u32 shader_buffer_size);
-void win32_graphics_clear(uptr graphics_pointer, Color color);
-void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, Color color);
-void win32_graphics_draw_triangle(uptr graphics_pointer, Vec2 v1, Vec2 v2, Vec2 v3, Color color);
+void win32_graphics_clear(uptr graphics_pointer, RGBA color);
+void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, RGBA color);
+void win32_graphics_draw_triangle(uptr graphics_pointer, V2 v1, V2 v2, V2 v3, RGBA color);
 void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
-                                        f32 start_angle, f32 end_angle, i32 segments, Color color);
-void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, Color color);
-void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, Color color);
+                                        f32 start_angle, f32 end_angle, i32 segments, RGBA color);
+void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, RGBA color);
+void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, RGBA color);
 void win32_graphics_draw(uptr graphics_pointer);
 
 #define H_WIN32_GRAPHICS_H

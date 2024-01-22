@@ -8,7 +8,7 @@ typedef b32  OSWindowClose(uptr window_pointer);
 typedef uptr OSWindowGetHandleFrom(uptr window_pointer);
 typedef uptr OSWindowGetWindowFrom(uptr handle_pointer);
 typedef uptr OSWindowGetGraphicsHandleFrom(uptr window_pointer);
-typedef void OSWindowGetEventList(OSEventList* event_list, MemoryArena* event_arena);
+typedef OSEventList OSWindowGetEventList(MemoryArena* arena);
 typedef b32  OSWindowGetPositionAndSize(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
 typedef b32  OSWindowSetPositionAndSize(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
 typedef b32  OSWindowSetTitle(uptr window_pointer, const char* title);
@@ -104,23 +104,13 @@ uptr os_window_get_graphics_handle(OSWindowHandle os_window_handle)
     return graphics_handle;
 }
 
-OSEventList os_window_get_events(void)
+OSEventList os_window_get_events(MemoryArena* arena)
 {
-    static OSEventList os_event_list;
-    static TemporaryMemory os_temporary_memory;
-
-    memory_zero(&os_event_list, sizeof(os_event_list));
-
-    if (os_temporary_memory.initial_size < os_event_arena->used_size)
-    {
-        end_temporary_memory(os_temporary_memory);
-    }
-    
-    os_temporary_memory = begin_temporary_memory(os_event_arena);
+    OSEventList os_event_list = { 0 };
 
     ASSERT(os_window.get_event_list);
 
-    os_window.get_event_list(&os_event_list, os_event_arena);
+    os_event_list = os_window.get_event_list(arena);
 
     return os_event_list;
 }

@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "utils.h"
+#include "mem.h"
 #include "maths.h"
 #include "atomic.h"
 #include "random.h"
