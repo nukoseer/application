@@ -128,6 +128,7 @@ OSEventList os_window_get_events(MemoryArena* arena);
 b32 os_window_get_position_and_size(OSWindowHandle os_window_handle, i32* x, i32* y, i32* width, i32* height);
 b32 os_window_set_position_and_size(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height);
 b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title);
+f32 os_window_get_default_refresh_rate(void);
 OSWindowHandle os_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless);
 b32 os_window_close(OSWindowHandle os_window_handle);
 void os_window_init(void);

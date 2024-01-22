@@ -77,6 +77,22 @@ f64 os_time_tick_to_milliseconds(u64 tick)
     return milliseconds;
 }
 
+f64 os_time_tick_to_seconds(u64 tick)
+{
+    u64 frequency = os_time_get_frequency();
+    f64 seconds = tick / (f64)frequency;
+
+    return seconds;
+}
+
+f64 os_time_get_elapsed_seconds(u64 begin_tick, u64 end_tick)
+{
+    u64 frequency = os_time_get_frequency();
+    f64 seconds_elapsed = ((f64)end_tick - (f64)begin_tick) / (f64)frequency;
+
+    return seconds_elapsed;
+}
+
 u64 os_time_get_tick(void)
 {
     u64 tick = 0;
@@ -97,6 +113,7 @@ u64 os_time_get_frequency(void)
     return frequency;
 }
 
+// TODO: Do we really need this begin_tick, end_tick thing? 
 OSTimeTickHandle os_time_begin_tick(void)
 {
     OSTimeTickHandle os_time_tick_handle = INVALID_TIMER_HANDLE;

@@ -126,15 +126,14 @@ static void application(void)
     //     os_graphics_create_texture(os_window_handle, texture_buffer1, 2, 2);
     // }
 
+    f32 default_refresh_rate = 60.0f; // os_window_get_default_refresh_rate();
+    f32 target_seconds_per_frame = 1.0f / default_refresh_rate;
     MemoryArena* frame_arena = allocate_memory_arena(KILOBYTES(2));
-
+    u64 last_tick = os_time_get_tick();
     while (!os_should_quit())
     {
         TemporaryMemory frame_memory = begin_temporary_memory(frame_arena);
-        OSTimeTickHandle os_time_tick_handle = os_time_begin_tick();
         OSEventList event_list = os_window_get_events(frame_memory.arena);
-
-        os_time_sleep(16);
 
         // TODO: Still not sure how to handle input events.
         for (OSEvent* event = event_list.first; event != 0; event = event->next)
@@ -151,20 +150,26 @@ static void application(void)
         }
 
         // os_window_get_position(os_window_handle, &x, &y, &width, &height);
-
-        {
-            char milliseconds_string[32] = { 0 };
-            u64 tick = os_time_end_tick(os_time_tick_handle);
-            f64 milliseconds = os_time_tick_to_milliseconds(tick);
-
-            sprintf(milliseconds_string, "%.2f ms. %.2f fps.\n",  milliseconds, 1000.0 / milliseconds);
-
-            os_window_set_title(os_window_handle, milliseconds_string);
-        }
-
         os_graphics_clear(os_window_handle, RGBA(100.0f, 149.0f, 237.0f, 255.0f));
         os_graphics_draw(os_window_handle);
 
+        {
+            u64 tick = os_time_get_tick();
+            f32 elapsed_seconds = (f32)os_time_get_elapsed_seconds(last_tick, tick);
+
+            if (elapsed_seconds < target_seconds_per_frame)
+            {
+                u32 sleep_ms = (u32)(1000.0f * (target_seconds_per_frame - elapsed_seconds));
+                os_time_sleep(sleep_ms);
+            }
+
+            char milliseconds_string[32] = { 0 };
+            f64 milliseconds = os_time_get_elapsed_seconds(last_tick, os_time_get_tick()) * 1000.0;
+            sprintf(milliseconds_string, "%.2f ms. %.2f fps\n",  milliseconds, 1000.0 / milliseconds);
+            os_window_set_title(os_window_handle, milliseconds_string);
+        }
+
+        last_tick = os_time_get_tick();
         end_temporary_memory(frame_memory);
     }
 

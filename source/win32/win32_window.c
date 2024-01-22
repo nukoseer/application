@@ -70,6 +70,7 @@ static MemoryArena* win32_window_memory_arena;
 static OSEventList win32_window_event_list;
 static MemoryArena* win32_window_event_arena;
 static u32 win32_window_count;
+static f32 win32_default_refresh_rate;
 
 static b32 win32_quit;
 
@@ -653,6 +654,18 @@ static void set_process_dpi_aware(void)
     ASSERT(result);
 }
 
+static void set_default_refresh_rate(void)
+{
+    DEVMODEW devmode = { 0 };
+
+    if (EnumDisplaySettingsW(0, ENUM_CURRENT_SETTINGS, &devmode))
+    {
+        win32_default_refresh_rate = (f32)devmode.dmDisplayFrequency;
+    }
+ 
+    ASSERT(win32_default_refresh_rate);
+}
+
 uptr win32_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless)
 {
     static HANDLE semaphore_handle = 0;
@@ -821,6 +834,11 @@ b32 win32_window_set_title(uptr window_pointer, const char* title)
     return !!result;
 }
 
+f32 win32_window_get_default_refresh_rate(void)
+{
+    return win32_default_refresh_rate;
+}
+
 u32 win32_window_get_window_count(void)
 {
     return win32_window_count;
@@ -835,6 +853,7 @@ void win32_window_init(void)
 {
     register_window_class();
     set_process_dpi_aware();
+    set_default_refresh_rate();
     main_thread_id = GetCurrentThreadId();
     win32_window_memory_arena = allocate_memory_arena(KILOBYTES(1));
 

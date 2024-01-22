@@ -12,6 +12,7 @@ typedef OSEventList OSWindowGetEventList(MemoryArena* arena);
 typedef b32  OSWindowGetPositionAndSize(uptr window_pointer, i32* x, i32* y, i32* width, i32* height);
 typedef b32  OSWindowSetPositionAndSize(uptr window_pointer, i32 x, i32 y, i32 width, i32 height);
 typedef b32  OSWindowSetTitle(uptr window_pointer, const char* title);
+typedef f32  OSWindowGetDefaultRefreshRate(void);
 
 typedef struct OSWindow
 {
@@ -24,6 +25,7 @@ typedef struct OSWindow
     OSWindowGetPositionAndSize* get_position_and_size;
     OSWindowSetPositionAndSize* set_position_and_size;
     OSWindowSetTitle* set_title;
+    OSWindowGetDefaultRefreshRate* get_default_refresh_rate;
 } OSWindow;
 
 #ifdef _WIN32
@@ -40,6 +42,7 @@ static OSWindow os_window =
     .get_position_and_size = &win32_window_get_position_and_size,
     .set_position_and_size = &win32_window_set_position_and_size,
     .set_title = &win32_window_set_title,
+    .get_default_refresh_rate = &win32_window_get_default_refresh_rate,
 };
 
 #else
@@ -162,6 +165,16 @@ b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title)
         ASSERT(os_window.set_title);
         result = os_window.set_title(window, title);
     }
+
+    return result;
+}
+
+f32 os_window_get_default_refresh_rate(void)
+{
+    f32 result = 0;
+    
+    ASSERT(os_window.get_default_refresh_rate);
+    result = os_window.get_default_refresh_rate();
 
     return result;
 }
