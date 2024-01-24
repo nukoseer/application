@@ -9,19 +9,19 @@ typedef b32  OSThreadWaitOnAddress(volatile void* address, void* compare_address
                                    memory_size address_size, u32 milliseconds);
 typedef void OSThreadWakeByAddress(void* address);
 
-typedef struct OSThread
+typedef struct OSThreadTable
 {
     OSThreadCreate* create;
     OSThreadResume* resume;
     OSThreadSuspend* suspend;
     OSThreadWaitOnAddress* wait_on_address;
     OSThreadWakeByAddress* wake_by_address;
-} OSThread;
+} OSThreadTable;
 
 #ifdef _WIN32
 #include "win32_thread.h"
 
-static OSThread os_thread =
+static OSThreadTable os_thread_table =
 {
     .create = &win32_thread_create,
     .resume = &win32_thread_resume,
@@ -39,9 +39,9 @@ OSThreadHandle os_thread_create(OSThreadProcedure* thread_procedure, void* param
     OSThreadHandle thread_handle = 0;
 
     ASSERT(thread_procedure);
-    ASSERT(os_thread.create);
+    ASSERT(os_thread_table.create);
 
-    thread_handle = os_thread.create(thread_procedure, parameter);
+    thread_handle = os_thread_table.create(thread_procedure, parameter);
 
     return thread_handle;
 }
@@ -50,8 +50,8 @@ u32 os_thread_resume(OSThreadHandle thread_handle)
 {
     u32 result = 0;
 
-    ASSERT(os_thread.resume);
-    result = os_thread.resume(thread_handle);
+    ASSERT(os_thread_table.resume);
+    result = os_thread_table.resume(thread_handle);
 
     return result;
 }
@@ -60,8 +60,8 @@ u32 os_thread_suspend(OSThreadHandle thread_handle)
 {
     u32 result = 0;
 
-    ASSERT(os_thread.suspend);
-    result = os_thread.suspend(thread_handle);
+    ASSERT(os_thread_table.suspend);
+    result = os_thread_table.suspend(thread_handle);
 
     return result;
 }
@@ -71,14 +71,14 @@ b32 os_thread_wait_on_address(volatile void* address, void* compare_address,
 {
     b32 result = 0;
 
-    ASSERT(os_thread.wait_on_address);
-    result = os_thread.wait_on_address(address, compare_address, address_size, milliseconds);
+    ASSERT(os_thread_table.wait_on_address);
+    result = os_thread_table.wait_on_address(address, compare_address, address_size, milliseconds);
 
     return result;
 }
 
 void os_thread_wake_by_address(void* address)
 {
-    ASSERT(os_thread.wake_by_address);
-    os_thread.wake_by_address(address);
+    ASSERT(os_thread_table.wake_by_address);
+    os_thread_table.wake_by_address(address);
 }

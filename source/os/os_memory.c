@@ -10,7 +10,7 @@ typedef void* OSMemoryHeapAllocate(memory_size size, b32 zero_init);
 typedef void* OSMemoryHeapReallocate(void* memory, memory_size size, b32 zero_init);
 typedef b32   OSMemoryHeapRelease(void* memory);
 
-typedef struct OSMemory
+typedef struct OSMemoryTable
 {
     OSMemoryReserve* reserve;
     OSMemoryCommit* commit;
@@ -19,12 +19,12 @@ typedef struct OSMemory
     OSMemoryHeapAllocate* heap_allocate;
     OSMemoryHeapReallocate* heap_reallocate;
     OSMemoryHeapRelease* heap_release;
-} OSMemory;
+} OSMemoryTable;
 
 #ifdef _WIN32
 #include "win32_memory.h"
 
-static OSMemory os_memory =
+static OSMemoryTable os_memory_table =
 {
     .reserve = &win32_memory_reserve,
     .commit = &win32_memory_commit,
@@ -43,8 +43,8 @@ void* os_memory_reserve(memory_size size)
 {
     void* result = NULL;
     
-    ASSERT(os_memory.reserve);
-    result = os_memory.reserve(size);
+    ASSERT(os_memory_table.reserve);
+    result = os_memory_table.reserve(size);
 
     return result;
 }
@@ -53,8 +53,8 @@ void* os_memory_commit(void* memory, memory_size size)
 {
     void* result = NULL;
     
-    ASSERT(os_memory.commit);
-    result = os_memory.commit(memory, size);
+    ASSERT(os_memory_table.commit);
+    result = os_memory_table.commit(memory, size);
 
     return result;
 }
@@ -63,8 +63,8 @@ b32 os_memory_decommit(void* memory, memory_size size)
 {
     b32 result = FALSE;
     
-    ASSERT(os_memory.decommit);
-    result = os_memory.decommit(memory, size);
+    ASSERT(os_memory_table.decommit);
+    result = os_memory_table.decommit(memory, size);
 
     return result;
 }
@@ -83,8 +83,8 @@ b32 os_memory_release(void* memory)
 {
     b32 result = FALSE;
     
-    ASSERT(os_memory.release);
-    result = os_memory.release(memory);
+    ASSERT(os_memory_table.release);
+    result = os_memory_table.release(memory);
 
     return result;
 }
@@ -93,8 +93,8 @@ void* os_memory_heap_allocate(memory_size size, b32 zero_init)
 {
     void* result = NULL;
     
-    ASSERT(os_memory.heap_allocate);
-    result = os_memory.heap_allocate(size, zero_init);
+    ASSERT(os_memory_table.heap_allocate);
+    result = os_memory_table.heap_allocate(size, zero_init);
 
     return result;
 }
@@ -103,8 +103,8 @@ void* os_memory_heap_reallocate(void* memory, memory_size size, b32 zero_init)
 {
     void* result = NULL;
 
-    ASSERT(os_memory.heap_reallocate);
-    result = os_memory.heap_reallocate(memory, size, zero_init);
+    ASSERT(os_memory_table.heap_reallocate);
+    result = os_memory_table.heap_reallocate(memory, size, zero_init);
 
     return result;
 }
@@ -113,8 +113,8 @@ b32 os_memory_heap_release(void* memory)
 {
     b32 result = FALSE;
     
-    ASSERT(os_memory.heap_release);
-    os_memory.heap_release(memory);
+    ASSERT(os_memory_table.heap_release);
+    os_memory_table.heap_release(memory);
 
     return result;
 }

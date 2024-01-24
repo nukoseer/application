@@ -23,7 +23,7 @@ typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 cente
 typedef void OSGraphicsDrawPixel(uptr graphics_pointer, i32 x, i32 y, RGBA color);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
-typedef struct OSGraphics
+typedef struct OSGraphicsTable
 {
     OSGraphicsUseShader* use_shader;
     OSGraphicsUseInputLayout* use_input_layout;
@@ -40,13 +40,13 @@ typedef struct OSGraphics
     OSGraphicsDrawCircle* draw_circle;
     OSGraphicsDrawPixel* draw_pixel;
     OSGraphicsDraw* draw;
-} OSGraphics;
+} OSGraphicsTable;
 
 #ifdef _WIN32
 #include "win32_window.h"
 #include "win32_graphics.h"
 
-static OSGraphics os_graphics =
+static OSGraphicsTable os_graphics_table =
 {
     .use_shader = &win32_graphics_use_shader,
     .use_input_layout = &win32_graphics_use_input_layout,
@@ -83,8 +83,8 @@ void os_graphics_use_shader(OSWindow os_window, OSGraphicsShader shader)
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.use_shader);
-        os_graphics.use_shader(graphics_handle, shader);
+        ASSERT(os_graphics_table.use_shader);
+        os_graphics_table.use_shader(graphics_handle, shader);
     }
 }
 
@@ -94,8 +94,8 @@ void os_graphics_use_input_layout(OSWindow os_window, OSGraphicsInputLayout inpu
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.use_input_layout);
-        os_graphics.use_input_layout(graphics_handle, input_layout);
+        ASSERT(os_graphics_table.use_input_layout);
+        os_graphics_table.use_input_layout(graphics_handle, input_layout);
     }
 }
 
@@ -105,8 +105,8 @@ void os_graphics_set_vertex_buffer_data(OSWindow os_window, const void* vertex_b
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.set_vertex_buffer_data);
-        os_graphics.set_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
+        ASSERT(os_graphics_table.set_vertex_buffer_data);
+        os_graphics_table.set_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
     }
 }
 
@@ -116,8 +116,8 @@ void os_graphics_add_vertex_buffer_data(OSWindow os_window, const void* vertex_b
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.add_vertex_buffer_data);
-        os_graphics.add_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
+        ASSERT(os_graphics_table.add_vertex_buffer_data);
+        os_graphics_table.add_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
     }
 }
 
@@ -127,8 +127,8 @@ OSGraphicsInputLayout os_graphics_create_input_layout(const u8* vertex_shader_bu
 {
     OSGraphicsInputLayout os_input_layout = 0;
     
-    ASSERT(os_graphics.create_input_layout);
-    os_input_layout = os_graphics.create_input_layout(vertex_shader_buffer, vertex_shader_buffer_size,
+    ASSERT(os_graphics_table.create_input_layout);
+    os_input_layout = os_graphics_table.create_input_layout(vertex_shader_buffer, vertex_shader_buffer_size,
                                                       names, offsets, formats, stride, layout_count);
 
     return os_input_layout;
@@ -140,8 +140,8 @@ void os_graphics_create_texture(OSWindow os_window, const u32* texture_buffer, i
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.create_texture);
-        os_graphics.create_texture(graphics_handle, texture_buffer, width, height);
+        ASSERT(os_graphics_table.create_texture);
+        os_graphics_table.create_texture(graphics_handle, texture_buffer, width, height);
     }
 }
 
@@ -149,8 +149,8 @@ OSGraphicsShader os_graphics_create_vertex_shader(const u8* shader_buffer, u32 s
 {
     OSGraphicsShader os_graphics_shader = 0;
     
-    ASSERT(os_graphics.create_vertex_shader);
-    os_graphics_shader = os_graphics.create_vertex_shader(shader_buffer, shader_buffer_size);
+    ASSERT(os_graphics_table.create_vertex_shader);
+    os_graphics_shader = os_graphics_table.create_vertex_shader(shader_buffer, shader_buffer_size);
 
     return os_graphics_shader;
 }
@@ -159,8 +159,8 @@ OSGraphicsShader os_graphics_create_pixel_shader(const u8* shader_buffer, u32 sh
 {
     OSGraphicsShader os_graphics_shader = 0;
 
-    ASSERT(os_graphics.create_pixel_shader);
-    os_graphics_shader = os_graphics.create_pixel_shader(shader_buffer, shader_buffer_size);
+    ASSERT(os_graphics_table.create_pixel_shader);
+    os_graphics_shader = os_graphics_table.create_pixel_shader(shader_buffer, shader_buffer_size);
 
     return os_graphics_shader;
 }
@@ -171,8 +171,8 @@ void os_graphics_clear(OSWindow os_window, RGBA color)
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.clear);
-        os_graphics.clear(graphics_handle, color);
+        ASSERT(os_graphics_table.clear);
+        os_graphics_table.clear(graphics_handle, color);
     }
 }
 
@@ -182,8 +182,8 @@ void os_graphics_draw_rectangle(OSWindow os_window, i32 x, i32 y, i32 width, i32
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.draw_rectangle);
-        os_graphics.draw_rectangle(graphics_handle, x, y, width, height, color);
+        ASSERT(os_graphics_table.draw_rectangle);
+        os_graphics_table.draw_rectangle(graphics_handle, x, y, width, height, color);
     }
 }
 
@@ -193,8 +193,8 @@ void os_graphics_draw_triangle(OSWindow os_window, V2 v1, V2 v2, V2 v3, RGBA col
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.draw_triangle);
-        os_graphics.draw_triangle(graphics_handle, v1, v2, v3, color);
+        ASSERT(os_graphics_table.draw_triangle);
+        os_graphics_table.draw_triangle(graphics_handle, v1, v2, v3, color);
     }
 }
 
@@ -205,8 +205,8 @@ void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 cente
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.draw_circle_section);
-        os_graphics.draw_circle_section(graphics_handle, center_x, center_y, radius, start_angle, end_angle, segments, color);
+        ASSERT(os_graphics_table.draw_circle_section);
+        os_graphics_table.draw_circle_section(graphics_handle, center_x, center_y, radius, start_angle, end_angle, segments, color);
     }
 }
 
@@ -216,8 +216,8 @@ void os_graphics_draw_circle(OSWindow os_window, i32 center_x, i32 center_y, f32
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.draw_circle);
-        os_graphics.draw_circle(graphics_handle, center_x, center_y, radius, color);
+        ASSERT(os_graphics_table.draw_circle);
+        os_graphics_table.draw_circle(graphics_handle, center_x, center_y, radius, color);
     }
 }
 
@@ -227,8 +227,8 @@ void os_graphics_draw_pixel(OSWindow os_window, i32 x, i32 y, RGBA color)
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.draw_pixel);
-        os_graphics.draw_pixel(graphics_handle, x, y, color);
+        ASSERT(os_graphics_table.draw_pixel);
+        os_graphics_table.draw_pixel(graphics_handle, x, y, color);
     }
 }
 
@@ -238,7 +238,7 @@ void os_graphics_draw(OSWindow os_window)
 
     if (graphics_handle)
     {
-        ASSERT(os_graphics.draw);
-        os_graphics.draw(graphics_handle);
+        ASSERT(os_graphics_table.draw);
+        os_graphics_table.draw(graphics_handle);
     }
 }

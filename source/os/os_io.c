@@ -24,7 +24,7 @@ typedef b32                OSIOFileGetCreationTime(uptr file_handle, OSDateTime*
 typedef b32                OSIOFileGetLastAccessTime(uptr file_handle, OSDateTime* os_date_time);
 typedef b32                OSIOFileGetLastWriteTime(uptr file_handle, OSDateTime* os_date_time);
 
-typedef struct OSIO
+typedef struct OSIOTable
 {
     OSIOConsoleWrite* console_write;
     OSIOFileCreate* file_create;
@@ -43,12 +43,12 @@ typedef struct OSIO
     OSIOFileGetCreationTime* file_get_creation_time;
     OSIOFileGetLastAccessTime* file_get_last_access_time;
     OSIOFileGetLastWriteTime* file_get_last_write_time;
-} OSIO;
+} OSIOTable;
 
 #ifdef _WIN32
 #include "win32_io.h"
 
-static OSIO os_io =
+static OSIOTable os_io_table =
 {
     .console_write = &win32_io_console_write,
     .file_create = &win32_io_file_create,
@@ -87,8 +87,8 @@ static u32 write_console(const char* fmt, va_list args)
     {
         length = (u32)ilength;
 
-        ASSERT(os_io.console_write);
-        length = os_io.console_write(os_io_str, length);
+        ASSERT(os_io_table.console_write);
+        length = os_io_table.console_write(os_io_str, length);
     }
 
     return length;
@@ -110,8 +110,8 @@ OSIOFileHandle os_io_file_create(const char* file_name, i32 access_mode)
 {
     OSIOFileHandle file_handle = 0;
     
-    ASSERT(os_io.file_create);
-    file_handle = (OSIOFileHandle)os_io.file_create(file_name, access_mode);
+    ASSERT(os_io_table.file_create);
+    file_handle = (OSIOFileHandle)os_io_table.file_create(file_name, access_mode);
 
     return file_handle;
 }
@@ -120,8 +120,8 @@ OSIOFileHandle os_io_file_open(const char* file_name, i32 access_mode)
 {
     OSIOFileHandle file_handle = 0;
     
-    ASSERT(os_io.file_open);
-    file_handle = (OSIOFileHandle)os_io.file_open(file_name, access_mode);
+    ASSERT(os_io_table.file_open);
+    file_handle = (OSIOFileHandle)os_io_table.file_open(file_name, access_mode);
 
     return file_handle;
 }
@@ -130,8 +130,8 @@ b32 os_io_file_close(OSIOFileHandle file_handle)
 {
     b32 result = FALSE;
 
-    ASSERT(os_io.file_close);
-    result = os_io.file_close(file_handle);
+    ASSERT(os_io_table.file_close);
+    result = os_io_table.file_close(file_handle);
 
     return result;
 }
@@ -140,8 +140,8 @@ b32 os_io_file_delete(const char* file_name)
 {
     b32 result = FALSE;
 
-    ASSERT(os_io.file_delete);
-    result = os_io.file_delete(file_name);
+    ASSERT(os_io_table.file_delete);
+    result = os_io_table.file_delete(file_name);
 
     return result;
 }
@@ -150,8 +150,8 @@ u32 os_io_file_write(OSIOFileHandle file_handle, const char* buffer, u32 size)
 {
     u32 result = 0;
 
-    ASSERT(os_io.file_write);
-    result = os_io.file_write(file_handle, buffer, size);
+    ASSERT(os_io_table.file_write);
+    result = os_io_table.file_write(file_handle, buffer, size);
 
     return result;
 }
@@ -160,8 +160,8 @@ u32 os_io_file_read(OSIOFileHandle file_handle, char* buffer, u32 size)
 {
     u32 result = 0;
 
-    ASSERT(os_io.file_read);
-    result = os_io.file_read(file_handle, buffer, size);
+    ASSERT(os_io_table.file_read);
+    result = os_io_table.file_read(file_handle, buffer, size);
 
     return result;
 }
@@ -170,8 +170,8 @@ u32 os_io_file_size(OSIOFileHandle file_handle)
 {
     u32 result = 0;
 
-    ASSERT(os_io.file_size);
-    result = os_io.file_size(file_handle);
+    ASSERT(os_io_table.file_size);
+    result = os_io_table.file_size(file_handle);
 
     return result;
 }
@@ -180,8 +180,8 @@ OSIOFileFindHandle os_io_file_find_begin(const char* file_name, u32* file_count)
 {
     OSIOFileFindHandle find_handle = 0;
 
-    ASSERT(os_io.file_find_begin);
-    find_handle = os_io.file_find_begin(file_name, file_count);
+    ASSERT(os_io_table.file_find_begin);
+    find_handle = os_io_table.file_find_begin(file_name, file_count);
 
     return find_handle;
 }
@@ -190,8 +190,8 @@ OSIOFileHandle os_io_file_find_and_open(OSIOFileFindHandle find_handle, i32 acce
 {
     OSIOFileHandle file_handle = 0;
 
-    ASSERT(os_io.file_find_and_open);
-    file_handle = os_io.file_find_and_open(find_handle, access_mode);
+    ASSERT(os_io_table.file_find_and_open);
+    file_handle = os_io_table.file_find_and_open(find_handle, access_mode);
 
     return file_handle;
 }
@@ -200,8 +200,8 @@ b32 os_io_file_find_end(OSIOFileFindHandle find_handle)
 {
     b32 result = 0;
 
-    ASSERT(os_io.file_find_end);
-    result = os_io.file_find_end(find_handle);
+    ASSERT(os_io_table.file_find_end);
+    result = os_io_table.file_find_end(find_handle);
 
     return result;
 }
@@ -210,8 +210,8 @@ u32 os_io_file_pointer_move(OSIOFileHandle file_handle, i32 distance, OSIOFilePo
 {
     u32 result = 0;
 
-    ASSERT(os_io.file_pointer_move);
-    result = os_io.file_pointer_move(file_handle, distance, offset);
+    ASSERT(os_io_table.file_pointer_move);
+    result = os_io_table.file_pointer_move(file_handle, distance, offset);
 
     return result;
 }
@@ -220,8 +220,8 @@ u32 os_io_file_pointer_reset(OSIOFileHandle file_handle)
 {
     u32 result = 0;
 
-    ASSERT(os_io.file_pointer_reset);
-    result = os_io.file_pointer_reset(file_handle);
+    ASSERT(os_io_table.file_pointer_reset);
+    result = os_io_table.file_pointer_reset(file_handle);
 
     return result;
 }
@@ -230,8 +230,8 @@ u32 os_io_file_pointer_get(OSIOFileHandle file_handle)
 {
     u32 result = 0;
 
-    ASSERT(os_io.file_pointer_get);
-    result = os_io.file_pointer_get(file_handle);
+    ASSERT(os_io_table.file_pointer_get);
+    result = os_io_table.file_pointer_get(file_handle);
 
     return result;
 }
@@ -240,8 +240,8 @@ b32 os_io_file_get_creation_time(OSIOFileHandle file_handle, OSDateTime* os_date
 {
     b32 result = 0;
 
-    ASSERT(os_io.file_get_creation_time);
-    result = os_io.file_get_creation_time(file_handle, os_date_time);
+    ASSERT(os_io_table.file_get_creation_time);
+    result = os_io_table.file_get_creation_time(file_handle, os_date_time);
 
     return result;
 }
@@ -250,8 +250,8 @@ b32 os_io_file_get_last_access_time(OSIOFileHandle file_handle, OSDateTime* os_d
 {
     b32 result = 0;
 
-    ASSERT(os_io.file_get_last_access_time);
-    result = os_io.file_get_last_access_time(file_handle, os_date_time);
+    ASSERT(os_io_table.file_get_last_access_time);
+    result = os_io_table.file_get_last_access_time(file_handle, os_date_time);
 
     return result;
 }
@@ -260,8 +260,8 @@ b32 os_io_file_get_last_write_time(OSIOFileHandle file_handle, OSDateTime* os_da
 {
     b32 result = 0;
 
-    ASSERT(os_io.file_get_last_write_time);
-    result = os_io.file_get_last_write_time(file_handle, os_date_time);
+    ASSERT(os_io_table.file_get_last_write_time);
+    result = os_io_table.file_get_last_write_time(file_handle, os_date_time);
 
     return result;
 }

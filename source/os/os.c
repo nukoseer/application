@@ -12,16 +12,16 @@ typedef OSProcedureAddress OSGetProcedureAddress(OSModuleHandle module_handle, c
 #ifdef _WIN32
 #include "win32.h"
 
-typedef struct OS
+typedef struct OSTable
 {
     OSGetProcedureAddress* get_procedure_address;
     OSLoadLibrary* load_library;
     OSQuit* should_quit;
     OSDestroy* destroy;
     OSInit* init;
-} OS;
+} OSTable;
 
-static OS os =
+static OSTable os_table =
 {
     .get_procedure_address = &win32_get_procedure_address,
     .load_library = &win32_load_library,
@@ -38,8 +38,8 @@ OSProcedureAddress os_get_procedure_address(OSModuleHandle module_handle, const 
 {
     OSProcedureAddress procedure_address = 0;
 
-    ASSERT(os.get_procedure_address);
-    procedure_address = os.get_procedure_address(module_handle, procedure_name);
+    ASSERT(os_table.get_procedure_address);
+    procedure_address = os_table.get_procedure_address(module_handle, procedure_name);
 
     return procedure_address;
 }
@@ -48,8 +48,8 @@ OSModuleHandle os_load_library(const char* module_name)
 {
     OSModuleHandle module_handle = 0;
 
-    ASSERT(os.load_library);
-    module_handle = os.load_library(module_name);
+    ASSERT(os_table.load_library);
+    module_handle = os_table.load_library(module_name);
 
     return module_handle;
 }
@@ -58,22 +58,22 @@ b32 os_should_quit(void)
 {
     b32 quit = FALSE;
 
-    ASSERT(os.should_quit);
-    quit = os.should_quit();
+    ASSERT(os_table.should_quit);
+    quit = os_table.should_quit();
 
     return quit;
 }
 
 void os_destroy(void)
 {
-    ASSERT(os.destroy);
-    os.destroy();
+    ASSERT(os_table.destroy);
+    os_table.destroy();
 }
 
 void os_init(void)
 {
-    ASSERT(os.init);
-    os.init();
+    ASSERT(os_table.init);
+    os_table.init();
     os_window_init();
     os_log_init();
 }

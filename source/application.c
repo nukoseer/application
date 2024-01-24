@@ -76,6 +76,7 @@ static void graphics_init(OSWindow os_window)
     os_io_file_close(pixel_shader_file);
 }
 
+// TODO: Probably we should get rid of the function tables in os_xx.c source files.
 static void application(void)
 {
     OSWindow os_window = 0;
