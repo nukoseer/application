@@ -219,7 +219,7 @@ static void process_message(void)
         {
             Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(mparam->handle, GWLP_USERDATA));
 
-            event->window_handle = (OSWindowHandle)window->handle;
+            event->window_handle = (OSWindow)window->handle;
             ++event_list->count;
             DLL_PUSH_BACK(event_list->first, event_list->last, event);
         }

@@ -14,7 +14,7 @@ typedef b32  OSWindowSetPositionAndSize(uptr window_pointer, i32 x, i32 y, i32 w
 typedef b32  OSWindowSetTitle(uptr window_pointer, const char* title);
 typedef f32  OSWindowGetDefaultRefreshRate(void);
 
-typedef struct OSWindow
+typedef struct OSWindowTable
 {
     OSWindowOpen* open;
     OSWindowClose* close;
@@ -26,12 +26,12 @@ typedef struct OSWindow
     OSWindowSetPositionAndSize* set_position_and_size;
     OSWindowSetTitle* set_title;
     OSWindowGetDefaultRefreshRate* get_default_refresh_rate;
-} OSWindow;
+} OSWindowTable;
 
 #ifdef _WIN32
 #include "win32_window.h"
 
-static OSWindow os_window =
+static OSWindowTable os_window_table =
 {
     .open = &win32_window_open,
     .close = &win32_window_close,
@@ -51,20 +51,20 @@ static OSWindow os_window =
 
 static MemoryArena* os_event_arena;
 
-static OSWindowHandle get_handle_from_window(uptr window)
+static OSWindow get_handle_from_window(uptr window)
 {
-    OSWindowHandle os_window_handle = 0;
+    OSWindow os_window = 0;
 
     ASSERT(window);
     
     if (window)
     {
-        ASSERT(os_window.get_handle_from_window);
-        os_window_handle = (OSWindowHandle)os_window.get_handle_from_window(window);
-        ASSERT(os_window_handle);
+        ASSERT(os_window_table.get_handle_from_window);
+        os_window = (OSWindow)os_window_table.get_handle_from_window(window);
+        ASSERT(os_window);
     }
     
-    return os_window_handle;
+    return os_window;
 }
 
 static uptr get_window_from_handle(uptr handle)
@@ -75,8 +75,8 @@ static uptr get_window_from_handle(uptr handle)
 
     if (handle)
     {
-        ASSERT(os_window.get_window_from_handle);
-        window = os_window.get_window_from_handle(handle);
+        ASSERT(os_window_table.get_window_from_handle);
+        window = os_window_table.get_window_from_handle(handle);
         ASSERT(window);
     }
     
@@ -87,17 +87,17 @@ static uptr get_graphics_handle_from_window(uptr window)
 {
     uptr graphics_handle = 0;
 
-    ASSERT(os_window.get_graphics_handle_from_window);
-    graphics_handle = os_window.get_graphics_handle_from_window(window);
+    ASSERT(os_window_table.get_graphics_handle_from_window);
+    graphics_handle = os_window_table.get_graphics_handle_from_window(window);
     ASSERT(graphics_handle);
 
     return graphics_handle;
 }
 
-uptr os_window_get_graphics_handle(OSWindowHandle os_window_handle)
+uptr os_window_get_graphics_handle(OSWindow os_window)
 {
     uptr graphics_handle = 0;
-    uptr window = get_window_from_handle(os_window_handle);
+    uptr window = get_window_from_handle(os_window);
 
     if (window)
     {
@@ -111,59 +111,59 @@ OSEventList os_window_get_events(MemoryArena* arena)
 {
     OSEventList os_event_list = { 0 };
 
-    ASSERT(os_window.get_event_list);
+    ASSERT(os_window_table.get_event_list);
 
-    os_event_list = os_window.get_event_list(arena);
+    os_event_list = os_window_table.get_event_list(arena);
 
     return os_event_list;
 }
 
-b32 os_window_get_position_and_size(OSWindowHandle os_window_handle, i32* x, i32* y, i32* width, i32* height)
+b32 os_window_get_position_and_size(OSWindow os_window, i32* x, i32* y, i32* width, i32* height)
 {
     b32 result = FALSE;
     uptr window = 0;
-    uptr handle = os_window_handle;
+    uptr handle = os_window;
 
     window = get_window_from_handle(handle);
 
     if (window)
     {
-        ASSERT(os_window.get_position_and_size);
-        result = os_window.get_position_and_size(window, x, y, width, height);
+        ASSERT(os_window_table.get_position_and_size);
+        result = os_window_table.get_position_and_size(window, x, y, width, height);
     }
 
     return result;
 }
 
-b32 os_window_set_position_and_size(OSWindowHandle os_window_handle, i32 x, i32 y, i32 width, i32 height)
+b32 os_window_set_position_and_size(OSWindow os_window, i32 x, i32 y, i32 width, i32 height)
 {
     b32 result = FALSE;
     uptr window = 0;
-    uptr handle = os_window_handle;
+    uptr handle = os_window;
 
     window = get_window_from_handle(handle);
 
     if (window)
     {
-        ASSERT(os_window.set_position_and_size);
-        result = os_window.set_position_and_size(window, x, y, width, height);
+        ASSERT(os_window_table.set_position_and_size);
+        result = os_window_table.set_position_and_size(window, x, y, width, height);
     }
 
     return result;
 }
 
-b32 os_window_set_title(OSWindowHandle os_window_handle, const char* title)
+b32 os_window_set_title(OSWindow os_window, const char* title)
 {
     b32 result = FALSE;
     uptr window = 0;
-    uptr handle = os_window_handle;
+    uptr handle = os_window;
 
     window = get_window_from_handle(handle);
 
     if (window)
     {
-        ASSERT(os_window.set_title);
-        result = os_window.set_title(window, title);
+        ASSERT(os_window_table.set_title);
+        result = os_window_table.set_title(window, title);
     }
 
     return result;
@@ -173,39 +173,39 @@ f32 os_window_get_default_refresh_rate(void)
 {
     f32 result = 0;
     
-    ASSERT(os_window.get_default_refresh_rate);
-    result = os_window.get_default_refresh_rate();
+    ASSERT(os_window_table.get_default_refresh_rate);
+    result = os_window_table.get_default_refresh_rate();
 
     return result;
 }
 
-OSWindowHandle os_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless)
+OSWindow os_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless)
 {
     uptr window = 0;
-    OSWindowHandle os_window_handle = 0;
+    OSWindow os_window = 0;
     
-    ASSERT(os_window.open);
-    window = os_window.open(title, x, y, width, height, borderless);
+    ASSERT(os_window_table.open);
+    window = os_window_table.open(title, x, y, width, height, borderless);
     ASSERT(window);
     
-    os_window_handle = get_handle_from_window(window);
-    ASSERT(os_window_handle);
+    os_window = get_handle_from_window(window);
+    ASSERT(os_window);
     
-    return os_window_handle;
+    return os_window;
 }
 
-b32 os_window_close(OSWindowHandle os_window_handle)
+b32 os_window_close(OSWindow os_window)
 {
     b32 result = FALSE;
     uptr window = 0;
-    uptr handle = os_window_handle;
+    uptr handle = os_window;
 
-    ASSERT(os_window.close);
+    ASSERT(os_window_table.close);
     window = get_window_from_handle(handle);
 
     if (window)
     {
-        result = os_window.close(window);
+        result = os_window_table.close(window);
     }
 
     return result;

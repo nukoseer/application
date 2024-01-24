@@ -38,7 +38,7 @@ static f32 vertices[] =
 // 2D graphics it should be enough for us.
 
 // TODO: Our default shader? Not sure about TEXCOORD, uv.
-static void graphics_init(OSWindowHandle os_window_handle)
+static void graphics_init(OSWindow os_window)
 {
     const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
     const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
@@ -66,9 +66,9 @@ static void graphics_init(OSWindowHandle os_window_handle)
                                                                          input_layout_formats,
                                                                          sizeof(struct Vertex), ARRAY_COUNT(input_layout_names));
 
-    os_graphics_use_shader(os_window_handle, vertex_shader);
-    os_graphics_use_shader(os_window_handle, pixel_shader);
-    os_graphics_use_input_layout(os_window_handle, input_layout);
+    os_graphics_use_shader(os_window, vertex_shader);
+    os_graphics_use_shader(os_window, pixel_shader);
+    os_graphics_use_input_layout(os_window, input_layout);
 
     os_memory_heap_release(vertex_shader_buffer);
     os_memory_heap_release(pixel_shader_buffer);
@@ -78,7 +78,7 @@ static void graphics_init(OSWindowHandle os_window_handle)
 
 static void application(void)
 {
-    OSWindowHandle os_window_handle = 0;
+    OSWindow os_window = 0;
     RandomHandle random_handle = { 0 };
     i32 x = 0;
     i32 y = 0;
@@ -86,22 +86,22 @@ static void application(void)
     i32 height = 0;
 
     os_init();
-    os_window_handle = os_window_open("Application", 60, 60, 640, 480, FALSE);
+    os_window = os_window_open("Application", 60, 60, 640, 480, FALSE);
 
-    graphics_init(os_window_handle);
+    graphics_init(os_window);
     
-    os_window_get_position_and_size(os_window_handle, &x, &y, &width, &height);
+    os_window_get_position_and_size(os_window, &x, &y, &width, &height);
 
     os_log_set_level(OS_LOG_LEVEL_TRACE);
 
-    os_graphics_set_vertex_buffer_data(os_window_handle, vertices, sizeof(vertices) / 2);
-    os_graphics_draw_rectangle(os_window_handle, 160, 120, 320, 240, RGBA(255.0f, 0.0f, 0.0f, 255.0f));
-    os_graphics_draw_triangle(os_window_handle,
+    os_graphics_set_vertex_buffer_data(os_window, vertices, sizeof(vertices) / 2);
+    os_graphics_draw_rectangle(os_window, 160, 120, 320, 240, RGBA(255.0f, 0.0f, 0.0f, 255.0f));
+    os_graphics_draw_triangle(os_window,
                               V2(320.0f, 120.0f), V2(80.0f, 420.0f), V2(560.0f, 420.0f),
                               RGBA(210.0f, 39.0f, 210.0f, 128.0f));
-    os_graphics_draw_circle(os_window_handle, width / 2, height / 2, 60, RGBA(0.0f, 0.0f, 255.0f, 255.0f));
-    os_graphics_draw_circle_section(os_window_handle, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
-    os_graphics_draw_pixel(os_window_handle, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
+    os_graphics_draw_circle(os_window, width / 2, height / 2, 60, RGBA(0.0f, 0.0f, 255.0f, 255.0f));
+    os_graphics_draw_circle_section(os_window, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
+    os_graphics_draw_pixel(os_window, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
     
     random_handle = random_init(44);
     OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random_handle));
@@ -122,8 +122,8 @@ static void application(void)
 
     //     // TODO: Maybe, we should not associate textures with windows,
     //     // they are not directly related with windows but shaders?
-    //     os_graphics_create_texture(os_window_handle, texture_buffer0, 2, 2);
-    //     os_graphics_create_texture(os_window_handle, texture_buffer1, 2, 2);
+    //     os_graphics_create_texture(os_window, texture_buffer0, 2, 2);
+    //     os_graphics_create_texture(os_window, texture_buffer1, 2, 2);
     // }
 
     f32 default_refresh_rate = 60.0f; // os_window_get_default_refresh_rate();
@@ -149,9 +149,9 @@ static void application(void)
             }
         }
 
-        // os_window_get_position(os_window_handle, &x, &y, &width, &height);
-        os_graphics_clear(os_window_handle, RGBA(100.0f, 149.0f, 237.0f, 255.0f));
-        os_graphics_draw(os_window_handle);
+        // os_window_get_position(os_window, &x, &y, &width, &height);
+        os_graphics_clear(os_window, RGBA(100.0f, 149.0f, 237.0f, 255.0f));
+        os_graphics_draw(os_window);
 
         {
             u64 tick = os_time_get_tick();
@@ -166,7 +166,7 @@ static void application(void)
             char milliseconds_string[32] = { 0 };
             f64 milliseconds = os_time_get_elapsed_seconds(last_tick, os_time_get_tick()) * 1000.0;
             sprintf(milliseconds_string, "%.2f ms. %.2f fps\n",  milliseconds, 1000.0 / milliseconds);
-            os_window_set_title(os_window_handle, milliseconds_string);
+            os_window_set_title(os_window, milliseconds_string);
         }
 
         last_tick = os_time_get_tick();
