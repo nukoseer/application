@@ -136,7 +136,7 @@ static void application(void)
         OSEventList event_list = os_window_get_events(frame_memory.arena);
 
         // TODO: Still not sure how to handle input events.
-        for (OSEvent* event = event_list.first; event != 0; event = event->next)
+        FOREACH(event_list.first, OSEvent, event)
         {
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
             {

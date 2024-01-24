@@ -109,6 +109,11 @@ inline void* buffer__grow(void* buffer, i64 new_capacity, i64 element_size)
 #define DLL_PUSH_BACK(first, last, element) DLL_INSERT(first, last, last, element, prev, next)
 #define DLL_PUSH_FRONT(first, last, element) DLL_INSERT(last, first, first, element, next, prev)
 
+#define FOREACH_BY_NAME_(sentinel, name) for (name = (sentinel); name != 0; name = (name)->next)
+#define FOREACH_BY_NAME(sentinel, name) FOREACH_BY_NAME_(sentinel, name)
+#define FOREACH_(sentinel, type, name) for (type* name = (sentinel); name != 0; name = (name)->next)
+#define FOREACH(sentinel, type, name) FOREACH_(sentinel, type, name)
+
 // NOTE: Function version of DLL_INSERT macro. (f=first, l=last, p=prev, e=element)
 // void DLL_INSERT(T** first, T** last, T* prev, T* element)       \
 // {                                                               \

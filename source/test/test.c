@@ -61,8 +61,8 @@ static void doubly_linked_list_test(void)
         {
             Number* number = NULL;
             i = 0;
-        
-            for (number = number_list.first; number; number = number->next)
+
+            FOREACH_BY_NAME(number_list.first, number)
             {
                 ASSERT(number->i == i++);
             }
@@ -87,8 +87,8 @@ static void doubly_linked_list_test(void)
         {
             Number* number = NULL;
             i = 0;
-        
-            for (number = number_list.first; number; number = number->next)
+
+            FOREACH_BY_NAME(number_list.first, number)
             {
                 ASSERT(number->i == (count - ++i));
             }
