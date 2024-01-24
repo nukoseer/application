@@ -1,3 +1,5 @@
+#include <Windows.h>
+
 #include "types.h"
 #include "win32.h"
 #include "win32_window.h"
@@ -13,6 +15,25 @@
 #pragma comment(lib, "D3D11")
 #pragma comment(lib, "DXGI")
 #pragma comment(lib, "DXGUID")
+
+uptr win32_get_procedure_address(uptr module_handle, const char* procedure_name)
+{
+    HMODULE module = (HMODULE)module_handle;
+    FARPROC result = 0;
+
+    result = GetProcAddress(module, procedure_name);
+
+    return (uptr)result;
+}
+
+uptr win32_load_library(const char* module_name)
+{
+    HMODULE result = 0;
+
+    result = LoadLibraryA(module_name);
+
+    return (uptr)result;
+}
 
 b32 win32_should_quit(void)
 {

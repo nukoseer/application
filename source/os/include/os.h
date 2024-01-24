@@ -14,6 +14,11 @@
 #include "os_log.h"
 #include "os_thread.h"
 
+typedef uptr OSModuleHandle;
+typedef uptr OSProcedureAddress;
+
+OSProcedureAddress os_get_procedure_address(OSModuleHandle module_handle, const char* procedure_name);
+OSModuleHandle os_load_library(const char* module_name);
 b32 os_should_quit(void);
 void os_destroy(void);
 void os_init(void);
