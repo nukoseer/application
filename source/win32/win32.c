@@ -16,12 +16,12 @@
 #pragma comment(lib, "DXGI")
 #pragma comment(lib, "DXGUID")
 
-uptr win32_get_procedure_address(uptr module_handle, const char* procedure_name)
+uptr win32_get_procedure_address(uptr module, const char* procedure_name)
 {
-    HMODULE module = (HMODULE)module_handle;
+    HMODULE handle = (HMODULE)module;
     FARPROC result = 0;
 
-    result = GetProcAddress(module, procedure_name);
+    result = GetProcAddress(handle, procedure_name);
 
     return (uptr)result;
 }

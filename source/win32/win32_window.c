@@ -31,10 +31,10 @@ typedef struct Win32Window Win32Window;
 
 struct Win32Window
 {
-    HANDLE semaphore_handle;
+    HANDLE window_semaphore;
     HWND handle;
     HDC device_context;
-    Win32Graphics* graphics_handle;
+    Win32Graphics* graphics;
     i32 x;
     i32 y;
     i32 width;
@@ -219,7 +219,7 @@ static void process_message(void)
         {
             Win32Window* window = (Win32Window*)((LONG_PTR)GetWindowLongPtr(mparam->handle, GWLP_USERDATA));
 
-            event->window_handle = (OSWindow)window->handle;
+            event->window = (OSWindow)window->handle;
             ++event_list->count;
             DLL_PUSH_BACK(event_list->first, event_list->last, event);
         }
@@ -329,7 +329,7 @@ static void handle_nccalcsize(Win32Window* window, WPARAM wparam, LPARAM lparam)
 	} params = { .lparam = lparam };
 
     // TODO: Now it seems okay but We should check this. Maybe this should not be here?
-    // win32_graphics_resize_swap_chain((uptr)window->graphics_handle, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
+    // win32_graphics_resize_swap_chain((uptr)window->graphics, params.rect->right - params.rect->left, params.rect->bottom - params.rect->top);
 
     // NOTE: DefWindowProc must be called in both the maximized and
     // non-maximized cases, otherwise tile/cascade windows won't work.
@@ -555,13 +555,13 @@ static void window_open(Win32Window* win32_window)
         update_region(win32_window);
     }
 
-    win32_window->graphics_handle = (Win32Graphics*)win32_graphics_init((uptr)handle);
+    win32_window->graphics = (Win32Graphics*)win32_graphics_init((uptr)handle);
 
     ShowWindow(handle, SW_SHOW);
 
     ++win32_window_count;
 
-    ReleaseSemaphore(win32_window->semaphore_handle, 1, 0);
+    ReleaseSemaphore(win32_window->window_semaphore, 1, 0);
 }
 
 static void window_close(Win32Window* win32_window)
@@ -577,7 +577,7 @@ static void window_close(Win32Window* win32_window)
         --win32_window_count;
     }
 
-    ReleaseSemaphore(win32_window->semaphore_handle, 1, 0);
+    ReleaseSemaphore(win32_window->window_semaphore, 1, 0);
 }
 
 // NOTE: Actual window message loop that passes messages to main thread.
@@ -668,7 +668,7 @@ static void set_default_refresh_rate(void)
 
 uptr win32_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b32 borderless)
 {
-    static HANDLE semaphore_handle = 0;
+    static HANDLE window_semaphore = 0;
     static Win32Window* win32_window = 0;
 
     if (win32_window_free_list)
@@ -692,19 +692,19 @@ uptr win32_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, b
 
     if (!win32_window_count)
     {
-        semaphore_handle = CreateSemaphoreEx(0, 0, 1, 0, 0, SEMAPHORE_ALL_ACCESS);
-        win32_window->semaphore_handle = semaphore_handle;
+        window_semaphore = CreateSemaphoreEx(0, 0, 1, 0, 0, SEMAPHORE_ALL_ACCESS);
+        win32_window->window_semaphore = window_semaphore;
         CloseHandle(CreateThread(0, 0, window_thread_proc, win32_window, 0, &window_thread_id));
 
-        ASSERT(window_thread_id && semaphore_handle);
+        ASSERT(window_thread_id && window_semaphore);
     }
     else
     {
-        win32_window->semaphore_handle = semaphore_handle;
+        win32_window->window_semaphore = window_semaphore;
         PostThreadMessage(window_thread_id, MSG_WINDOW_OPEN, (WPARAM)win32_window, 0);
     }
 
-    WaitForSingleObjectEx(win32_window->semaphore_handle, INFINITE, FALSE);
+    WaitForSingleObjectEx(win32_window->window_semaphore, INFINITE, FALSE);
 
     return (uptr)win32_window;
 }
@@ -727,7 +727,7 @@ b32 win32_window_close(uptr window_pointer)
         u32 temp_window_count = win32_window_count;
 
         PostThreadMessage(window_thread_id, MSG_WINDOW_CLOSE, (WPARAM)window, 0);
-        WaitForSingleObjectEx(window->semaphore_handle, INFINITE, FALSE);
+        WaitForSingleObjectEx(window->window_semaphore, INFINITE, FALSE);
 
         if (temp_window_count <= win32_window_count)
         {
@@ -744,7 +744,7 @@ b32 win32_window_close(uptr window_pointer)
     return !!result;
 }
 
-uptr win32_window_get_handle_from(uptr window_pointer)
+uptr win32_window_get_from(uptr window_pointer)
 {
     HWND result = 0;
     Win32Window* window = (Win32Window*)window_pointer;
@@ -767,13 +767,13 @@ uptr win32_window_get_window_from(uptr handle_pointer)
     return (uptr)window;
 }
 
-uptr win32_window_get_graphics_handle_from(uptr window_pointer)
+uptr win32_window_get_graphics_from(uptr window_pointer)
 {
     Win32Graphics* graphics = 0;
     Win32Window* window = (Win32Window*)window_pointer;
 
-    ASSERT(window && window->graphics_handle);
-    graphics = window->graphics_handle;
+    ASSERT(window && window->graphics);
+    graphics = window->graphics;
 
     return (uptr)graphics;
 }

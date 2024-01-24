@@ -18,9 +18,9 @@ typedef struct OSWindowTable
 {
     OSWindowOpen* open;
     OSWindowClose* close;
-    OSWindowGetHandleFrom* get_handle_from_window;
-    OSWindowGetWindowFrom* get_window_from_handle;
-    OSWindowGetGraphicsHandleFrom* get_graphics_handle_from_window;
+    OSWindowGetHandleFrom* get_from_window;
+    OSWindowGetWindowFrom* get_window_from;
+    OSWindowGetGraphicsHandleFrom* get_graphics_from_window;
     OSWindowGetEventList* get_event_list;
     OSWindowGetPositionAndSize* get_position_and_size;
     OSWindowSetPositionAndSize* set_position_and_size;
@@ -35,9 +35,9 @@ static OSWindowTable os_window_table =
 {
     .open = &win32_window_open,
     .close = &win32_window_close,
-    .get_handle_from_window = &win32_window_get_handle_from,
-    .get_window_from_handle = &win32_window_get_window_from,
-    .get_graphics_handle_from_window = &win32_window_get_graphics_handle_from,
+    .get_from_window = &win32_window_get_from,
+    .get_window_from = &win32_window_get_window_from,
+    .get_graphics_from_window = &win32_window_get_graphics_from,
     .get_event_list = &win32_window_get_event_list,
     .get_position_and_size = &win32_window_get_position_and_size,
     .set_position_and_size = &win32_window_set_position_and_size,
@@ -49,9 +49,8 @@ static OSWindowTable os_window_table =
 #error _WIN32 must be defined.
 #endif
 
-static MemoryArena* os_event_arena;
-
-static OSWindow get_handle_from_window(uptr window)
+// TODO: Why get_from_window and get_window_from functions are here? They should be in the platform layer?
+static OSWindow get_from_window(uptr window)
 {
     OSWindow os_window = 0;
 
@@ -59,15 +58,15 @@ static OSWindow get_handle_from_window(uptr window)
     
     if (window)
     {
-        ASSERT(os_window_table.get_handle_from_window);
-        os_window = (OSWindow)os_window_table.get_handle_from_window(window);
+        ASSERT(os_window_table.get_from_window);
+        os_window = (OSWindow)os_window_table.get_from_window(window);
         ASSERT(os_window);
     }
     
     return os_window;
 }
 
-static uptr get_window_from_handle(uptr handle)
+static uptr get_window_from(uptr handle)
 {
     uptr window = 0;
 
@@ -75,36 +74,36 @@ static uptr get_window_from_handle(uptr handle)
 
     if (handle)
     {
-        ASSERT(os_window_table.get_window_from_handle);
-        window = os_window_table.get_window_from_handle(handle);
+        ASSERT(os_window_table.get_window_from);
+        window = os_window_table.get_window_from(handle);
         ASSERT(window);
     }
     
     return window;
 }
 
-static uptr get_graphics_handle_from_window(uptr window)
+static uptr get_graphics_from_window(uptr window)
 {
-    uptr graphics_handle = 0;
+    uptr graphics = 0;
 
-    ASSERT(os_window_table.get_graphics_handle_from_window);
-    graphics_handle = os_window_table.get_graphics_handle_from_window(window);
-    ASSERT(graphics_handle);
+    ASSERT(os_window_table.get_graphics_from_window);
+    graphics = os_window_table.get_graphics_from_window(window);
+    ASSERT(graphics);
 
-    return graphics_handle;
+    return graphics;
 }
 
-uptr os_window_get_graphics_handle(OSWindow os_window)
+uptr os_window_get_graphics(OSWindow os_window)
 {
-    uptr graphics_handle = 0;
-    uptr window = get_window_from_handle(os_window);
+    uptr graphics = 0;
+    uptr window = get_window_from(os_window);
 
     if (window)
     {
-        graphics_handle = get_graphics_handle_from_window(window);
+        graphics = get_graphics_from_window(window);
     }
     
-    return graphics_handle;
+    return graphics;
 }
 
 OSEventList os_window_get_events(MemoryArena* arena)
@@ -124,7 +123,7 @@ b32 os_window_get_position_and_size(OSWindow os_window, i32* x, i32* y, i32* wid
     uptr window = 0;
     uptr handle = os_window;
 
-    window = get_window_from_handle(handle);
+    window = get_window_from(handle);
 
     if (window)
     {
@@ -141,7 +140,7 @@ b32 os_window_set_position_and_size(OSWindow os_window, i32 x, i32 y, i32 width,
     uptr window = 0;
     uptr handle = os_window;
 
-    window = get_window_from_handle(handle);
+    window = get_window_from(handle);
 
     if (window)
     {
@@ -158,7 +157,7 @@ b32 os_window_set_title(OSWindow os_window, const char* title)
     uptr window = 0;
     uptr handle = os_window;
 
-    window = get_window_from_handle(handle);
+    window = get_window_from(handle);
 
     if (window)
     {
@@ -188,7 +187,7 @@ OSWindow os_window_open(const char* title, i32 x, i32 y, i32 width, i32 height, 
     window = os_window_table.open(title, x, y, width, height, borderless);
     ASSERT(window);
     
-    os_window = get_handle_from_window(window);
+    os_window = get_from_window(window);
     ASSERT(os_window);
     
     return os_window;
@@ -201,7 +200,7 @@ b32 os_window_close(OSWindow os_window)
     uptr handle = os_window;
 
     ASSERT(os_window_table.close);
-    window = get_window_from_handle(handle);
+    window = get_window_from(handle);
 
     if (window)
     {
@@ -213,8 +212,5 @@ b32 os_window_close(OSWindow os_window)
 
 void os_window_init(void)
 {
-    if (!os_event_arena)
-    {
-        os_event_arena = allocate_memory_arena(KILOBYTES(1));
-    }
+    
 }

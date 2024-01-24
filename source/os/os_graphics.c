@@ -69,55 +69,55 @@ static OSGraphicsTable os_graphics_table =
 #error _WIN32 must be defined.
 #endif
 
-static uptr get_graphics_handle_from_window(OSWindow os_window)
+static uptr get_graphics_from_window(OSWindow os_window)
 {
-    uptr graphics_handle = os_window_get_graphics_handle(os_window);
+    uptr graphics = os_window_get_graphics(os_window);
 
-    ASSERT(graphics_handle);
-    return graphics_handle;
+    ASSERT(graphics);
+    return graphics;
 }
 
 void os_graphics_use_shader(OSWindow os_window, OSGraphicsShader shader)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.use_shader);
-        os_graphics_table.use_shader(graphics_handle, shader);
+        os_graphics_table.use_shader(graphics, shader);
     }
 }
 
 void os_graphics_use_input_layout(OSWindow os_window, OSGraphicsInputLayout input_layout)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.use_input_layout);
-        os_graphics_table.use_input_layout(graphics_handle, input_layout);
+        os_graphics_table.use_input_layout(graphics, input_layout);
     }
 }
 
 void os_graphics_set_vertex_buffer_data(OSWindow os_window, const void* vertex_buffer_data, u32 vertex_buffer_size)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.set_vertex_buffer_data);
-        os_graphics_table.set_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
+        os_graphics_table.set_vertex_buffer_data(graphics, vertex_buffer_data, vertex_buffer_size);
     }
 }
 
 void os_graphics_add_vertex_buffer_data(OSWindow os_window, const void* vertex_buffer_data, u32 vertex_buffer_size)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.add_vertex_buffer_data);
-        os_graphics_table.add_vertex_buffer_data(graphics_handle, vertex_buffer_data, vertex_buffer_size);
+        os_graphics_table.add_vertex_buffer_data(graphics, vertex_buffer_data, vertex_buffer_size);
     }
 }
 
@@ -136,12 +136,12 @@ OSGraphicsInputLayout os_graphics_create_input_layout(const u8* vertex_shader_bu
 
 void os_graphics_create_texture(OSWindow os_window, const u32* texture_buffer, i32 width, i32 height)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.create_texture);
-        os_graphics_table.create_texture(graphics_handle, texture_buffer, width, height);
+        os_graphics_table.create_texture(graphics, texture_buffer, width, height);
     }
 }
 
@@ -167,78 +167,78 @@ OSGraphicsShader os_graphics_create_pixel_shader(const u8* shader_buffer, u32 sh
 
 void os_graphics_clear(OSWindow os_window, RGBA color)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.clear);
-        os_graphics_table.clear(graphics_handle, color);
+        os_graphics_table.clear(graphics, color);
     }
 }
 
 void os_graphics_draw_rectangle(OSWindow os_window, i32 x, i32 y, i32 width, i32 height, RGBA color)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.draw_rectangle);
-        os_graphics_table.draw_rectangle(graphics_handle, x, y, width, height, color);
+        os_graphics_table.draw_rectangle(graphics, x, y, width, height, color);
     }
 }
 
 void os_graphics_draw_triangle(OSWindow os_window, V2 v1, V2 v2, V2 v3, RGBA color)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.draw_triangle);
-        os_graphics_table.draw_triangle(graphics_handle, v1, v2, v3, color);
+        os_graphics_table.draw_triangle(graphics, v1, v2, v3, color);
     }
 }
 
 void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 center_y, f32 radius,
                                      f32 start_angle, f32 end_angle, i32 segments, RGBA color)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.draw_circle_section);
-        os_graphics_table.draw_circle_section(graphics_handle, center_x, center_y, radius, start_angle, end_angle, segments, color);
+        os_graphics_table.draw_circle_section(graphics, center_x, center_y, radius, start_angle, end_angle, segments, color);
     }
 }
 
 void os_graphics_draw_circle(OSWindow os_window, i32 center_x, i32 center_y, f32 radius, RGBA color)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.draw_circle);
-        os_graphics_table.draw_circle(graphics_handle, center_x, center_y, radius, color);
+        os_graphics_table.draw_circle(graphics, center_x, center_y, radius, color);
     }
 }
 
 void os_graphics_draw_pixel(OSWindow os_window, i32 x, i32 y, RGBA color)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.draw_pixel);
-        os_graphics_table.draw_pixel(graphics_handle, x, y, color);
+        os_graphics_table.draw_pixel(graphics, x, y, color);
     }
 }
 
 void os_graphics_draw(OSWindow os_window)
 {
-    uptr graphics_handle = get_graphics_handle_from_window(os_window);
+    uptr graphics = get_graphics_from_window(os_window);
 
-    if (graphics_handle)
+    if (graphics)
     {
         ASSERT(os_graphics_table.draw);
-        os_graphics_table.draw(graphics_handle);
+        os_graphics_table.draw(graphics);
     }
 }

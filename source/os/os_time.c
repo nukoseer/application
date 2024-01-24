@@ -2,9 +2,6 @@
 #include "utils.h"
 #include "os_time.h"
 
-#define INVALID_TIMER_HANDLE   0
-#define MAX_TIMER_COUNT        11
-
 typedef u64  OSTimeGetTick(void);
 typedef u64  OSTimeGetFrequency(void);
 typedef void OSTimeSleep(u32 milliseconds);
@@ -35,39 +32,6 @@ static OSTimeTable os_time_table =
 #else
 #error _WIN32 must be defined.
 #endif
-
-typedef struct OSTimeTick
-{
-    u64 tick;
-} OSTimeTick;
-
-// NOTE: 0 is INVALID_TIMER
-static OSTimeTick os_time_ticks[MAX_TIMER_COUNT];
-
-static OSTimeTick* find_empty_time_tick(OSTimeTickHandle* os_time_tick_handle)
-{
-    OSTimeTickHandle found_time_tick_handle = INVALID_TIMER_HANDLE;
-    OSTimeTick* found_time_tick = 0;
-
-    for (i32 i = 1; i < MAX_TIMER_COUNT; ++i)
-    {
-        OSTimeTick* os_time_tick = os_time_ticks + i;
-
-        if (os_time_tick->tick == 0)
-        {
-            found_time_tick = os_time_tick;
-            found_time_tick_handle = (u32)i;
-            break;
-        }
-    }
-
-    ASSERT(found_time_tick_handle != INVALID_TIMER_HANDLE);
-    ASSERT(found_time_tick && found_time_tick->tick == 0);
-
-    *os_time_tick_handle = found_time_tick_handle;
-
-    return found_time_tick;
-}
 
 f64 os_time_tick_to_milliseconds(u64 tick)
 {
@@ -111,31 +75,6 @@ u64 os_time_get_frequency(void)
     frequency = os_time_table.get_frequency();
 
     return frequency;
-}
-
-// TODO: Do we really need this begin_tick, end_tick thing? 
-OSTimeTickHandle os_time_begin_tick(void)
-{
-    OSTimeTickHandle os_time_tick_handle = INVALID_TIMER_HANDLE;
-    OSTimeTick* os_time_tick = find_empty_time_tick(&os_time_tick_handle);
-
-    os_time_tick->tick = os_time_get_tick();
-
-    return os_time_tick_handle;
-}
-
-u64 os_time_end_tick(OSTimeTickHandle os_time_tick_handle)
-{
-    OSTimeTick* os_time_tick = 0;
-    u64 elapsed_ticks = 0;
-
-    ASSERT(os_time_tick_handle != INVALID_TIMER_HANDLE && os_time_tick_handle < MAX_TIMER_COUNT);
-
-    os_time_tick = os_time_ticks + os_time_tick_handle;
-    elapsed_ticks = os_time_get_tick() - os_time_tick->tick;
-    os_time_tick->tick = 0;
-
-    return elapsed_ticks;
 }
 
 void os_time_sleep(u32 milliseconds)

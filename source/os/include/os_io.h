@@ -2,8 +2,8 @@
 
 #define OS_IO_MAX_OUTPUT_LENGTH 512
 
-typedef uptr OSIOFileHandle;
-typedef uptr OSIOFileFindHandle;
+typedef uptr OSIOFile;
+typedef uptr OSIOFileFind;
 
 typedef enum OSIOFileAccessMode
 {
@@ -21,22 +21,22 @@ typedef enum OSIOFilePointerOffset
 } OSIOFilePointerOffset;
 
 u32 os_io_console_write(const char* fmt, ...);
-OSIOFileHandle os_io_file_create(const char* file_name, i32 access_mode);
-OSIOFileHandle os_io_file_open(const char* file_name, i32 access_mode);
-b32 os_io_file_close(OSIOFileHandle file_handle);
+OSIOFile os_io_file_create(const char* file_name, i32 access_mode);
+OSIOFile os_io_file_open(const char* file_name, i32 access_mode);
+b32 os_io_file_close(OSIOFile file);
 b32 os_io_file_delete(const char* file_name);
-u32 os_io_file_write(OSIOFileHandle file_handle, const char* buffer, u32 size);
-u32 os_io_file_read(OSIOFileHandle file_handle, char* buffer, u32 size);
-u32 os_io_file_size(OSIOFileHandle file_handle);
-OSIOFileFindHandle os_io_file_find_begin(const char* file_name, u32* file_count);
-OSIOFileHandle os_io_file_find_and_open(OSIOFileFindHandle find_handle, i32 access_mode);
-b32 os_io_file_find_end(OSIOFileFindHandle find_handle);
-u32 os_io_file_pointer_move(OSIOFileHandle file_handle, i32 distance, OSIOFilePointerOffset offset);
-u32 os_io_file_pointer_reset(OSIOFileHandle file_handle);
-u32 os_io_file_pointer_get(OSIOFileHandle file_handle);
-b32 os_io_file_get_creation_time(OSIOFileHandle file_handle, OSDateTime* os_date_time);
-b32 os_io_file_get_last_access_time(OSIOFileHandle file_handle, OSDateTime* os_date_time);
-b32 os_io_file_get_last_write_time(OSIOFileHandle file_handle, OSDateTime* os_date_time);
+u32 os_io_file_write(OSIOFile file, const char* buffer, u32 size);
+u32 os_io_file_read(OSIOFile file, char* buffer, u32 size);
+u32 os_io_file_size(OSIOFile file);
+OSIOFileFind os_io_file_find_begin(const char* file_name, u32* file_count);
+OSIOFile os_io_file_find_and_open(OSIOFileFind file_find, i32 access_mode);
+b32 os_io_file_find_end(OSIOFileFind file_find);
+u32 os_io_file_pointer_move(OSIOFile file, i32 distance, OSIOFilePointerOffset offset);
+u32 os_io_file_pointer_reset(OSIOFile file);
+u32 os_io_file_pointer_get(OSIOFile file);
+b32 os_io_file_get_creation_time(OSIOFile file, OSDateTime* os_date_time);
+b32 os_io_file_get_last_access_time(OSIOFile file, OSDateTime* os_date_time);
+b32 os_io_file_get_last_write_time(OSIOFile file, OSDateTime* os_date_time);
 
 #define H_OS_IO_H
 #endif

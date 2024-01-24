@@ -107,7 +107,7 @@ typedef enum OSEventModifier
 typedef struct OSEvent OSEvent;
 struct OSEvent
 {
-    OSWindow window_handle;
+    OSWindow window;
     OSEvent* next;
     OSEvent* prev;
     OSEventType type;
@@ -123,7 +123,7 @@ typedef struct OSEventList
     u64 count;
 } OSEventList;
 
-uptr os_window_get_graphics_handle(OSWindow os_window);
+uptr os_window_get_graphics(OSWindow os_window);
 OSEventList os_window_get_events(MemoryArena* arena);
 b32 os_window_get_position_and_size(OSWindow os_window, i32* x, i32* y, i32* width, i32* height);
 b32 os_window_set_position_and_size(OSWindow os_window, i32 x, i32 y, i32 width, i32 height);

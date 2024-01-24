@@ -3,8 +3,8 @@
 #include "os_thread.h"
 
 typedef uptr OSThreadCreate(OSThreadProcedure* thread_procedure, void* parameter);
-typedef u32  OSThreadResume(uptr thread_handle);
-typedef u32  OSThreadSuspend(uptr thread_handle);
+typedef u32  OSThreadResume(uptr thread);
+typedef u32  OSThreadSuspend(uptr thread);
 typedef b32  OSThreadWaitOnAddress(volatile void* address, void* compare_address,
                                    memory_size address_size, u32 milliseconds);
 typedef void OSThreadWakeByAddress(void* address);
@@ -34,34 +34,34 @@ static OSThreadTable os_thread_table =
 #error _WIN32 must be defined.
 #endif
 
-OSThreadHandle os_thread_create(OSThreadProcedure* thread_procedure, void* parameter)
+OSThread os_thread_create(OSThreadProcedure* thread_procedure, void* parameter)
 {
-    OSThreadHandle thread_handle = 0;
+    OSThread thread = 0;
 
     ASSERT(thread_procedure);
     ASSERT(os_thread_table.create);
 
-    thread_handle = os_thread_table.create(thread_procedure, parameter);
+    thread = os_thread_table.create(thread_procedure, parameter);
 
-    return thread_handle;
+    return thread;
 }
 
-u32 os_thread_resume(OSThreadHandle thread_handle)
+u32 os_thread_resume(OSThread thread)
 {
     u32 result = 0;
 
     ASSERT(os_thread_table.resume);
-    result = os_thread_table.resume(thread_handle);
+    result = os_thread_table.resume(thread);
 
     return result;
 }
 
-u32 os_thread_suspend(OSThreadHandle thread_handle)
+u32 os_thread_suspend(OSThread thread)
 {
     u32 result = 0;
 
     ASSERT(os_thread_table.suspend);
-    result = os_thread_table.suspend(thread_handle);
+    result = os_thread_table.suspend(thread);
 
     return result;
 }

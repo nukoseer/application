@@ -137,13 +137,13 @@ static const u32 random_number_sequence[] =
     0x27FBC90, 0x0492A0D, 0x45CB10F, 0x1E1EF84, 0x2955F8D, 0x50E959B, 0x11B75C7, 0x53B5E1C,
 };
 
-static u32 next_random_seed(RandomHandle random_handle)
+static u32 next_random_seed(Random random)
 {
-    u32 seed = random_number_sequence[random_handle.index++];
+    u32 seed = random_number_sequence[random.index++];
 
-    if (random_handle.index >= ARRAY_COUNT(random_number_sequence))
+    if (random.index >= ARRAY_COUNT(random_number_sequence))
     {
-        random_handle.index = 0;
+        random.index = 0;
     }
 
     return seed;
@@ -179,32 +179,32 @@ static f32 xorwow_random_f32(u32 seed)
     return *(f32*)&result; // [1.0f, 2.0f)
 }
 
-f32 random_unilateral(RandomHandle random_handle)
+f32 random_unilateral(Random random)
 {
-    f32 result = xorwow_random_f32(next_random_seed(random_handle)) - 1.0f; // [1.0f, 2.0f) -> [0.0f, 1.0f)
+    f32 result = xorwow_random_f32(next_random_seed(random)) - 1.0f; // [1.0f, 2.0f) -> [0.0f, 1.0f)
 
     return result;
 }
 
-f32 random_bilateral(RandomHandle random_handle)
+f32 random_bilateral(Random random)
 {
-    f32 result = 2.0f * random_unilateral(random_handle) -1.0f; // [0.0f, 1.0f) -> [-1.0f, 1.0f)
+    f32 result = 2.0f * random_unilateral(random) -1.0f; // [0.0f, 1.0f) -> [-1.0f, 1.0f)
 
     return result;
 }
 
-u32 random_next_u32(RandomHandle random_handle)
+u32 random_next_u32(Random random)
 {
-    u32 result = xorwow_random(next_random_seed(random_handle));
+    u32 result = xorwow_random(next_random_seed(random));
 
     return result;
 }
 
-RandomHandle random_init(u32 value)
+Random random_init(u32 value)
 {
-    RandomHandle random_handle = { 0 };
+    Random random = { 0 };
 
-    random_handle.index = value % ARRAY_COUNT(random_number_sequence);
+    random.index = value % ARRAY_COUNT(random_number_sequence);
 
-    return random_handle;
+    return random;
 }

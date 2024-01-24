@@ -45,10 +45,10 @@ static void graphics_init(OSWindow os_window)
     struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
     u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, uv), OFFSETOF(struct Vertex, color) };
     u32 input_layout_formats[] = { 2, 2, 4 };
-    OSIOFileHandle vertex_shader_file = os_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
+    OSIOFile vertex_shader_file = os_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
     u32 vertex_shader_buffer_size = os_io_file_size(vertex_shader_file);
     u8* vertex_shader_buffer = os_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
-    OSIOFileHandle pixel_shader_file = os_io_file_open(shader_file_names[1], 1); // NOTE: Read mode
+    OSIOFile pixel_shader_file = os_io_file_open(shader_file_names[1], 1); // NOTE: Read mode
     u32 pixel_shader_buffer_size = os_io_file_size(pixel_shader_file);
     u8* pixel_shader_buffer = os_memory_heap_allocate(pixel_shader_buffer_size, FALSE);
 
@@ -80,7 +80,7 @@ static void graphics_init(OSWindow os_window)
 static void application(void)
 {
     OSWindow os_window = 0;
-    RandomHandle random_handle = { 0 };
+    Random random = { 0 };
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
@@ -104,9 +104,9 @@ static void application(void)
     os_graphics_draw_circle_section(os_window, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
     os_graphics_draw_pixel(os_window, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
     
-    random_handle = random_init(44);
-    OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random_handle));
-    OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random_handle));
+    random = random_init(44);
+    OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random));
+    OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random));
 
     // {
     //     u32 texture_buffer0[] =
@@ -142,11 +142,11 @@ static void application(void)
             if (event->type == OS_EVENT_TYPE_WINDOW_CLOSE)
             {
                 OS_LOG_DEBUG("OS_EVENT_TYPE_WINDOW_CLOSE");
-                os_window_close(event->window_handle);
+                os_window_close(event->window);
             }
             else if (event->type == OS_EVENT_TYPE_PRESS)
             {
-                OS_LOG_TRACE("handle: %llu, key: %d", event->window_handle, event->key);
+                OS_LOG_TRACE("handle: %llu, key: %d", event->window, event->key);
             }
         }
 

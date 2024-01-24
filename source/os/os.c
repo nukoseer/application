@@ -6,8 +6,8 @@
 typedef void OSInit(void);
 typedef b32 OSQuit(void);
 typedef void OSDestroy(void);
-typedef OSModuleHandle OSLoadLibrary(const char* module_name);
-typedef OSProcedureAddress OSGetProcedureAddress(OSModuleHandle module_handle, const char* procedure_name);
+typedef OSModule OSLoadLibrary(const char* module_name);
+typedef OSProcedureAddress OSGetProcedureAddress(OSModule module, const char* procedure_name);
 
 #ifdef _WIN32
 #include "win32.h"
@@ -34,24 +34,24 @@ static OSTable os_table =
 #error _WIN32 must be defined.
 #endif
 
-OSProcedureAddress os_get_procedure_address(OSModuleHandle module_handle, const char* procedure_name)
+OSProcedureAddress os_get_procedure_address(OSModule module, const char* procedure_name)
 {
     OSProcedureAddress procedure_address = 0;
 
     ASSERT(os_table.get_procedure_address);
-    procedure_address = os_table.get_procedure_address(module_handle, procedure_name);
+    procedure_address = os_table.get_procedure_address(module, procedure_name);
 
     return procedure_address;
 }
 
-OSModuleHandle os_load_library(const char* module_name)
+OSModule os_load_library(const char* module_name)
 {
-    OSModuleHandle module_handle = 0;
+    OSModule module = 0;
 
     ASSERT(os_table.load_library);
-    module_handle = os_table.load_library(module_name);
+    module = os_table.load_library(module_name);
 
-    return module_handle;
+    return module;
 }
 
 b32 os_should_quit(void)

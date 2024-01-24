@@ -20,11 +20,11 @@ typedef enum Win32IOFileTimeType
     WIN32_IO_FILE_TIME_TYPE_LAST_WRITE,
 } Win32IOFileTimeType;
 
-static HANDLE std_handle_output = 0;
+static HANDLE std_output = 0;
 
-static BOOL get_file_time(uptr file_handle, Win32IOFileTimeType file_time_type, OSDateTime* os_file_time)
+static BOOL get_file_time(uptr file, Win32IOFileTimeType file_time_type, OSDateTime* os_file_time)
 {
-    HANDLE handle = (HANDLE)file_handle;
+    HANDLE handle = (HANDLE)file;
     b32 result = 0;
     FILETIME file_time = { 0 };
 
@@ -101,25 +101,25 @@ static DWORD map_access_mode(i32 access_mode)
 
 static uptr create_file(const char* file_name, i32 access_mode, i32 creating_mode)
 {
-    HANDLE file_handle = 0;
+    HANDLE file = 0;
     DWORD generic_access_mode = 0;
 
     generic_access_mode = map_access_mode(access_mode);
 
-    file_handle = CreateFile(file_name, generic_access_mode, 0, 0, creating_mode, FILE_ATTRIBUTE_NORMAL, 0);
-    ASSERT(INVALID_HANDLE_VALUE != file_handle);
+    file = CreateFile(file_name, generic_access_mode, 0, 0, creating_mode, FILE_ATTRIBUTE_NORMAL, 0);
+    ASSERT(INVALID_HANDLE_VALUE != file);
 
-    if (file_handle == INVALID_HANDLE_VALUE)
+    if (file == INVALID_HANDLE_VALUE)
     {
-        file_handle = 0;
+        file = 0;
     }
 
-    return (uptr)file_handle;
+    return (uptr)file;
 }
 
-static u32 write_file(uptr file_handle, const char* buffer, u32 size)
+static u32 write_file(uptr file, const char* buffer, u32 size)
 {
-    HANDLE handle = (HANDLE)file_handle;
+    HANDLE handle = (HANDLE)file;
     b32 result = 0;
     DWORD bytes_written = 0;
 
@@ -130,9 +130,9 @@ static u32 write_file(uptr file_handle, const char* buffer, u32 size)
     return (u32)bytes_written;
 }
 
-static u32 read_file(uptr file_handle, char* buffer, u32 size)
+static u32 read_file(uptr file, char* buffer, u32 size)
 {
-    HANDLE handle = (HANDLE)file_handle;
+    HANDLE handle = (HANDLE)file;
     b32 result = 0;
     DWORD bytes_read = 0;
 
@@ -143,10 +143,10 @@ static u32 read_file(uptr file_handle, char* buffer, u32 size)
     return (u32)bytes_read;
 }
 
-static u32 move_file_pointer(uptr file_handle, i32 distance, i32 offset)
+static u32 move_file_pointer(uptr file, i32 distance, i32 offset)
 {
     u32 result = 0;
-    HANDLE handle = (HANDLE)file_handle;
+    HANDLE handle = (HANDLE)file;
     
     result = (u32)SetFilePointer(handle, distance, 0, (u32)offset);
     ASSERT(result != INVALID_SET_FILE_POINTER);
@@ -159,7 +159,7 @@ u32 win32_io_console_write(const char* str, u32 length)
 {
     DWORD number_of_chars_written = 0;
 
-    WriteFile(std_handle_output, str, length, &number_of_chars_written, 0);
+    WriteFile(std_output, str, length, &number_of_chars_written, 0);
     ASSERT(length == number_of_chars_written);
 
     return (u32)number_of_chars_written;
@@ -167,26 +167,26 @@ u32 win32_io_console_write(const char* str, u32 length)
 
 uptr win32_io_file_create(const char* file_name, i32 access_mode)
 {
-    uptr file_handle = 0;
+    uptr file = 0;
     
-    file_handle = create_file(file_name, access_mode, CREATE_ALWAYS);
+    file = create_file(file_name, access_mode, CREATE_ALWAYS);
 
-    return file_handle;
+    return file;
 }
 
 uptr win32_io_file_open(const char* file_name, i32 access_mode)
 {
-    uptr file_handle = 0;
+    uptr file = 0;
     
-    file_handle = create_file(file_name, access_mode, OPEN_ALWAYS);
+    file = create_file(file_name, access_mode, OPEN_ALWAYS);
 
-    return file_handle;
+    return file;
 }
 
-b32 win32_io_file_close(uptr file_handle)
+b32 win32_io_file_close(uptr file)
 {
     BOOL result = FALSE;
-    HANDLE handle = (HANDLE)file_handle;
+    HANDLE handle = (HANDLE)file;
     
     result = CloseHandle(handle);
     ASSERT(result);
@@ -204,28 +204,28 @@ b32 win32_io_file_delete(const char* file_name)
     return (b32)result;
 }
 
-u32 win32_io_file_write(uptr file_handle, const char* buffer, u32 size)
+u32 win32_io_file_write(uptr file, const char* buffer, u32 size)
 {
     u32 result = 0;
 
-    result = write_file(file_handle, buffer, size);
+    result = write_file(file, buffer, size);
 
     return result;
 }
 
-u32 win32_io_file_read(uptr file_handle, char* buffer, u32 size)
+u32 win32_io_file_read(uptr file, char* buffer, u32 size)
 {
     u32 result = 0;
 
-    result = read_file(file_handle, buffer, size);
+    result = read_file(file, buffer, size);
 
     return result;
 }
 
-u32 win32_io_file_size(uptr file_handle)
+u32 win32_io_file_size(uptr file)
 {
     u32 result = 0;
-    HANDLE handle = (HANDLE)file_handle;
+    HANDLE handle = (HANDLE)file;
     
     result = (u32)GetFileSize(handle ,0);
     ASSERT(result != INVALID_FILE_SIZE);
@@ -265,14 +265,14 @@ uptr win32_io_file_find_begin(const char* file_name, u32* file_count)
     return (uptr)file_find_info;
 }
 
-uptr win32_io_file_find_and_open(uptr find_handle, i32 access_mode)
+uptr win32_io_file_find_and_open(uptr file_find, i32 access_mode)
 {
-    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)find_handle;
-    uptr file_handle = 0;
+    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)file_find;
+    uptr file = 0;
     
     if (find_info->handle != INVALID_HANDLE_VALUE)
     {
-        file_handle = win32_io_file_open(find_info->data.cFileName, access_mode);
+        file = win32_io_file_open(find_info->data.cFileName, access_mode);
 
         if (!FindNextFile(find_info->handle, &find_info->data))
         {
@@ -281,13 +281,13 @@ uptr win32_io_file_find_and_open(uptr find_handle, i32 access_mode)
         }
     }
 
-    return file_handle;
+    return file;
 }
 
-b32 win32_io_file_find_end(uptr find_handle)
+b32 win32_io_file_find_end(uptr file_find)
 {
     b32 result = 0;
-    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)find_handle;
+    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)file_find;
 
     if (find_info)
     {
@@ -298,82 +298,82 @@ b32 win32_io_file_find_end(uptr find_handle)
     return result;
 }
 
-u32 win32_io_file_pointer_move(uptr file_handle, i32 distance, i32 offset)
+u32 win32_io_file_pointer_move(uptr file, i32 distance, i32 offset)
 {
     u32 result = 0;
     
-    result = move_file_pointer(file_handle, distance, offset);
+    result = move_file_pointer(file, distance, offset);
 
     return result;
 }
 
-u32 win32_io_file_pointer_reset(uptr file_handle)
+u32 win32_io_file_pointer_reset(uptr file)
 {
     u32 result = 0;
     
-    result = move_file_pointer(file_handle, 0, FILE_BEGIN);
+    result = move_file_pointer(file, 0, FILE_BEGIN);
 
     return result;
 }
 
-u32 win32_io_file_pointer_get(uptr file_handle)
+u32 win32_io_file_pointer_get(uptr file)
 {
     u32 result = 0;
     
-    result = move_file_pointer(file_handle, 0, FILE_CURRENT);
+    result = move_file_pointer(file, 0, FILE_CURRENT);
 
     return result;
 }
 
-b32 win32_io_file_get_creation_time(uptr file_handle, OSDateTime* os_date_time)
+b32 win32_io_file_get_creation_time(uptr file, OSDateTime* os_date_time)
 {
     b32 result = 0;
     
-    result = get_file_time(file_handle, WIN32_IO_FILE_TIME_TYPE_CREATION, os_date_time);
+    result = get_file_time(file, WIN32_IO_FILE_TIME_TYPE_CREATION, os_date_time);
 
     return result;
 }
 
-b32 win32_io_file_get_last_access_time(uptr file_handle, OSDateTime* os_date_time)
+b32 win32_io_file_get_last_access_time(uptr file, OSDateTime* os_date_time)
 {
     b32 result = 0;
     
-    result = get_file_time(file_handle, WIN32_IO_FILE_TIME_TYPE_LAST_ACCESS, os_date_time);
+    result = get_file_time(file, WIN32_IO_FILE_TIME_TYPE_LAST_ACCESS, os_date_time);
 
     return result;
 }
 
-b32 win32_io_file_get_last_write_time(uptr file_handle, OSDateTime* os_date_time)
+b32 win32_io_file_get_last_write_time(uptr file, OSDateTime* os_date_time)
 {
     b32 result = 0;
     
-    result = get_file_time(file_handle, WIN32_IO_FILE_TIME_TYPE_LAST_WRITE, os_date_time);
+    result = get_file_time(file, WIN32_IO_FILE_TIME_TYPE_LAST_WRITE, os_date_time);
 
     return result;
 }
 
 void win32_io_init(void)
 {
-    if (!std_handle_output)
+    if (!std_output)
     {
         DWORD console_mode = 0;
-        HANDLE std_handle_input = 0;
+        HANDLE std_input = 0;
 
-        std_handle_output = GetStdHandle(STD_OUTPUT_HANDLE);
+        std_output = GetStdHandle(STD_OUTPUT_HANDLE);
         
-        if (!std_handle_output)
+        if (!std_output)
         {
             AllocConsole();
         }
 
-        std_handle_output = GetStdHandle(STD_OUTPUT_HANDLE);
-        std_handle_input = GetStdHandle(STD_INPUT_HANDLE);
+        std_output = GetStdHandle(STD_OUTPUT_HANDLE);
+        std_input = GetStdHandle(STD_INPUT_HANDLE);
 
-        ASSERT(std_handle_output != INVALID_HANDLE_VALUE);
-        ASSERT(std_handle_input != INVALID_HANDLE_VALUE);
+        ASSERT(std_output != INVALID_HANDLE_VALUE);
+        ASSERT(std_input != INVALID_HANDLE_VALUE);
 
-        GetConsoleMode(std_handle_input, &console_mode);
-        SetConsoleMode(std_handle_input, (ENABLE_EXTENDED_FLAGS | (console_mode & (DWORD)~ENABLE_QUICK_EDIT_MODE)));
-        SetConsoleMode(std_handle_output, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+        GetConsoleMode(std_input, &console_mode);
+        SetConsoleMode(std_input, (ENABLE_EXTENDED_FLAGS | (console_mode & (DWORD)~ENABLE_QUICK_EDIT_MODE)));
+        SetConsoleMode(std_output, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
     }
 }

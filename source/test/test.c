@@ -113,33 +113,33 @@ static void print_time(char* label, OSDateTime* os_date_time)
 
 static void file_operation_test(void)
 {
-    OSIOFileHandle os_io_file_handle = 0;
+    OSIOFile os_io_file = 0;
     const char* file_name = "test_file.txt";
     b32 result = FALSE;
     OSDateTime os_date_time = { 0 };
     
-    os_io_file_handle = os_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
-    ASSERT(os_io_file_handle);
+    os_io_file = os_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
+    ASSERT(os_io_file);
 
-    result = os_io_file_get_creation_time(os_io_file_handle, &os_date_time);
+    result = os_io_file_get_creation_time(os_io_file, &os_date_time);
     ASSERT(result);
 
     print_time("File creation time: ", &os_date_time);
     
-    result = os_io_file_close(os_io_file_handle);
+    result = os_io_file_close(os_io_file);
     ASSERT(result);
 
     {
-        OSIOFileFindHandle os_io_file_find_handle = 0;
+        OSIOFileFind os_io_file_file_find = 0;
         u32 file_count = 0;
         i32 i = 0;
         
-        os_io_file_find_handle = os_io_file_find_begin("test_file.txt", &file_count);
+        os_io_file_file_find = os_io_file_find_begin("test_file.txt", &file_count);
         ASSERT(file_count == 1);
 
         for (i = 0; i < (i32)file_count; ++i)
         {
-            os_io_file_handle = os_io_file_find_and_open(os_io_file_find_handle,
+            os_io_file = os_io_file_find_and_open(os_io_file_file_find,
                                                          OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ);
 
             {
@@ -147,34 +147,34 @@ static void file_operation_test(void)
                 char read_buffer[sizeof(write_buffer)] = { 0 };
                 u32 size = 0;
 
-                size = os_io_file_write(os_io_file_handle, write_buffer, sizeof(write_buffer));
+                size = os_io_file_write(os_io_file, write_buffer, sizeof(write_buffer));
                 ASSERT(size == sizeof(write_buffer));
 
-                result = os_io_file_get_last_access_time(os_io_file_handle, &os_date_time);
+                result = os_io_file_get_last_access_time(os_io_file, &os_date_time);
                 ASSERT(result);
 
                 print_time("File last access time: ", &os_date_time);
 
-                ASSERT(os_io_file_size(os_io_file_handle) == os_io_file_pointer_get(os_io_file_handle));
+                ASSERT(os_io_file_size(os_io_file) == os_io_file_pointer_get(os_io_file));
                 
-                size = os_io_file_pointer_reset(os_io_file_handle);
+                size = os_io_file_pointer_reset(os_io_file);
                 ASSERT(size == 0);
 
-                size = os_io_file_read(os_io_file_handle, read_buffer, sizeof(read_buffer));
+                size = os_io_file_read(os_io_file, read_buffer, sizeof(read_buffer));
                 ASSERT(size == sizeof(read_buffer));
 
                 ASSERT(!strcmp(write_buffer, read_buffer));
             }
 
-            result = os_io_file_get_last_write_time(os_io_file_handle, &os_date_time);
+            result = os_io_file_get_last_write_time(os_io_file, &os_date_time);
             ASSERT(result);
 
             print_time("File last write time: ", &os_date_time);
             
-            result = os_io_file_close(os_io_file_handle);
+            result = os_io_file_close(os_io_file);
             ASSERT(result);
         }
-        result = os_io_file_find_end(os_io_file_find_handle);
+        result = os_io_file_find_end(os_io_file_file_find);
         ASSERT(result);
     }
 
