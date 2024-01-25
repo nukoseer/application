@@ -3,19 +3,21 @@
 
 #include "types.h"
 #include "utils.h"
+#include "memory_utils.h"
 #include "os_time.h"
 #include "os_io.h"
 
 typedef u32                OSIOConsoleWrite(const char* str, u32 length);
-typedef OSIOFile     OSIOFileCreate(const char* file_name, i32 access_mode);
-typedef OSIOFile     OSIOFileOpen(const char* file_name, i32 access_mode);
+typedef OSIOFile           OSIOFileCreate(const char* file_name, i32 access_mode);
+typedef OSIOFile           OSIOFileOpen(const char* file_name, i32 access_mode);
 typedef b32                OSIOFileClose(OSIOFile file);
 typedef b32                OSIOFileDelete(const char* file_name);
 typedef u32                OSIOFileWrite(OSIOFile file, const char* buffer, u32 size);
-typedef u32                OSIOFileRead(OSIOFile file, char* buffer, u32 size);
-typedef u32                OSIOFileSize(OSIOFile file);
-typedef OSIOFileFind OSIOFileFindBegin(const char* file_name, u32* file_count);
-typedef OSIOFile     OSIOFileFindAndOpen(OSIOFileFind file_find, i32 access_mode);
+typedef memory_size        OSIOFileReadBySize(OSIOFile file, char* buffer, memory_size size);
+typedef OSIOFileContent    OSIOFileReadByName(MemoryArena* arena, const char* file_name);
+typedef memory_size        OSIOFileSize(OSIOFile file);
+typedef OSIOFileFind       OSIOFileFindBegin(const char* file_name, u32* file_count);
+typedef OSIOFile           OSIOFileFindAndOpen(OSIOFileFind file_find, i32 access_mode);
 typedef b32                OSIOFileFindEnd(OSIOFileFind file_find);
 typedef u32                OSIOFilePointerMove(OSIOFile file, i32 distance, i32 offset);
 typedef u32                OSIOFilePointerReset(OSIOFile file);
@@ -32,7 +34,8 @@ typedef struct OSIOTable
     OSIOFileClose* file_close;
     OSIOFileDelete* file_delete;
     OSIOFileWrite* file_write;
-    OSIOFileRead* file_read;
+    OSIOFileReadBySize* file_read_by_size;
+    OSIOFileReadByName* file_read_by_name;
     OSIOFileSize* file_size;
     OSIOFileFindBegin* file_find_begin;
     OSIOFileFindAndOpen* file_find_and_open;
@@ -56,7 +59,8 @@ static OSIOTable os_io_table =
     .file_close = &win32_io_file_close,
     .file_delete = &win32_io_file_delete,
     .file_write = &win32_io_file_write,
-    .file_read = &win32_io_file_read,
+    .file_read_by_size = &win32_io_file_read_by_size,
+    .file_read_by_name = &win32_io_file_read_by_name,
     .file_size = &win32_io_file_size,
     .file_find_begin = &win32_io_file_find_begin,
     .file_find_and_open = &win32_io_file_find_and_open,
@@ -156,19 +160,40 @@ u32 os_io_file_write(OSIOFile file, const char* buffer, u32 size)
     return result;
 }
 
-u32 os_io_file_read(OSIOFile file, char* buffer, u32 size)
+// TODO: We need file functions directly work with file name.
+memory_size os_io_file_read_by_size(OSIOFile file, char* buffer, memory_size size)
 {
-    u32 result = 0;
+    memory_size result = 0;
 
-    ASSERT(os_io_table.file_read);
-    result = os_io_table.file_read(file, buffer, size);
+    ASSERT(os_io_table.file_read_by_size);
+    result = os_io_table.file_read_by_size(file, buffer, size);
 
     return result;
 }
 
-u32 os_io_file_size(OSIOFile file)
+OSIOFileContent os_io_file_read_by_name(MemoryArena* arena, const char* file_name)
 {
-    u32 result = 0;
+    OSIOFileContent result = { 0 };
+
+    ASSERT(os_io_table.file_read_by_name);
+    result = os_io_table.file_read_by_name(arena, file_name);
+
+    return result;
+}
+
+memory_size os_io_file_read(OSIOFile file, char* buffer)
+{
+    memory_size result = 0;
+    memory_size size = os_io_file_size(file);
+    
+    result = os_io_file_read_by_size(file, buffer, size);
+
+    return result;
+}
+
+memory_size os_io_file_size(OSIOFile file)
+{
+    memory_size result = 0;
 
     ASSERT(os_io_table.file_size);
     result = os_io_table.file_size(file);

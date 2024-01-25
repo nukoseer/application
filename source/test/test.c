@@ -117,7 +117,7 @@ static void file_operation_test(void)
     const char* file_name = "test_file.txt";
     b32 result = FALSE;
     OSDateTime os_date_time = { 0 };
-    
+
     os_io_file = os_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
     ASSERT(os_io_file);
 
@@ -145,7 +145,7 @@ static void file_operation_test(void)
             {
                 const char write_buffer[] = "test";
                 char read_buffer[sizeof(write_buffer)] = { 0 };
-                u32 size = 0;
+                memory_size size = 0;
 
                 size = os_io_file_write(os_io_file, write_buffer, sizeof(write_buffer));
                 ASSERT(size == sizeof(write_buffer));
@@ -160,7 +160,7 @@ static void file_operation_test(void)
                 size = os_io_file_pointer_reset(os_io_file);
                 ASSERT(size == 0);
 
-                size = os_io_file_read(os_io_file, read_buffer, sizeof(read_buffer));
+                size = os_io_file_read_by_size(os_io_file, read_buffer, sizeof(read_buffer));
                 ASSERT(size == sizeof(read_buffer));
 
                 ASSERT(!strcmp(write_buffer, read_buffer));

@@ -32,6 +32,8 @@
 #define MEGABYTES(n) (KILOBYTES(n) << 10)
 #define GIGABYTES(n) (MEGABYTES(n) << 10)
 
+#define U32_MAX (0xFFFFFFFFU)
+
 #define DEFER_LOOP(begin, end) for (u32 UNIQUE(_i_) = ((begin), 0); UNIQUE(_i_) == 0; (++UNIQUE(_i_), (end)))
 #define DEFER(x) DEFER_LOOP(0, x)
 

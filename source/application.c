@@ -38,29 +38,22 @@ static f32 vertices[] =
 // 2D graphics it should be enough for us.
 
 // TODO: Our default shader? Not sure about TEXCOORD, uv.
-static void graphics_init(OSWindow os_window)
+static void graphics_init(OSWindow os_window, MemoryArena* arena)
 {
+    TemporaryMemory shader_file_memory = begin_temporary_memory(arena);
     const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
     const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
     struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
     u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, uv), OFFSETOF(struct Vertex, color) };
     u32 input_layout_formats[] = { 2, 2, 4 };
-    OSIOFile vertex_shader_file = os_io_file_open(shader_file_names[0], 1); // NOTE: Read mode
-    u32 vertex_shader_buffer_size = os_io_file_size(vertex_shader_file);
-    u8* vertex_shader_buffer = os_memory_heap_allocate(vertex_shader_buffer_size, FALSE);
-    OSIOFile pixel_shader_file = os_io_file_open(shader_file_names[1], 1); // NOTE: Read mode
-    u32 pixel_shader_buffer_size = os_io_file_size(pixel_shader_file);
-    u8* pixel_shader_buffer = os_memory_heap_allocate(pixel_shader_buffer_size, FALSE);
+    OSIOFileContent vertex_shader_file = os_io_file_read_by_name(shader_file_memory.arena, shader_file_names[0]);
+    OSIOFileContent pixel_shader_file = os_io_file_read_by_name(shader_file_memory.arena, shader_file_names[1]);
 
-    // TODO: Check size of read bytes?
-    os_io_file_read(vertex_shader_file, (char*)vertex_shader_buffer, vertex_shader_buffer_size);
-    os_io_file_read(pixel_shader_file, (char*)pixel_shader_buffer, pixel_shader_buffer_size);
+    OSGraphicsShader vertex_shader = os_graphics_create_vertex_shader(vertex_shader_file.data, (u32)vertex_shader_file.size);
+    OSGraphicsShader pixel_shader = os_graphics_create_pixel_shader(pixel_shader_file.data, (u32)pixel_shader_file.size);
 
-    OSGraphicsShader vertex_shader = os_graphics_create_vertex_shader(vertex_shader_buffer, vertex_shader_buffer_size);
-    OSGraphicsShader pixel_shader = os_graphics_create_pixel_shader(pixel_shader_buffer, pixel_shader_buffer_size);
-
-    OSGraphicsInputLayout input_layout = os_graphics_create_input_layout(vertex_shader_buffer,
-                                                                         vertex_shader_buffer_size,
+    OSGraphicsInputLayout input_layout = os_graphics_create_input_layout(vertex_shader_file.data,
+                                                                         (u32)vertex_shader_file.size,
                                                                          input_layout_names,
                                                                          input_layout_offsets,
                                                                          input_layout_formats,
@@ -70,10 +63,7 @@ static void graphics_init(OSWindow os_window)
     os_graphics_use_shader(os_window, pixel_shader);
     os_graphics_use_input_layout(os_window, input_layout);
 
-    os_memory_heap_release(vertex_shader_buffer);
-    os_memory_heap_release(pixel_shader_buffer);
-    os_io_file_close(vertex_shader_file);
-    os_io_file_close(pixel_shader_file);
+    end_temporary_memory(shader_file_memory);
 }
 
 // TODO: Probably we should get rid of the function tables in os_xx.c source files.
@@ -85,11 +75,12 @@ static void application(void)
     i32 y = 0;
     i32 width = 0;
     i32 height = 0;
+    MemoryArena* frame_arena = allocate_memory_arena(KILOBYTES(5));
 
     os_init();
     os_window = os_window_open("Application", 60, 60, 640, 480, FALSE);
 
-    graphics_init(os_window);
+    graphics_init(os_window, frame_arena);
     
     os_window_get_position_and_size(os_window, &x, &y, &width, &height);
 
@@ -129,7 +120,6 @@ static void application(void)
 
     f32 default_refresh_rate = 60.0f; // os_window_get_default_refresh_rate();
     f32 target_seconds_per_frame = 1.0f / default_refresh_rate;
-    MemoryArena* frame_arena = allocate_memory_arena(KILOBYTES(2));
     u64 last_tick = os_time_get_tick();
     while (!os_should_quit())
     {

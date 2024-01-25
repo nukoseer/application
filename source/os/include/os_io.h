@@ -5,6 +5,12 @@
 typedef uptr OSIOFile;
 typedef uptr OSIOFileFind;
 
+typedef struct OSIOFileContent
+{
+    u8* data;
+    memory_size size;
+} OSIOFileContent;
+
 typedef enum OSIOFileAccessMode
 {
     OS_IO_FILE_ACCESS_MODE_NULL,
@@ -20,14 +26,18 @@ typedef enum OSIOFilePointerOffset
     OS_IO_FILE_POINTER_OFFSET_END,
 } OSIOFilePointerOffset;
 
+struct MemoryArena;
+
 u32 os_io_console_write(const char* fmt, ...);
 OSIOFile os_io_file_create(const char* file_name, i32 access_mode);
 OSIOFile os_io_file_open(const char* file_name, i32 access_mode);
 b32 os_io_file_close(OSIOFile file);
 b32 os_io_file_delete(const char* file_name);
 u32 os_io_file_write(OSIOFile file, const char* buffer, u32 size);
-u32 os_io_file_read(OSIOFile file, char* buffer, u32 size);
-u32 os_io_file_size(OSIOFile file);
+memory_size os_io_file_read(OSIOFile file, char* buffer);
+memory_size os_io_file_read_by_size(OSIOFile file, char* buffer, memory_size size);
+OSIOFileContent os_io_file_read_by_name(struct MemoryArena* arena, const char* file_name);
+memory_size os_io_file_size(OSIOFile file);
 OSIOFileFind os_io_file_find_begin(const char* file_name, u32* file_count);
 OSIOFile os_io_file_find_and_open(OSIOFileFind file_find, i32 access_mode);
 b32 os_io_file_find_end(OSIOFileFind file_find);

@@ -2,10 +2,11 @@
 
 #include "types.h"
 #include "utils.h"
-#include "win32_memory.h"
-#include "win32_io.h"
+#include "memory_utils.h"
 #include "os_time.h"
 #include "os_io.h"
+#include "win32_memory.h"
+#include "win32_io.h"
 
 typedef struct Win32IOFileFindInfo
 {
@@ -51,22 +52,29 @@ static BOOL get_file_time(uptr file, Win32IOFileTimeType file_time_type, OSDateT
 
     if (result)
     {
-        SYSTEMTIME system_time = { 0 };
+        SYSTEMTIME local_time = { 0 };
+        FILETIME local_file_time = { 0 };
 
-        result = FileTimeToSystemTime(&file_time, &system_time);
+        result = FileTimeToLocalFileTime(&file_time, &local_file_time);
+        ASSERT(result);
+
+        if (result)
+        {
+            result = FileTimeToSystemTime(&local_file_time, &local_time);
+        }
 
         ASSERT(result);
 
         if (result)
         {
-            os_file_time->year         = system_time.wYear;
-            os_file_time->month        = system_time.wMonth;
-            os_file_time->day_of_week  = system_time.wDayOfWeek;
-            os_file_time->day          = system_time.wDay;
-            os_file_time->hour         = system_time.wHour;
-            os_file_time->minute       = system_time.wMinute;
-            os_file_time->second       = system_time.wSecond;
-            os_file_time->milliseconds = system_time.wMilliseconds;    
+            os_file_time->year         = local_time.wYear;
+            os_file_time->month        = local_time.wMonth;
+            os_file_time->day_of_week  = local_time.wDayOfWeek;
+            os_file_time->day          = local_time.wDay;
+            os_file_time->hour         = local_time.wHour;
+            os_file_time->minute       = local_time.wMinute;
+            os_file_time->second       = local_time.wSecond;
+            os_file_time->milliseconds = local_time.wMilliseconds;    
         }
     }
     
@@ -130,17 +138,27 @@ static u32 write_file(uptr file, const char* buffer, u32 size)
     return (u32)bytes_written;
 }
 
-static u32 read_file(uptr file, char* buffer, u32 size)
+static memory_size read_file(uptr file, char* buffer, memory_size size)
 {
     HANDLE handle = (HANDLE)file;
-    b32 result = 0;
     DWORD bytes_read = 0;
+    memory_size offset = 0;
 
-    result = ReadFile(handle, buffer, size, &bytes_read, 0);
-    ASSERT(result);
-    ASSERT(bytes_read == size);
+    while (offset < size)
+    {
+        u32 read_size = ((size - offset) > U32_MAX) ? U32_MAX : (u32)(size - offset);
 
-    return (u32)bytes_read;
+        if (!ReadFile(handle, buffer + offset, read_size, &bytes_read, 0))
+        {
+            break;
+        }
+
+        offset += bytes_read;
+    }
+
+    ASSERT(offset == size);
+
+    return offset;
 }
 
 static u32 move_file_pointer(uptr file, i32 distance, i32 offset)
@@ -213,22 +231,60 @@ u32 win32_io_file_write(uptr file, const char* buffer, u32 size)
     return result;
 }
 
-u32 win32_io_file_read(uptr file, char* buffer, u32 size)
+memory_size win32_io_file_read_by_size(uptr file, char* buffer, memory_size size)
 {
-    u32 result = 0;
+    memory_size result = 0;
 
     result = read_file(file, buffer, size);
 
     return result;
 }
 
-u32 win32_io_file_size(uptr file)
+OSIOFileContent win32_io_file_read_by_name(MemoryArena* arena, const char* file_name)
 {
-    u32 result = 0;
+    OSIOFileContent result = { 0 };
+    u8* data = 0;
+    memory_size size = 0;
+    memory_size read_size = 0;
+
+    uptr file = win32_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
+    ASSERT(file);
+
+    if (file)
+    {
+        size = win32_io_file_size(file);
+        data = PUSH_SIZE(arena, size + 1);
+        data[size] = 0;
+
+        read_size = read_file(file, (char*)data, size);
+        win32_io_file_close(file);
+    }
+
+    if (read_size == size)
+    {
+        result.data = data;
+        result.size = size;
+    }
+
+    return result;
+}
+
+memory_size win32_io_file_size(uptr file)
+{
+    memory_size result = 0;
+    u32 file_size_high = 0;
     HANDLE handle = (HANDLE)file;
     
-    result = (u32)GetFileSize(handle ,0);
+    result = GetFileSize(handle, (DWORD*)&file_size_high);
     ASSERT(result != INVALID_FILE_SIZE);
+
+    if (result == INVALID_FILE_SIZE)
+    {
+        result = 0;
+        file_size_high = 0;
+    }
+    
+    result = ((memory_size)file_size_high << 32) | result;
 
     return result;
 }
