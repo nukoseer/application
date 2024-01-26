@@ -20,6 +20,8 @@ f64 os_time_get_elapsed_seconds(u64 begin_tick, u64 end_tick);
 void os_time_sleep(u32 milliseconds);
 OSDateTime os_time_system_now(void);
 OSDateTime os_time_local_now(void);
+b32 os_time_to_system(u64 time, OSDateTime* system_time);
+b32 os_time_to_local(u64 time, OSDateTime* local_time);
 
 #define H_OS_TIME_H
 #endif

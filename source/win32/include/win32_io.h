@@ -3,6 +3,7 @@
 struct OSDateTime;
 struct MemoryArena;
 struct OSIOFileContent;
+struct OSIOFileTime;
 
 u32  win32_io_console_write(const char* str, u32 length);
 uptr win32_io_file_create(const char* file_name, i32 access_mode);
@@ -19,10 +20,7 @@ b32  win32_io_file_find_end(uptr file_find);
 u32  win32_io_file_pointer_move(uptr file, i32 distance, i32 offset);
 u32  win32_io_file_pointer_reset(uptr file);
 u32  win32_io_file_pointer_get(uptr file);
-b32 win32_io_file_get_creation_time(uptr file, struct OSDateTime* os_date_time);
-b32 win32_io_file_get_last_access_time(uptr file, struct OSDateTime* os_date_time);
-b32 win32_io_file_get_last_write_time(uptr file, struct OSDateTime* os_date_time);
-
+b32 win32_io_file_get_time(uptr file, struct OSIOFileTime* file_time);
 void win32_io_init(void);
 
 #define H_WIN32_IO_H

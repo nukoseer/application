@@ -11,6 +11,13 @@ typedef struct OSIOFileContent
     memory_size size;
 } OSIOFileContent;
 
+typedef struct OSIOFileTime
+{
+    u64 create_time;
+    u64 last_access_time;
+    u64 last_write_time;
+} OSIOFileTime;
+
 typedef enum OSIOFileAccessMode
 {
     OS_IO_FILE_ACCESS_MODE_NULL,
@@ -44,9 +51,7 @@ b32 os_io_file_find_end(OSIOFileFind file_find);
 u32 os_io_file_pointer_move(OSIOFile file, i32 distance, OSIOFilePointerOffset offset);
 u32 os_io_file_pointer_reset(OSIOFile file);
 u32 os_io_file_pointer_get(OSIOFile file);
-b32 os_io_file_get_creation_time(OSIOFile file, OSDateTime* os_date_time);
-b32 os_io_file_get_last_access_time(OSIOFile file, OSDateTime* os_date_time);
-b32 os_io_file_get_last_write_time(OSIOFile file, OSDateTime* os_date_time);
+b32 os_io_file_get_time(OSIOFile file, OSIOFileTime* file_time);
 
 #define H_OS_IO_H
 #endif

@@ -14,72 +14,7 @@ typedef struct Win32IOFileFindInfo
     WIN32_FIND_DATA data;
 } Win32IOFileFindInfo;
 
-typedef enum Win32IOFileTimeType
-{
-    WIN32_IO_FILE_TIME_TYPE_CREATION,
-    WIN32_IO_FILE_TIME_TYPE_LAST_ACCESS,
-    WIN32_IO_FILE_TIME_TYPE_LAST_WRITE,
-} Win32IOFileTimeType;
-
 static HANDLE std_output = 0;
-
-static BOOL get_file_time(uptr file, Win32IOFileTimeType file_time_type, OSDateTime* os_file_time)
-{
-    HANDLE handle = (HANDLE)file;
-    b32 result = 0;
-    FILETIME file_time = { 0 };
-
-    switch (file_time_type)
-    {
-        case WIN32_IO_FILE_TIME_TYPE_CREATION:
-        {
-            result = GetFileTime(handle, &file_time, 0, 0);
-        }
-        break;
-        case WIN32_IO_FILE_TIME_TYPE_LAST_ACCESS:
-        {
-            result = GetFileTime(handle, 0, &file_time, 0);
-        }
-        break;
-        case WIN32_IO_FILE_TIME_TYPE_LAST_WRITE:
-        {
-            result = GetFileTime(handle, 0, 0, &file_time);
-        }
-        break;
-    }
-    
-    ASSERT(result);
-
-    if (result)
-    {
-        SYSTEMTIME local_time = { 0 };
-        FILETIME local_file_time = { 0 };
-
-        result = FileTimeToLocalFileTime(&file_time, &local_file_time);
-        ASSERT(result);
-
-        if (result)
-        {
-            result = FileTimeToSystemTime(&local_file_time, &local_time);
-        }
-
-        ASSERT(result);
-
-        if (result)
-        {
-            os_file_time->year         = local_time.wYear;
-            os_file_time->month        = local_time.wMonth;
-            os_file_time->day_of_week  = local_time.wDayOfWeek;
-            os_file_time->day          = local_time.wDay;
-            os_file_time->hour         = local_time.wHour;
-            os_file_time->minute       = local_time.wMinute;
-            os_file_time->second       = local_time.wSecond;
-            os_file_time->milliseconds = local_time.wMilliseconds;    
-        }
-    }
-    
-    return (b32)result;
-}
 
 static DWORD map_access_mode(i32 access_mode)
 {
@@ -381,29 +316,23 @@ u32 win32_io_file_pointer_get(uptr file)
     return result;
 }
 
-b32 win32_io_file_get_creation_time(uptr file, OSDateTime* os_date_time)
+b32 win32_io_file_get_time(uptr file, OSIOFileTime* file_time)
 {
-    b32 result = 0;
-    
-    result = get_file_time(file, WIN32_IO_FILE_TIME_TYPE_CREATION, os_date_time);
+    b32 result = FALSE;
+    HANDLE handle = (HANDLE)file;
+    FILETIME create_time = { 0 };
+    FILETIME last_access_time = { 0 };
+    FILETIME last_write_time = { 0 };
 
-    return result;
-}
+    result = GetFileTime(handle, &create_time, &last_access_time, &last_write_time);
+    ASSERT(result);
 
-b32 win32_io_file_get_last_access_time(uptr file, OSDateTime* os_date_time)
-{
-    b32 result = 0;
-    
-    result = get_file_time(file, WIN32_IO_FILE_TIME_TYPE_LAST_ACCESS, os_date_time);
-
-    return result;
-}
-
-b32 win32_io_file_get_last_write_time(uptr file, OSDateTime* os_date_time)
-{
-    b32 result = 0;
-    
-    result = get_file_time(file, WIN32_IO_FILE_TIME_TYPE_LAST_WRITE, os_date_time);
+    if (result)
+    {
+        file_time->create_time = ((u64)create_time.dwHighDateTime << 32) | (u64)create_time.dwLowDateTime;
+        file_time->last_access_time = ((u64)last_access_time.dwHighDateTime << 32) | (u64)last_access_time.dwLowDateTime;
+        file_time->last_write_time = ((u64)last_write_time.dwHighDateTime << 32) | (u64)last_write_time.dwLowDateTime;
+    }
 
     return result;
 }

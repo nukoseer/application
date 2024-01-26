@@ -5,8 +5,10 @@
 typedef u64  OSTimeGetTick(void);
 typedef u64  OSTimeGetFrequency(void);
 typedef void OSTimeSleep(u32 milliseconds);
-typedef void OSTimeSystemNow(OSDateTime* os_system_time);
-typedef void OSTimeLocalNow(OSDateTime* os_local_time);
+typedef void OSTimeSystemNow(OSDateTime* system_time);
+typedef void OSTimeLocalNow(OSDateTime* local_time);
+typedef b32  OSTimeToSystem(u64 time, OSDateTime* system_time);
+typedef b32  OSTimeToLocal(u64 time, OSDateTime* local_time);
 
 typedef struct OSTimeTable
 {
@@ -15,6 +17,8 @@ typedef struct OSTimeTable
     OSTimeSleep* sleep;
     OSTimeSystemNow* system_now;
     OSTimeLocalNow* local_now;
+    OSTimeToSystem* to_system;
+    OSTimeToLocal* to_local;
 } OSTimeTable;
 
 #ifdef _WIN32
@@ -27,6 +31,8 @@ static OSTimeTable os_time_table =
     .sleep = &win32_time_sleep,
     .system_now = &win32_time_system_now,
     .local_now = &win32_time_local_now,
+    .to_system = &win32_time_to_system,
+    .to_local = &win32_time_to_local,
 };
 
 #else
@@ -101,4 +107,24 @@ OSDateTime os_time_local_now(void)
     os_time_table.local_now(&os_local_time);
 
     return os_local_time;
+}
+
+b32 os_time_to_system(u64 time, OSDateTime* system_time)
+{
+    b32 result = FALSE;
+
+    ASSERT(os_time_table.to_system);
+    result = os_time_table.to_system(time, system_time);
+
+    return result;
+}
+
+b32 os_time_to_local(u64 time, OSDateTime* local_time)
+{
+    b32 result = FALSE;
+
+    ASSERT(os_time_table.to_local);
+    result = os_time_table.to_local(time, local_time);
+
+    return result;
 }

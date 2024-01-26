@@ -117,11 +117,15 @@ static void file_operation_test(void)
     const char* file_name = "test_file.txt";
     b32 result = FALSE;
     OSDateTime os_date_time = { 0 };
+    OSIOFileTime os_io_file_time = { 0 };
 
     os_io_file = os_io_file_open(file_name, OS_IO_FILE_ACCESS_MODE_READ);
     ASSERT(os_io_file);
 
-    result = os_io_file_get_creation_time(os_io_file, &os_date_time);
+    result = os_io_file_get_time(os_io_file, &os_io_file_time);
+    ASSERT(result);
+
+    result = os_time_to_local(os_io_file_time.create_time, &os_date_time);
     ASSERT(result);
 
     print_time("File creation time: ", &os_date_time);
@@ -150,9 +154,12 @@ static void file_operation_test(void)
                 size = os_io_file_write(os_io_file, write_buffer, sizeof(write_buffer));
                 ASSERT(size == sizeof(write_buffer));
 
-                result = os_io_file_get_last_access_time(os_io_file, &os_date_time);
+                result = os_io_file_get_time(os_io_file, &os_io_file_time);
                 ASSERT(result);
 
+                result = os_time_to_local(os_io_file_time.last_access_time, &os_date_time);
+                ASSERT(result);
+                
                 print_time("File last access time: ", &os_date_time);
 
                 ASSERT(os_io_file_size(os_io_file) == os_io_file_pointer_get(os_io_file));
@@ -166,7 +173,10 @@ static void file_operation_test(void)
                 ASSERT(!strcmp(write_buffer, read_buffer));
             }
 
-            result = os_io_file_get_last_write_time(os_io_file, &os_date_time);
+            result = os_io_file_get_time(os_io_file, &os_io_file_time);
+            ASSERT(result);
+
+            result = os_time_to_local(os_io_file_time.last_write_time, &os_date_time);
             ASSERT(result);
 
             print_time("File last write time: ", &os_date_time);
