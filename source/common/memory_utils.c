@@ -7,10 +7,12 @@
 memory_size get_alignment_offset(MemoryArena* arena, memory_size alignment)
 {
     memory_size alignment_offset = 0;
+    memory_size memory = (memory_size)arena->memory + arena->used_size;
+    memory_size alignment_mask = alignment - 1;
 
-    if (((memory_size)(u8*)arena->memory + arena->used_size) & alignment)
+    if (memory & alignment_mask)
     {
-        alignment_offset = (memory_size)((u8*)arena->memory + arena->used_size) & (alignment - 1);
+        alignment_offset = alignment - (memory & alignment_mask);
     }
 
     return alignment_offset;
