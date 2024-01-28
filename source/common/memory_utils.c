@@ -69,13 +69,3 @@ void* push_size_zero(MemoryArena* arena, memory_size size, memory_size alignment
     return result;
 }
 
-// NOTE: We can use memset.
-void memory_zero(void* memory, memory_size size)
-{
-    u8* pointer = (u8*)memory;
-    
-    while (size--)
-    {
-        *pointer++ = 0;
-    }
-}

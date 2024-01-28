@@ -1,15 +1,21 @@
 #ifndef H_OS_IO_H
 
 #define OS_IO_MAX_OUTPUT_LENGTH 512
+#define OS_IO_FILE_MAX_PATH_LENGTH 256
 
 typedef uptr OSIOFile;
-typedef uptr OSIOFileFind;
 
 typedef struct OSIOFileContent
 {
     u8* data;
     memory_size size;
 } OSIOFileContent;
+
+typedef struct OSIOFileFound
+{
+    char file_names[64][OS_IO_FILE_MAX_PATH_LENGTH];
+    u32 file_count;
+} OSIOFileFound;
 
 typedef struct OSIOFileTime
 {
@@ -45,9 +51,7 @@ memory_size os_io_file_read(OSIOFile file, char* buffer);
 memory_size os_io_file_read_by_size(OSIOFile file, char* buffer, memory_size size);
 OSIOFileContent os_io_file_read_by_name(struct MemoryArena* arena, const char* file_name);
 memory_size os_io_file_size(OSIOFile file);
-OSIOFileFind os_io_file_find_begin(const char* file_name, u32* file_count);
-OSIOFile os_io_file_find_and_open(OSIOFileFind file_find, i32 access_mode);
-b32 os_io_file_find_end(OSIOFileFind file_find);
+void os_io_file_find(OSIOFileFound* file_found, const char* file_name);
 u32 os_io_file_pointer_move(OSIOFile file, i32 distance, OSIOFilePointerOffset offset);
 u32 os_io_file_pointer_reset(OSIOFile file);
 u32 os_io_file_pointer_get(OSIOFile file);

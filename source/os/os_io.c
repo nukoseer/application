@@ -16,9 +16,7 @@ typedef u32                OSIOFileWrite(OSIOFile file, const char* buffer, u32 
 typedef memory_size        OSIOFileReadBySize(OSIOFile file, char* buffer, memory_size size);
 typedef OSIOFileContent    OSIOFileReadByName(MemoryArena* arena, const char* file_name);
 typedef memory_size        OSIOFileSize(OSIOFile file);
-typedef OSIOFileFind       OSIOFileFindBegin(const char* file_name, u32* file_count);
-typedef OSIOFile           OSIOFileFindAndOpen(OSIOFileFind file_find, i32 access_mode);
-typedef b32                OSIOFileFindEnd(OSIOFileFind file_find);
+typedef void               OSIOFileFind(OSIOFileFound* file_found, const char* file_name);
 typedef u32                OSIOFilePointerMove(OSIOFile file, i32 distance, i32 offset);
 typedef u32                OSIOFilePointerReset(OSIOFile file);
 typedef u32                OSIOFilePointerGet(OSIOFile file);
@@ -35,9 +33,7 @@ typedef struct OSIOTable
     OSIOFileReadBySize* file_read_by_size;
     OSIOFileReadByName* file_read_by_name;
     OSIOFileSize* file_size;
-    OSIOFileFindBegin* file_find_begin;
-    OSIOFileFindAndOpen* file_find_and_open;
-    OSIOFileFindEnd* file_find_end;
+    OSIOFileFind* file_find;
     OSIOFilePointerMove* file_pointer_move;
     OSIOFilePointerReset* file_pointer_reset;
     OSIOFilePointerGet* file_pointer_get;
@@ -58,9 +54,7 @@ static OSIOTable os_io_table =
     .file_read_by_size = &win32_io_file_read_by_size,
     .file_read_by_name = &win32_io_file_read_by_name,
     .file_size = &win32_io_file_size,
-    .file_find_begin = &win32_io_file_find_begin,
-    .file_find_and_open = &win32_io_file_find_and_open,
-    .file_find_end = &win32_io_file_find_end,
+    .file_find = &win32_io_file_find,
     .file_pointer_move = &win32_io_file_pointer_move,
     .file_pointer_reset = &win32_io_file_pointer_reset,
     .file_pointer_get = &win32_io_file_pointer_get,
@@ -195,34 +189,10 @@ memory_size os_io_file_size(OSIOFile file)
     return result;
 }
 
-OSIOFileFind os_io_file_find_begin(const char* file_name, u32* file_count)
+void os_io_file_find(OSIOFileFound* file_found, const char* file_name)
 {
-    OSIOFileFind file_find = 0;
-
-    ASSERT(os_io_table.file_find_begin);
-    file_find = os_io_table.file_find_begin(file_name, file_count);
-
-    return file_find;
-}
-
-OSIOFile os_io_file_find_and_open(OSIOFileFind file_find, i32 access_mode)
-{
-    OSIOFile file = 0;
-
-    ASSERT(os_io_table.file_find_and_open);
-    file = os_io_table.file_find_and_open(file_find, access_mode);
-
-    return file;
-}
-
-b32 os_io_file_find_end(OSIOFileFind file_find)
-{
-    b32 result = 0;
-
-    ASSERT(os_io_table.file_find_end);
-    result = os_io_table.file_find_end(file_find);
-
-    return result;
+    ASSERT(os_io_table.file_find);
+    os_io_table.file_find(file_found, file_name);
 }
 
 u32 os_io_file_pointer_move(OSIOFile file, i32 distance, OSIOFilePointerOffset offset)

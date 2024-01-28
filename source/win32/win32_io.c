@@ -224,69 +224,20 @@ memory_size win32_io_file_size(uptr file)
     return result;
 }
 
-uptr win32_io_file_find_begin(const char* file_name, u32* file_count)
+void win32_io_file_find(OSIOFileFound* file_found, const char* file_name)
 {
-    Win32IOFileFindInfo* file_find_info = 0;
-    u32 find_count = 0;
+    WIN32_FIND_DATA data = { 0 };
+    HANDLE handle = FindFirstFile(file_name, &data);
 
-    file_find_info = (Win32IOFileFindInfo*)win32_memory_heap_allocate(sizeof(Win32IOFileFindInfo), TRUE);
-    ASSERT(file_find_info);
-
-    file_find_info->handle = FindFirstFile(file_name, &file_find_info->data);
-
-    while (file_find_info->handle != INVALID_HANDLE_VALUE)
+    if (handle != INVALID_HANDLE_VALUE)
     {
-        ++find_count;
-        
-        if (!FindNextFile(file_find_info->handle, &file_find_info->data))
+        do
         {
-            break;
-        }
+            memory_copy(file_found->file_names + file_found->file_count++, data.cFileName, string_length(data.cFileName));
+        } while (FindNextFile(handle, &data) && file_found->file_count < ARRAY_COUNT(file_found->file_names));
+
+        FindClose(handle);
     }
-
-    FindClose(file_find_info->handle);
-    
-    file_find_info->handle = FindFirstFile(file_name, &file_find_info->data);
-        
-    if (file_count)
-    {
-        *file_count = find_count;
-    }
-
-    return (uptr)file_find_info;
-}
-
-uptr win32_io_file_find_and_open(uptr file_find, i32 access_mode)
-{
-    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)file_find;
-    uptr file = 0;
-    
-    if (find_info->handle != INVALID_HANDLE_VALUE)
-    {
-        file = win32_io_file_open(find_info->data.cFileName, access_mode);
-
-        if (!FindNextFile(find_info->handle, &find_info->data))
-        {
-            FindClose(find_info->handle);
-            find_info->handle = INVALID_HANDLE_VALUE;
-        }
-    }
-
-    return file;
-}
-
-b32 win32_io_file_find_end(uptr file_find)
-{
-    b32 result = 0;
-    Win32IOFileFindInfo* find_info = (Win32IOFileFindInfo*)file_find;
-
-    if (find_info)
-    {
-        FindClose(find_info->handle);
-        result = win32_memory_heap_release(find_info);
-    }
-    
-    return result;
 }
 
 u32 win32_io_file_pointer_move(uptr file, i32 distance, i32 offset)

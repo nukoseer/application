@@ -34,7 +34,28 @@ TemporaryMemory begin_temporary_memory(MemoryArena* memory_arena);
 void end_temporary_memory(TemporaryMemory temporary_memory);
 void* push_size(MemoryArena* arena, memory_size size, memory_size alignment);
 void* push_size_zero(MemoryArena* arena, memory_size size, memory_size alignment);
-void memory_zero(void* memory, memory_size size);
+
+inline void memory_copy(void* destination, const void* source, memory_size size)
+{
+    u8* dst = (u8*)destination;
+    const u8* src = (u8*)source;
+
+    while (size--)
+    {
+        *dst++ = *src++;
+    }
+}
+
+// NOTE: We can use memset.
+inline void memory_zero(void* memory, memory_size size)
+{
+    u8* pointer = (u8*)memory;
+    
+    while (size--)
+    {
+        *pointer++ = 0;
+    }
+}
 
 #define H_MEMORY_H
 #endif

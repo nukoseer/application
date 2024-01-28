@@ -3,6 +3,7 @@
 struct OSDateTime;
 struct MemoryArena;
 struct OSIOFileContent;
+struct OSIOFileFound;
 struct OSIOFileTime;
 
 u32  win32_io_console_write(const char* str, u32 length);
@@ -14,9 +15,7 @@ u32  win32_io_file_write(uptr file, const char* buffer, u32 size);
 memory_size win32_io_file_read_by_size(uptr file, char* buffer, memory_size size);
 struct OSIOFileContent win32_io_file_read_by_name(struct MemoryArena* arena, const char* file_name);
 memory_size win32_io_file_size(uptr file);
-uptr win32_io_file_find_begin(const char* file_name, u32* file_count);
-uptr win32_io_file_find_and_open(uptr file_find, i32 access_mode);
-b32  win32_io_file_find_end(uptr file_find);
+void win32_io_file_find(struct OSIOFileFound* file_found, const char* file_name);
 u32  win32_io_file_pointer_move(uptr file, i32 distance, i32 offset);
 u32  win32_io_file_pointer_reset(uptr file);
 u32  win32_io_file_pointer_get(uptr file);

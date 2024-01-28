@@ -134,18 +134,16 @@ static void file_operation_test(void)
     ASSERT(result);
 
     {
-        OSIOFileFind os_io_file_file_find = 0;
-        u32 file_count = 0;
+        OSIOFileFound os_io_file_found = { 0 };
         i32 i = 0;
         
-        os_io_file_file_find = os_io_file_find_begin("test_file.txt", &file_count);
-        ASSERT(file_count == 1);
+        os_io_file_find(&os_io_file_found, "test_f*.txt");
+        ASSERT(os_io_file_found.file_count == 1);
 
-        for (i = 0; i < (i32)file_count; ++i)
+        for (i = 0; i < (i32)os_io_file_found.file_count; ++i)
         {
-            os_io_file = os_io_file_find_and_open(os_io_file_file_find,
-                                                         OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ);
-
+            os_io_file = os_io_file_open(os_io_file_found.file_names[i],
+                                         OS_IO_FILE_ACCESS_MODE_WRITE | OS_IO_FILE_ACCESS_MODE_READ);
             {
                 const char write_buffer[] = "test";
                 char read_buffer[sizeof(write_buffer)] = { 0 };
@@ -184,8 +182,6 @@ static void file_operation_test(void)
             result = os_io_file_close(os_io_file);
             ASSERT(result);
         }
-        result = os_io_file_find_end(os_io_file_file_find);
-        ASSERT(result);
     }
 
     result = os_io_file_delete(file_name);
