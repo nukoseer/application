@@ -84,6 +84,8 @@ static void application(void)
     
     os_window_get_position_and_size(os_window, &x, &y, &width, &height);
 
+    os_io_console_init();
+    // TODO: We should be able to set which file/console will be used for saving logs.
     os_log_set_level(OS_LOG_LEVEL_TRACE);
 
     os_graphics_set_vertex_buffer_data(os_window, vertices, sizeof(vertices) / 2);

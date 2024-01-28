@@ -8,6 +8,7 @@
 #include "os_io.h"
 
 typedef u32                OSIOConsoleWrite(const char* str, u32 length);
+typedef void               OSIOConsoleInit(void);
 typedef OSIOFile           OSIOFileCreate(const char* file_name, i32 access_mode);
 typedef OSIOFile           OSIOFileOpen(const char* file_name, i32 access_mode);
 typedef b32                OSIOFileClose(OSIOFile file);
@@ -25,6 +26,7 @@ typedef b32                OSIOFileGetTime(OSIOFile file, OSIOFileTime* file_tim
 typedef struct OSIOTable
 {
     OSIOConsoleWrite* console_write;
+    OSIOConsoleInit* console_init;
     OSIOFileCreate* file_create;
     OSIOFileOpen* file_open;
     OSIOFileClose* file_close;
@@ -46,6 +48,7 @@ typedef struct OSIOTable
 static OSIOTable os_io_table =
 {
     .console_write = &win32_io_console_write,
+    .console_init = &win32_io_console_init,
     .file_create = &win32_io_file_create,
     .file_open = &win32_io_file_open,
     .file_close = &win32_io_file_close,
@@ -96,6 +99,12 @@ u32 os_io_console_write(const char* fmt, ...)
     va_end(args);
     
     return length;
+}
+
+void os_io_console_init(void)
+{
+    ASSERT(os_io_table.console_init);
+    os_io_table.console_init();
 }
 
 OSIOFile os_io_file_create(const char* file_name, i32 access_mode)

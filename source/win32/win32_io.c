@@ -128,6 +128,38 @@ u32 win32_io_console_write(const char* str, u32 length)
     return (u32)number_of_chars_written;
 }
 
+uptr win32_io_console_init(void)
+{
+    HANDLE handle = 0;
+    
+    if (!std_output)
+    {
+        DWORD console_mode = 0;
+        HANDLE std_input = 0;
+
+        std_output = GetStdHandle(STD_OUTPUT_HANDLE);
+        
+        if (!std_output)
+        {
+            AllocConsole();
+        }
+
+        std_output = GetStdHandle(STD_OUTPUT_HANDLE);
+        std_input = GetStdHandle(STD_INPUT_HANDLE);
+
+        ASSERT(std_output != INVALID_HANDLE_VALUE);
+        ASSERT(std_input != INVALID_HANDLE_VALUE);
+
+        GetConsoleMode(std_input, &console_mode);
+        SetConsoleMode(std_input, (ENABLE_EXTENDED_FLAGS | (console_mode & (DWORD)~ENABLE_QUICK_EDIT_MODE)));
+        SetConsoleMode(std_output, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
+        handle = std_output;
+    }
+
+    return (uptr)handle;
+}
+
 uptr win32_io_file_create(const char* file_name, i32 access_mode)
 {
     uptr file = 0;
@@ -300,26 +332,5 @@ b32 win32_io_file_get_time(uptr file, OSIOFileTime* file_time)
 
 void win32_io_init(void)
 {
-    if (!std_output)
-    {
-        DWORD console_mode = 0;
-        HANDLE std_input = 0;
-
-        std_output = GetStdHandle(STD_OUTPUT_HANDLE);
-        
-        if (!std_output)
-        {
-            AllocConsole();
-        }
-
-        std_output = GetStdHandle(STD_OUTPUT_HANDLE);
-        std_input = GetStdHandle(STD_INPUT_HANDLE);
-
-        ASSERT(std_output != INVALID_HANDLE_VALUE);
-        ASSERT(std_input != INVALID_HANDLE_VALUE);
-
-        GetConsoleMode(std_input, &console_mode);
-        SetConsoleMode(std_input, (ENABLE_EXTENDED_FLAGS | (console_mode & (DWORD)~ENABLE_QUICK_EDIT_MODE)));
-        SetConsoleMode(std_output, ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    }
+    // TODO: ???
 }
