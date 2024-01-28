@@ -60,17 +60,27 @@ static uptr create_file(const char* file_name, i32 access_mode, i32 creating_mod
     return (uptr)file;
 }
 
-static u32 write_file(uptr file, const char* buffer, u32 size)
+static memory_size write_file(uptr file, const char* buffer, memory_size size)
 {
     HANDLE handle = (HANDLE)file;
-    b32 result = 0;
     DWORD bytes_written = 0;
+    memory_size offset = 0;
 
-    result = WriteFile(handle, buffer, size, &bytes_written, 0);
-    ASSERT(result);
-    ASSERT(bytes_written == size);
+    while (offset < size)
+    {
+        DWORD write_size = ((size - offset) > U32_MAX) ? U32_MAX : (DWORD)(size - offset);
 
-    return (u32)bytes_written;
+        if (!WriteFile(handle, buffer + offset, write_size, &bytes_written, 0))
+        {
+            break;
+        }
+
+        offset += bytes_written;
+    }
+
+    ASSERT(offset == size);
+
+    return offset;
 }
 
 static memory_size read_file(uptr file, char* buffer, memory_size size)
@@ -157,9 +167,9 @@ b32 win32_io_file_delete(const char* file_name)
     return (b32)result;
 }
 
-u32 win32_io_file_write(uptr file, const char* buffer, u32 size)
+memory_size win32_io_file_write(uptr file, const char* buffer, memory_size size)
 {
-    u32 result = 0;
+    memory_size result = 0;
 
     result = write_file(file, buffer, size);
 

@@ -46,7 +46,7 @@ OSIOFile os_io_file_create(const char* file_name, i32 access_mode);
 OSIOFile os_io_file_open(const char* file_name, i32 access_mode);
 b32 os_io_file_close(OSIOFile file);
 b32 os_io_file_delete(const char* file_name);
-u32 os_io_file_write(OSIOFile file, const char* buffer, u32 size);
+memory_size os_io_file_write(OSIOFile file, const char* buffer, memory_size size);
 memory_size os_io_file_read(OSIOFile file, char* buffer);
 memory_size os_io_file_read_by_size(OSIOFile file, char* buffer, memory_size size);
 OSIOFileContent os_io_file_read_by_name(struct MemoryArena* arena, const char* file_name);

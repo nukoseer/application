@@ -11,7 +11,7 @@ uptr win32_io_file_create(const char* file_name, i32 access_mode);
 uptr win32_io_file_open(const char* file_name, i32 access_mode);
 b32  win32_io_file_close(uptr file);
 b32  win32_io_file_delete(const char* file_name);
-u32  win32_io_file_write(uptr file, const char* buffer, u32 size);
+memory_size win32_io_file_write(uptr file, const char* buffer, memory_size size);
 memory_size win32_io_file_read_by_size(uptr file, char* buffer, memory_size size);
 struct OSIOFileContent win32_io_file_read_by_name(struct MemoryArena* arena, const char* file_name);
 memory_size win32_io_file_size(uptr file);

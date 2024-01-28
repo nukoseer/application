@@ -12,7 +12,7 @@ typedef OSIOFile           OSIOFileCreate(const char* file_name, i32 access_mode
 typedef OSIOFile           OSIOFileOpen(const char* file_name, i32 access_mode);
 typedef b32                OSIOFileClose(OSIOFile file);
 typedef b32                OSIOFileDelete(const char* file_name);
-typedef u32                OSIOFileWrite(OSIOFile file, const char* buffer, u32 size);
+typedef memory_size        OSIOFileWrite(OSIOFile file, const char* buffer, memory_size size);
 typedef memory_size        OSIOFileReadBySize(OSIOFile file, char* buffer, memory_size size);
 typedef OSIOFileContent    OSIOFileReadByName(MemoryArena* arena, const char* file_name);
 typedef memory_size        OSIOFileSize(OSIOFile file);
@@ -138,9 +138,9 @@ b32 os_io_file_delete(const char* file_name)
     return result;
 }
 
-u32 os_io_file_write(OSIOFile file, const char* buffer, u32 size)
+memory_size os_io_file_write(OSIOFile file, const char* buffer, memory_size size)
 {
-    u32 result = 0;
+    memory_size result = 0;
 
     ASSERT(os_io_table.file_write);
     result = os_io_table.file_write(file, buffer, size);
