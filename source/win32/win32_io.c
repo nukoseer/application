@@ -117,17 +117,6 @@ static u32 move_file_pointer(uptr file, i32 distance, i32 offset)
     return result;
 }
 
-// TODO: Probably we can merge win32_io_console_write() and win32_io_file_write(). At least partially?
-u32 win32_io_console_write(const char* str, u32 length)
-{
-    DWORD number_of_chars_written = 0;
-
-    WriteFile(std_output, str, length, &number_of_chars_written, 0);
-    ASSERT(length == number_of_chars_written);
-
-    return (u32)number_of_chars_written;
-}
-
 uptr win32_io_console_init(void)
 {
     HANDLE handle = 0;

@@ -849,6 +849,7 @@ void win32_window_destroy(void)
     release_memory_arena(win32_window_memory_arena);
 }
 
+// TODO: We do not have to call this from upper layer??
 void win32_window_init(void)
 {
     register_window_class();

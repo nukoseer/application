@@ -70,10 +70,11 @@ void os_destroy(void)
     os_table.destroy();
 }
 
+// TODO: Consider getting rid of this. We should not have to call os_init explicitly.
+// Handle this internally, maybe when window is created??
 void os_init(void)
 {
     ASSERT(os_table.init);
     os_table.init();
     os_window_init();
-    os_log_init();
 }

@@ -41,8 +41,8 @@ typedef enum OSIOFilePointerOffset
 
 struct MemoryArena;
 
-u32 os_io_console_write(const char* fmt, ...);
-void os_io_console_init(void);
+memory_size os_io_console_write(OSIOFile file, const char* fmt, ...);
+OSIOFile os_io_console_init(void);
 OSIOFile os_io_file_create(const char* file_name, i32 access_mode);
 OSIOFile os_io_file_open(const char* file_name, i32 access_mode);
 b32 os_io_file_close(OSIOFile file);

@@ -46,7 +46,7 @@ static i32 log_ring_buffer_pop(void);
 static inline void log_ring_buffer_push_commit(void);
 static inline void log_ring_buffer_pop_commit(void);
 
-static b32 init;
+static OSIOFile default_output_file;
 static OSLogRing os_log_ring;
 static OSLogLevel os_log_level;
 
@@ -64,14 +64,15 @@ static os_thread_callback_return os_log_thread_procedure(os_thread_callback_para
                 static char buffer[OS_IO_MAX_OUTPUT_LENGTH + 1];
                 OSLogRingElement* element = os_log_ring.elements + tail;
                 OSDateTime os_local_time = os_time_local_now();
-    
+
+                // TODO: Formatting with colors should be optional, it does not work with files.
                 snprintf(buffer, OS_IO_MAX_OUTPUT_LENGTH,
                          "\x1b[97m%02d:%02d:%02d %s%-5s \x1b[90m%s:%d: \x1b[97m %s\n\x1b[0m",
                          os_local_time.hour, os_local_time.minute, os_local_time.second,
                          os_log_level_colors[element->log_level], os_log_level_string[element->log_level],
                          element->file, element->line, element->fmt);
                 
-                os_io_console_write(buffer);
+                os_io_console_write(default_output_file, buffer);
             }
             log_ring_buffer_pop_commit();
         }
@@ -130,7 +131,7 @@ void os_log_set_level(OSLogLevel log_level)
 
 void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, ...)
 {
-    if (init && log_level >= os_log_level)
+    if (default_output_file && log_level >= os_log_level)
     {
         i32 head = log_ring_buffer_push();
         {
@@ -150,11 +151,12 @@ void os_log(OSLogLevel log_level, const char* file, i32 line, const char* fmt, .
     }
 }
 
-void os_log_init(void)
+// TODO: Should we add multiple output?
+void os_log_init(OSIOFile file)
 {
-    if (!init)
+    if (!default_output_file)
     {
         os_thread_create(&os_log_thread_procedure, 0);
-        init = TRUE;
+        default_output_file = file;
     }
 }

@@ -7,8 +7,7 @@
 #include "os_time.h"
 #include "os_io.h"
 
-typedef u32                OSIOConsoleWrite(const char* str, u32 length);
-typedef void               OSIOConsoleInit(void);
+typedef OSIOFile           OSIOConsoleInit(void);
 typedef OSIOFile           OSIOFileCreate(const char* file_name, i32 access_mode);
 typedef OSIOFile           OSIOFileOpen(const char* file_name, i32 access_mode);
 typedef b32                OSIOFileClose(OSIOFile file);
@@ -25,7 +24,6 @@ typedef b32                OSIOFileGetTime(OSIOFile file, OSIOFileTime* file_tim
 
 typedef struct OSIOTable
 {
-    OSIOConsoleWrite* console_write;
     OSIOConsoleInit* console_init;
     OSIOFileCreate* file_create;
     OSIOFileOpen* file_open;
@@ -47,7 +45,6 @@ typedef struct OSIOTable
 
 static OSIOTable os_io_table =
 {
-    .console_write = &win32_io_console_write,
     .console_init = &win32_io_console_init,
     .file_create = &win32_io_file_create,
     .file_open = &win32_io_file_open,
@@ -70,9 +67,9 @@ static OSIOTable os_io_table =
 
 static char os_io_str[OS_IO_MAX_OUTPUT_LENGTH + 1];
 
-static u32 write_console(const char* fmt, va_list args)
+static memory_size write_console(OSIOFile file, const char* fmt, va_list args)
 {
-    u32 length = 0;
+    memory_size length = 0;
     i32 ilength = 0;
 
     ilength = vsnprintf(os_io_str, OS_IO_MAX_OUTPUT_LENGTH, fmt, args);
@@ -80,31 +77,35 @@ static u32 write_console(const char* fmt, va_list args)
 
     if (ilength > 0)
     {
-        length = (u32)ilength;
+        length = (memory_size)ilength;
 
-        ASSERT(os_io_table.console_write);
-        length = os_io_table.console_write(os_io_str, length);
+        ASSERT(os_io_table.file_write);
+        length = os_io_table.file_write(file, os_io_str, length);
     }
 
     return length;
 }
 
-u32 os_io_console_write(const char* fmt, ...)
+memory_size os_io_console_write(OSIOFile file, const char* fmt, ...)
 {
     va_list args;
-    u32 length = 0;
+    memory_size length = 0;
     
     va_start(args, fmt);
-    length = write_console(fmt, args);
+    length = write_console(file, fmt, args);
     va_end(args);
     
     return length;
 }
 
-void os_io_console_init(void)
+OSIOFile os_io_console_init(void)
 {
+    OSIOFile file = 0;
+
     ASSERT(os_io_table.console_init);
-    os_io_table.console_init();
+    file = os_io_table.console_init();
+
+    return file;
 }
 
 OSIOFile os_io_file_create(const char* file_name, i32 access_mode)
