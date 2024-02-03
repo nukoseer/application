@@ -86,7 +86,6 @@ static void application(void)
 
     OSIOFile default_console = os_io_console_init();
     os_log_init(default_console); 
-    // TODO: We should be able to set which file/console will be used for saving logs.
     os_log_set_level(OS_LOG_LEVEL_TRACE);
 
     os_graphics_set_vertex_buffer_data(os_window, vertices, sizeof(vertices) / 2);

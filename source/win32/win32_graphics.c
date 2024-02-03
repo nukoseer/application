@@ -505,7 +505,6 @@ static void draw(Win32Graphics* graphics)
 
 static void add_vertex_data(Win32Graphics* graphics, const u8* vertex_buffer_data, u32 vertex_buffer_size)
 {
-
     ASSERT(graphics->vertex_buffer_size + vertex_buffer_size < VERTEX_BUFFER_SIZE);
     
     memcpy((u8*)graphics->vertex_buffer_data + graphics->vertex_buffer_size, vertex_buffer_data, vertex_buffer_size);

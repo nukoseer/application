@@ -86,11 +86,12 @@ set all_source=%common_source% %win32_source% %os_source% %test_source%
 
 set all_object=%object_folder%\*.obj
 
+REM TODO: We should be able to build shaders on runtime.
 REM Compile vertex shader to a object file
-fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fo d3d11_vertex_shader.o /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fo d3d11_vertex_shader.o /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/vertex_shader.hlsl
 
 REM Compile pixel shader to a object file
-fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fo d3d11_pixel_shader.o /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
+fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fo d3d11_pixel_shader.o /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/pixel_shader.hlsl
 
 REM Compile .c files to .obj files (no linking).
 %compiler% %common_compiler_flags% %clang_compiler_flags% %object_flags% %win32_defines% %all_include% %all_source%
