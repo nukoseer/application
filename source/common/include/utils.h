@@ -23,7 +23,7 @@
 
 #define UNUSED_VARIABLE(x)  ((void)(x))
 #define ARRAY_COUNT(x)      (sizeof(x) / sizeof(*(x)))
-#define PADDING(x)          u8 padding_[x]
+#define PADDING(x)          u8 CONCAT(padding, __LINE__)[x]
 
 #define MAX(a, b)           ((a) >= (b) ? (a) : (b))
 #define OFFSETOF(T, m)      ((size_t)(&(((T*)0)->m)))

@@ -41,7 +41,7 @@ typedef struct Win32GraphicsVertexShader
 typedef struct Win32GraphicsPixelShader
 {
     ID3D11PixelShader* shader;
-    ID3D11ShaderResourceView* texture_view[2];
+    // ID3D11ShaderResourceView* texture_view[2];
 } Win32GraphicsPixelShader;
 
 typedef struct Win32GraphicsShader
@@ -54,6 +54,14 @@ typedef struct Win32GraphicsShader
         Win32GraphicsPixelShader pixel_shader;   
     };
 } Win32GraphicsShader;
+
+typedef struct Win32GraphicsTexture2D
+{
+    ID3D11Texture2D* texture;
+    ID3D11ShaderResourceView* view;
+    i32 width;
+    i32 height;
+} Win32GraphicsTexture2D;
 
 // TODO: One input layout can be used with multiple vertex shaders that have same layout?
 // Should we associate input layout and vertex shader or input layout and vertex buffer or
@@ -74,9 +82,9 @@ typedef struct Win32Graphics
     ID3D11Device* device;
     ID3D11DeviceContext* context;
     ID3D11Buffer* screen_buffer;
-    // TODO: What should we do with this?
-    ID3D11ShaderResourceView* texture_view[2];
-    u64 texture_count;
+    ID3D11ShaderResourceView* texture_views[16];
+    u32 texture_count;
+    PADDING(4);
     ID3D11SamplerState* sampler_state;
     ID3D11BlendState* blend_state;
     ID3D11RasterizerState* rasterizer_state;
@@ -437,8 +445,8 @@ static void draw(Win32Graphics* graphics)
         ID3D11PixelShader* pixel_shader = graphics->shaders[WIN32_GRAPHICS_SHADER_TYPE_PIXEL]->pixel_shader.shader;
         ID3D11Buffer** vertex_buffer = &graphics->shaders[WIN32_GRAPHICS_SHADER_TYPE_VERTEX]->vertex_shader.buffer;
         ID3D11Buffer** screen_buffer = &graphics->screen_buffer;
-        ID3D11ShaderResourceView** texture_view = graphics->texture_view;
-        u64 texture_count = graphics->texture_count;
+        ID3D11ShaderResourceView** texture_views = graphics->texture_views;
+        u32 texture_count = graphics->texture_count;
         D3D11_VIEWPORT viewport;
         D3D11_MAPPED_SUBRESOURCE mapped;
 
@@ -487,7 +495,7 @@ static void draw(Win32Graphics* graphics)
 
         // NOTE: Pixel Shader.
         ID3D11DeviceContext_PSSetSamplers(context, 0, 1, &sampler_state);
-        ID3D11DeviceContext_PSSetShaderResources(context, 0, (u32)texture_count, texture_view);
+        ID3D11DeviceContext_PSSetShaderResources(context, 0, (u32)texture_count, texture_views);
         ID3D11DeviceContext_PSSetShader(context, pixel_shader, NULL, 0);
 
         // NOTE: Output Merger.
@@ -714,15 +722,15 @@ void win32_graphics_draw(uptr graphics_pointer)
 //     ID3D11Device_CreateBuffer(device, &desc, buffer, const_buffer);
 // }
 
-// TODO: Probably we need to handle
-// ID3D11Device_CreateShaderResourceView function differently.
 // TODO: We should think about D3D11_USAGE_IMMUTABLE but probably it
 // is okay for textures.
-void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height)
+uptr win32_graphics_create_texture_2D(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
     ID3D11Device* device = graphics->device;
-    ID3D11ShaderResourceView** texture_view = graphics->texture_view + graphics->texture_count++;
+    // TODO: Maybe we need an internal arena to manage this kind of allocations
+    // instead of allocating from heap everytime
+    Win32GraphicsTexture2D* texture = win32_memory_heap_allocate(sizeof(Win32GraphicsTexture2D), TRUE);
     D3D11_TEXTURE2D_DESC desc =
     {
         .Width = (UINT)width,
@@ -739,11 +747,33 @@ void win32_graphics_create_texture(uptr graphics_pointer, const u32* texture_buf
         .pSysMem = texture_buffer,
         .SysMemPitch = (u32)width * sizeof(u32),
     };
-    ID3D11Texture2D* texture = 0;
 
-    ID3D11Device_CreateTexture2D(device, &desc, &data, &texture);
-    ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource*)texture, NULL, texture_view);
-    ID3D11Texture2D_Release(texture);
+    ID3D11Device_CreateTexture2D(device, &desc, &data, &texture->texture);
+    ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource*)texture->texture, NULL, &texture->view);
+    // TODO: Is it okay to release texture source immediately after
+    //  creating shader resource view or we will need it?
+    // ID3D11Texture2D_Release(texture);
+
+    return (uptr)texture;
+}
+
+void win32_graphics_use_texture_2Ds(uptr graphics_pointer, uptr* texture_2Ds, u32 texture_count)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+
+    if (texture_2Ds == 0 || texture_count == 0)
+    {
+        graphics->texture_count = 0;
+    }
+    else
+    {
+        ASSERT(texture_count < ARRAY_COUNT(graphics->texture_views));
+
+        for (u32 i = 0; i < texture_count; ++i)
+        {
+            graphics->texture_views[graphics->texture_count++] = ((Win32GraphicsTexture2D*)texture_2Ds[i])->view;
+        }
+    }
 }
 
 uptr win32_graphics_create_vertex_shader(const u8* shader_buffer, u32 shader_buffer_size)

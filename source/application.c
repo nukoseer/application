@@ -2,15 +2,26 @@
 #include "test.h"
 #include "os.h"
 
+// static f32 vertices[] =
+// {
+//      320.0f, 420.0f,     -1.0f, -1.0f,     255.0f, 0.0f,   0.0f,   255.0f,
+//      560.0f, 120.0f,     -1.0f, -1.0f,     0.0f,   255.0f, 0.0f,   255.0f,
+//      80.0f,  120.0f,     -1.0f, -1.0f,     0.0f,   0.0f,    255.0f, 255.0f,
+
+//      320.0f, 120.0f,     -1.0f, -1.0f,     255.0f, 0.0f,   0.0f,   255.0f,
+//      80.0f,  420.0f,     -1.0f, -1.0f,     0.0f,   255.0f, 0.0f,   255.0f,
+//      560.0f, 420.0f,     -1.0f, -1.0f,     0.0f,   0.0f,    255.0f, 255.0f,
+// };
+
 static f32 vertices[] =
 {
-     320.0f, 420.0f,     -1.0f, -1.0f,     255.0f, 0.0f,   0.0f,   255.0f,
-     560.0f, 120.0f,     -1.0f, -1.0f,     0.0f,   255.0f, 0.0f,   255.0f,
-     80.0f,  120.0f,     -1.0f, -1.0f,     0.0f,   0.0f,    255.0f, 255.0f,
-
-     320.0f, 120.0f,     -1.0f, -1.0f,     255.0f, 0.0f,   0.0f,   255.0f,
-     80.0f,  420.0f,     -1.0f, -1.0f,     0.0f,   255.0f, 0.0f,   255.0f,
-     560.0f, 420.0f,     -1.0f, -1.0f,     0.0f,   0.0f,    255.0f, 255.0f,
+    320.0f, 420.0f,     25.0f, 50.0f,      255.0f, 0.0f,   0.0f,   255.0f,
+    560.0f, 120.0f,     0.0f,  0.0f,       0.0f,   255.0f, 0.0f,   255.0f,
+    80.0f,  120.0f,     50.0f, 0.0f,       0.0f,   0.0f,    255.0f, 255.0f,
+    
+    320.0f, 120.0f,     25.0f, 50.0f,      255.0f, 0.0f,   0.0f,   255.0f,
+    80.0f,  420.0f,     0.0f,  0.0f,       0.0f,   255.0f, 0.0f,   255.0f,
+    560.0f, 420.0f,     50.0f, 0.0f,       0.0f,   0.0f,    255.0f, 255.0f,
 };
 
 // static f32 vertices[] =
@@ -89,36 +100,37 @@ static void application(void)
     os_log_set_level(OS_LOG_LEVEL_TRACE);
 
     os_graphics_set_vertex_buffer_data(os_window, vertices, sizeof(vertices) / 2);
-    os_graphics_draw_rectangle(os_window, 160, 120, 320, 240, RGBA(255.0f, 0.0f, 0.0f, 255.0f));
-    os_graphics_draw_triangle(os_window,
-                              V2(320.0f, 120.0f), V2(80.0f, 420.0f), V2(560.0f, 420.0f),
-                              RGBA(210.0f, 39.0f, 210.0f, 128.0f));
-    os_graphics_draw_circle(os_window, width / 2, height / 2, 60, RGBA(0.0f, 0.0f, 255.0f, 255.0f));
-    os_graphics_draw_circle_section(os_window, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
-    os_graphics_draw_pixel(os_window, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
+    // os_graphics_draw_rectangle(os_window, 160, 120, 320, 240, RGBA(255.0f, 0.0f, 0.0f, 255.0f));
+    // os_graphics_draw_triangle(os_window,
+    //                           V2(320.0f, 120.0f), V2(80.0f, 420.0f), V2(560.0f, 420.0f),
+    //                           RGBA(210.0f, 39.0f, 210.0f, 128.0f));
+    // os_graphics_draw_circle(os_window, width / 2, height / 2, 60, RGBA(0.0f, 0.0f, 255.0f, 255.0f));
+    // os_graphics_draw_circle_section(os_window, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
+    // os_graphics_draw_pixel(os_window, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
     
     random = random_init(44);
     OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random));
     OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random));
 
-    // {
-    //     u32 texture_buffer0[] =
-    //     {
-    //         0x80000000, 0xFFFFFFFF,
-    //         0xFFFFFFFF, 0x80000000,
-    //     };
+    {
+        u32 texture_buffer0[] =
+        {
+            0x80000000, 0xFFFFFFFF,
+            0xFFFFFFFF, 0x80000000,
+        };
         
-    //     u32 texture_buffer1[] =
-    //     {
-    //         0xFFFFFFFF, 0xFFFFFFFF,
-    //         0xFFFFFFFF, 0xFFFFFFFF,
-    //     };
+        // u32 texture_buffer1[] =
+        // {
+        //     0xFFFFFFFF, 0xFFFFFFFF,
+        //     0xFFFFFFFF, 0xFFFFFFFF,
+        // };
 
-    //     // TODO: Maybe, we should not associate textures with windows,
-    //     // they are not directly related with windows but shaders?
-    //     os_graphics_create_texture(os_window, texture_buffer0, 2, 2);
-    //     os_graphics_create_texture(os_window, texture_buffer1, 2, 2);
-    // }
+        // TODO: Maybe, we should not associate textures with windows,
+        // they are not directly related with windows but shaders?
+        OSGraphicsTexture2D texture0 = os_graphics_create_texture_2D(os_window, texture_buffer0, 2, 2);
+        os_graphics_use_texture_2Ds(os_window, &texture0, 1);
+        // os_graphics_create_texture(os_window, texture_buffer1, 2, 2);
+    }
 
     f32 default_refresh_rate = 60.0f; // os_window_get_default_refresh_rate();
     f32 target_seconds_per_frame = 1.0f / default_refresh_rate;

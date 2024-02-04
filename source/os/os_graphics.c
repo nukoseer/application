@@ -11,7 +11,8 @@ typedef void OSGraphicsSetVertexBufferData(uptr graphics_pointer, const void* ve
 typedef void OSGraphicsAddVertexBufferData(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size);
 typedef OSGraphicsInputLayout OSGraphicsCreateInputLayout(const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
                                                           const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count);
-typedef void OSGraphicsCreateTexture(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
+typedef OSGraphicsTexture2D OSGraphicsCreateTexture2D(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
+typedef void OSGraphicsUseTexture2Ds(uptr graphics_pointer, uptr* texture_2Ds, u32 texture_count);
 typedef OSGraphicsShader OSGraphicsCreateVertexShader(const u8* shader_buffer, u32 shader_buffer_size);
 typedef OSGraphicsShader OSGraphicsCreatePixelShader(const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsClear(uptr graphics_pointer, RGBA color);
@@ -30,7 +31,8 @@ typedef struct OSGraphicsTable
     OSGraphicsSetVertexBufferData* set_vertex_buffer_data;
     OSGraphicsAddVertexBufferData* add_vertex_buffer_data;
     OSGraphicsCreateInputLayout* create_input_layout;
-    OSGraphicsCreateTexture* create_texture;
+    OSGraphicsCreateTexture2D* create_texture_2D;
+    OSGraphicsUseTexture2Ds* use_texture_2Ds;
     OSGraphicsCreateVertexShader* create_vertex_shader;
     OSGraphicsCreatePixelShader* create_pixel_shader;
     OSGraphicsClear* clear;
@@ -53,7 +55,8 @@ static OSGraphicsTable os_graphics_table =
     .set_vertex_buffer_data = &win32_graphics_set_vertex_buffer_data,
     .add_vertex_buffer_data = &win32_graphics_add_vertex_buffer_data,
     .create_input_layout = &win32_graphics_create_input_layout,
-    .create_texture = &win32_graphics_create_texture,
+    .create_texture_2D = &win32_graphics_create_texture_2D,
+    .use_texture_2Ds = &win32_graphics_use_texture_2Ds,
     .create_vertex_shader = &win32_graphics_create_vertex_shader,
     .create_pixel_shader = &win32_graphics_create_pixel_shader,
     .clear = &win32_graphics_clear,
@@ -69,6 +72,7 @@ static OSGraphicsTable os_graphics_table =
 #error _WIN32 must be defined.
 #endif
 
+// TODO: Are we sure this needs to be done in here instead of platform code?
 static uptr get_graphics_from_window(OSWindow os_window)
 {
     uptr graphics = os_window_get_graphics(os_window);
@@ -134,14 +138,28 @@ OSGraphicsInputLayout os_graphics_create_input_layout(const u8* vertex_shader_bu
     return os_input_layout;
 }
 
-void os_graphics_create_texture(OSWindow os_window, const u32* texture_buffer, i32 width, i32 height)
+OSGraphicsTexture2D os_graphics_create_texture_2D(OSWindow os_window, const u32* texture_buffer, i32 width, i32 height)
+{
+    uptr graphics = get_graphics_from_window(os_window);
+    OSGraphicsTexture2D texture = 0;
+
+    if (graphics)
+    {
+        ASSERT(os_graphics_table.create_texture_2D);
+        texture = os_graphics_table.create_texture_2D(graphics, texture_buffer, width, height);
+    }
+    
+    return texture;
+}
+
+void os_graphics_use_texture_2Ds(OSWindow os_window, OSGraphicsTexture2D* texture_2Ds, u32 texture_count)
 {
     uptr graphics = get_graphics_from_window(os_window);
 
     if (graphics)
     {
-        ASSERT(os_graphics_table.create_texture);
-        os_graphics_table.create_texture(graphics, texture_buffer, width, height);
+        ASSERT(os_graphics_table.use_texture_2Ds);
+        os_graphics_table.use_texture_2Ds(graphics, texture_2Ds, texture_count);
     }
 }
 
