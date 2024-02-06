@@ -94,6 +94,7 @@ typedef struct Win32Graphics
     IDXGISwapChain1* swap_chain;
     i32 swap_chain_width;
     i32 swap_chain_height;
+    // TODO: User should pass vertex_buffer_data?
     void* vertex_buffer_data;
     u32 vertex_buffer_size;
     FLOAT clear_color[4];
@@ -564,136 +565,6 @@ void win32_graphics_clear(uptr graphics_pointer, RGBA color)
     graphics->clear_color[3] = (color.a + 0.5f) / 255.0f;
 }
 
-// TODO: This draw functions probably do not need to be in platform layer?
-// Determining vertices, colors etc. can be done in upper layer.
-
-void win32_graphics_draw_rectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, RGBA color)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    f32 xf = (f32)x; f32 yf = (f32)y; f32 wf = (f32)width; f32 hf = (f32)height;
-    // TODO: What to do with tex coords?
-    const f32 rectangle_buffer[] = 
-    {
-        xf,      yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf + wf, yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf,      yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf,      yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf + wf, yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf + wf, yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-    };
-
-    add_vertex_data(graphics, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
-}
-
-void win32_graphics_draw_triangle(uptr graphics_pointer, V2 v1, V2 v2, V2 v3, RGBA color)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    // TODO: What to do with tex coords?
-    const f32 triangle_buffer[] =
-    {
-        v1.x, v1.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        v2.x, v2.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        v3.x, v3.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-    };
-
-    add_vertex_data(graphics, (const u8*)triangle_buffer, sizeof(triangle_buffer));
-}
-
-// TODO: We should test this function with different(unusual) angles.
-void win32_graphics_draw_circle_section(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
-                                        f32 start_angle, f32 end_angle, i32 segments, RGBA color)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    f32 angle = 0;
-    f32 steps = 0;
-    i32 i = 0;
-    f32 circle_buffer[8];
-    i32 min_segments = (i32)ceil_f32((end_angle - start_angle) / 90.0f);
-
-    if (end_angle < start_angle)
-    {
-        f32 temp;
-        temp = start_angle;
-        start_angle = end_angle;
-        end_angle = temp;
-    }
-
-    if (segments < min_segments)
-    {
-        // NOTE: Source: https://stackoverflow.com/questions/2243668/when-drawing-an-ellipse-or-circle-with-opengl-how-many-vertices-should-we-use/2244088#2244088
-        // and raylib
-        // NOTE: Maximum angle between segments (error rate 0.5f)
-        f32 th = acos_f32(2.0f * pow_f32(1.0f - (0.5f / radius), 2.0f) - 1.0f);
-        segments = (i32)((end_angle - start_angle) * ceil_f32(2.0f * PI / th) / 360.0f);
-
-        if (segments <= 0)
-        {
-            segments = min_segments;
-        }
-    }
-
-    steps = (end_angle - start_angle) / (f32)segments;
-    angle = start_angle;
-
-    for (i = 0; i < segments; ++i)
-    {
-        circle_buffer[0] = (f32)center_x;
-        circle_buffer[1] = (f32)center_y;
-        circle_buffer[2] = -1.0f;
-        circle_buffer[3] = -1.0f;
-        circle_buffer[4] = (f32)color.r;
-        circle_buffer[5] = (f32)color.g;
-        circle_buffer[6] = (f32)color.b;
-        circle_buffer[7] = (f32)color.a;
-        add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
-
-        circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * angle) * radius;
-        circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * angle) * radius;
-        circle_buffer[2] = -1.0f;
-        circle_buffer[3] = -1.0f;
-        circle_buffer[4] = (f32)color.r;
-        circle_buffer[5] = (f32)color.g;
-        circle_buffer[6] = (f32)color.b;
-        circle_buffer[7] = (f32)color.a;
-        add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
-
-        circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
-        circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
-        circle_buffer[2] = -1.0f;
-        circle_buffer[3] = -1.0f;
-        circle_buffer[4] = (f32)color.r;
-        circle_buffer[5] = (f32)color.g;
-        circle_buffer[6] = (f32)color.b;
-        circle_buffer[7] = (f32)color.a;
-        add_vertex_data(graphics, (u8*)circle_buffer, sizeof(circle_buffer));
-
-        angle += steps;
-    }    
-}
-
-void win32_graphics_draw_circle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, RGBA color)
-{
-    win32_graphics_draw_circle_section(graphics_pointer, center_x, center_y, radius, 0.0f, 360.0f, 36, color);
-}
-
-void win32_graphics_draw_pixel(uptr graphics_pointer, i32 x, i32 y, RGBA color)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    f32 xf = (f32)x; f32 yf = (f32)y;
-    // TODO: What to do with tex coords?
-    const f32 pixel_buffer[] = 
-    {
-        xf,        yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf + 1.0f, yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf,        yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf,        yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf + 1.0f, yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-        xf + 1.0f, yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
-    };
-
-    add_vertex_data(graphics, (const u8*)pixel_buffer, sizeof(pixel_buffer));
-}
-
 void win32_graphics_draw(uptr graphics_pointer)
 {
     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
@@ -847,7 +718,7 @@ uptr win32_graphics_init(uptr handle_pointer)
  
     graphics->vertex_buffer_data = win32_memory_heap_allocate(VERTEX_BUFFER_SIZE, TRUE);
     graphics->vertex_buffer_size = 0;
-    
+
     return (uptr)graphics;
 }
 

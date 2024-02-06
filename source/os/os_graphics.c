@@ -1,6 +1,7 @@
 #include "types.h"
 #include "utils.h"
 #include "memory_utils.h"
+#include "maths.h"
 
 #include "os_window.h"
 #include "os_graphics.h"
@@ -16,12 +17,6 @@ typedef void OSGraphicsUseTexture2Ds(uptr graphics_pointer, uptr* texture_2Ds, u
 typedef OSGraphicsShader OSGraphicsCreateVertexShader(const u8* shader_buffer, u32 shader_buffer_size);
 typedef OSGraphicsShader OSGraphicsCreatePixelShader(const u8* shader_buffer, u32 shader_buffer_size);
 typedef void OSGraphicsClear(uptr graphics_pointer, RGBA color);
-typedef void OSGraphicsDrawRectangle(uptr graphics_pointer, i32 x, i32 y, i32 width, i32 height, RGBA color);
-typedef void OSGraphicsDrawCircleSection(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius,
-                                         f32 start_angle, f32 end_angle, i32 segments, RGBA color);
-typedef void OSGraphicsDrawTriangle(uptr graphics_pointer, V2 v1, V2 v2, V2 v3, RGBA color);
-typedef void OSGraphicsDrawCircle(uptr graphics_pointer, i32 center_x, i32 center_y, f32 radius, RGBA color);
-typedef void OSGraphicsDrawPixel(uptr graphics_pointer, i32 x, i32 y, RGBA color);
 typedef void OSGraphicsDraw(uptr graphics_pointer);
 
 typedef struct OSGraphicsTable
@@ -36,11 +31,6 @@ typedef struct OSGraphicsTable
     OSGraphicsCreateVertexShader* create_vertex_shader;
     OSGraphicsCreatePixelShader* create_pixel_shader;
     OSGraphicsClear* clear;
-    OSGraphicsDrawRectangle* draw_rectangle;
-    OSGraphicsDrawTriangle* draw_triangle;
-    OSGraphicsDrawCircleSection* draw_circle_section;
-    OSGraphicsDrawCircle* draw_circle;
-    OSGraphicsDrawPixel* draw_pixel;
     OSGraphicsDraw* draw;
 } OSGraphicsTable;
 
@@ -60,11 +50,6 @@ static OSGraphicsTable os_graphics_table =
     .create_vertex_shader = &win32_graphics_create_vertex_shader,
     .create_pixel_shader = &win32_graphics_create_pixel_shader,
     .clear = &win32_graphics_clear,
-    .draw_rectangle = &win32_graphics_draw_rectangle,
-    .draw_triangle = &win32_graphics_draw_triangle,
-    .draw_circle_section = &win32_graphics_draw_circle_section,
-    .draw_circle = &win32_graphics_draw_circle,
-    .draw_pixel = &win32_graphics_draw_pixel,
     .draw = &win32_graphics_draw,
 };
 
@@ -200,8 +185,19 @@ void os_graphics_draw_rectangle(OSWindow os_window, i32 x, i32 y, i32 width, i32
 
     if (graphics)
     {
-        ASSERT(os_graphics_table.draw_rectangle);
-        os_graphics_table.draw_rectangle(graphics, x, y, width, height, color);
+        f32 xf = (f32)x; f32 yf = (f32)y; f32 wf = (f32)width; f32 hf = (f32)height;
+        // TODO: What to do with tex coords?
+        const f32 rectangle_buffer[] = 
+        {
+            xf,      yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf + wf, yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf,      yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf,      yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf + wf, yf,      -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf + wf, yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        };
+
+        os_graphics_add_vertex_buffer_data(os_window, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
     }
 }
 
@@ -211,11 +207,18 @@ void os_graphics_draw_triangle(OSWindow os_window, V2 v1, V2 v2, V2 v3, RGBA col
 
     if (graphics)
     {
-        ASSERT(os_graphics_table.draw_triangle);
-        os_graphics_table.draw_triangle(graphics, v1, v2, v3, color);
+        const f32 triangle_buffer[] =
+        {
+            v1.x, v1.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            v2.x, v2.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            v3.x, v3.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        };
+        
+        os_graphics_add_vertex_buffer_data(os_window, (const u8*)triangle_buffer, sizeof(triangle_buffer));
     }
 }
 
+// TODO: We should test this function with different(unusual) angles.
 void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 center_y, f32 radius,
                                      f32 start_angle, f32 end_angle, i32 segments, RGBA color)
 {
@@ -223,8 +226,71 @@ void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 cente
 
     if (graphics)
     {
-        ASSERT(os_graphics_table.draw_circle_section);
-        os_graphics_table.draw_circle_section(graphics, center_x, center_y, radius, start_angle, end_angle, segments, color);
+        f32 angle = 0;
+        f32 steps = 0;
+        i32 i = 0;
+        f32 circle_buffer[8];
+        i32 min_segments = (i32)ceil_f32((end_angle - start_angle) / 90.0f);
+
+        if (end_angle < start_angle)
+        {
+            f32 temp;
+            temp = start_angle;
+            start_angle = end_angle;
+            end_angle = temp;
+        }
+
+        if (segments < min_segments)
+        {
+            // NOTE: Source: https://stackoverflow.com/questions/2243668/when-drawing-an-ellipse-or-circle-with-opengl-how-many-vertices-should-we-use/2244088#2244088
+            // and raylib
+            // NOTE: Maximum angle between segments (error rate 0.5f)
+            f32 th = acos_f32(2.0f * pow_f32(1.0f - (0.5f / radius), 2.0f) - 1.0f);
+            segments = (i32)((end_angle - start_angle) * ceil_f32(2.0f * PI / th) / 360.0f);
+
+            if (segments <= 0)
+            {
+                segments = min_segments;
+            }
+        }
+
+        steps = (end_angle - start_angle) / (f32)segments;
+        angle = start_angle;
+
+        for (i = 0; i < segments; ++i)
+        {
+            circle_buffer[0] = (f32)center_x;
+            circle_buffer[1] = (f32)center_y;
+            circle_buffer[2] = -1.0f;
+            circle_buffer[3] = -1.0f;
+            circle_buffer[4] = (f32)color.r;
+            circle_buffer[5] = (f32)color.g;
+            circle_buffer[6] = (f32)color.b;
+            circle_buffer[7] = (f32)color.a;
+            os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
+
+            circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * angle) * radius;
+            circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * angle) * radius;
+            circle_buffer[2] = -1.0f;
+            circle_buffer[3] = -1.0f;
+            circle_buffer[4] = (f32)color.r;
+            circle_buffer[5] = (f32)color.g;
+            circle_buffer[6] = (f32)color.b;
+            circle_buffer[7] = (f32)color.a;
+            os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
+
+            circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
+            circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
+            circle_buffer[2] = -1.0f;
+            circle_buffer[3] = -1.0f;
+            circle_buffer[4] = (f32)color.r;
+            circle_buffer[5] = (f32)color.g;
+            circle_buffer[6] = (f32)color.b;
+            circle_buffer[7] = (f32)color.a;
+            os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
+
+            angle += steps;
+        }
     }
 }
 
@@ -234,8 +300,7 @@ void os_graphics_draw_circle(OSWindow os_window, i32 center_x, i32 center_y, f32
 
     if (graphics)
     {
-        ASSERT(os_graphics_table.draw_circle);
-        os_graphics_table.draw_circle(graphics, center_x, center_y, radius, color);
+        os_graphics_draw_circle_section(os_window, center_x, center_y, radius, 0.0f, 360.0f, 36, color);
     }
 }
 
@@ -245,8 +310,19 @@ void os_graphics_draw_pixel(OSWindow os_window, i32 x, i32 y, RGBA color)
 
     if (graphics)
     {
-        ASSERT(os_graphics_table.draw_pixel);
-        os_graphics_table.draw_pixel(graphics, x, y, color);
+        f32 xf = (f32)x; f32 yf = (f32)y;
+        // TODO: What to do with tex coords?
+        const f32 pixel_buffer[] = 
+        {
+            xf,        yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf + 1.0f, yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf,        yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf,        yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf + 1.0f, yf,        -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+            xf + 1.0f, yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
+        };
+
+        os_graphics_add_vertex_buffer_data(os_window, (const u8*)pixel_buffer, sizeof(pixel_buffer));
     }
 }
 
