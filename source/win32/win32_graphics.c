@@ -63,6 +63,22 @@ typedef struct Win32GraphicsTexture2D
     i32 height;
 } Win32GraphicsTexture2D;
 
+// typedef struct Win32GraphicsShaderStage
+// {
+//     ID3D11Buffer* constant_buffers[OS_GRAPHICS_MAX_CONSTANT_BUFFER_COUNT];
+// } Win32GraphicsShaderStage;
+
+// typedef struct Win32GraphicsShader
+// {
+//     // TODO: 
+//     // attributes array 
+//     // stage array (constant buffer(uniforms) etc.)
+//     ID3D11VertexShader* vertex_shader;
+//     ID3D11PixelShader* pixel_shader;
+//     void* vertex_shader_data;
+//     memory_size vertex_shader_data_size;
+// } Win32GraphicsShader;
+
 // TODO: One input layout can be used with multiple vertex shaders that have same layout?
 // Should we associate input layout and vertex shader or input layout and vertex buffer or
 // it is enough to create an input layout and use it with particular vertex shader when it is needed. 
