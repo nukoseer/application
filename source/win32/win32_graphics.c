@@ -12,7 +12,10 @@
 
 #include "types.h"
 #include "utils.h"
+#include "memory_utils.h"
 #include "maths.h"
+
+#include "os_graphics_types.h"
 
 #include "win32_memory.h"
 #include "win32_window.h"
@@ -63,21 +66,56 @@ typedef struct Win32GraphicsTexture2D
     i32 height;
 } Win32GraphicsTexture2D;
 
-// typedef struct Win32GraphicsShaderStage
-// {
-//     ID3D11Buffer* constant_buffers[OS_GRAPHICS_MAX_CONSTANT_BUFFER_COUNT];
-// } Win32GraphicsShaderStage;
+typedef struct Win32GraphicsShaderAttribute
+{
+    char semantic_name[16];
+    u32 semantic_index;
+} Win32GraphicsShaderAttribute;
 
-// typedef struct Win32GraphicsShader
-// {
-//     // TODO: 
-//     // attributes array 
-//     // stage array (constant buffer(uniforms) etc.)
-//     ID3D11VertexShader* vertex_shader;
-//     ID3D11PixelShader* pixel_shader;
-//     void* vertex_shader_data;
-//     memory_size vertex_shader_data_size;
-// } Win32GraphicsShader;
+typedef struct Win32GraphicsShaderStage
+{
+    ID3D11Buffer* constant_buffers[OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT];
+} Win32GraphicsShaderStage;
+
+typedef struct GraphicsUniformBlock
+{
+    memory_size size;
+} GraphicsUniformBlock;
+
+typedef struct GraphicsShaderStage
+{
+    GraphicsUniformBlock uniform_blocks[OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT];
+} GraphicsShaderStage;
+
+typedef struct GraphicsShader
+{
+    GraphicsShaderStage shader;
+} GraphicsShader;
+
+typedef struct _Win32GraphicsShader
+{
+    // NOTE: Common.
+    GraphicsShaderStage shader;
+    
+    // NOTE: D3D11 specific.
+    struct
+    {
+        Win32GraphicsShaderAttribute attributes[OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT];
+        Win32GraphicsShaderStage stages[OS_GRAPHICS_MAX_SHADER_STAGE_COUNT];
+        ID3D11VertexShader* vertex_shader;
+        ID3D11PixelShader* pixel_shader;
+        const void* vertex_shader_data;
+        memory_size vertex_shader_data_size;
+    } d3d11;
+
+    struct _Win32GraphicsShader* next;
+} _Win32GraphicsShader;
+
+typedef struct Win32GraphicsState
+{
+    MemoryArena* arena;
+    _Win32GraphicsShader* shader_free_list;
+} Win32GraphicsState;
 
 // TODO: One input layout can be used with multiple vertex shaders that have same layout?
 // Should we associate input layout and vertex shader or input layout and vertex buffer or
@@ -119,6 +157,7 @@ typedef struct Win32Graphics
     Win32GraphicsInputLayout* input_layout;
 } Win32Graphics;
 
+static Win32GraphicsState* graphics_state;
 static ID3D11Device* graphics_device;
 static ID3D11DeviceContext* graphics_context;
 
@@ -717,10 +756,63 @@ void win32_graphics_use_input_layout(uptr graphics_pointer, uptr input_layout_po
     graphics->input_layout = input_layout;
 }
 
+uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
+{
+    _Win32GraphicsShader* graphics_shader = 0;
+
+    if (graphics_state->shader_free_list)
+    {
+        graphics_shader = graphics_state->shader_free_list;
+        graphics_state->shader_free_list = graphics_state->shader_free_list->next;
+        STRUCT_ZERO(graphics_shader, Win32GraphicsShader);
+    }
+    else
+    {
+        graphics_shader = PUSH_STRUCT(graphics_state->arena, _Win32GraphicsShader);
+    }
+
+    // TODO: Maybe deep-copy?
+    graphics_shader->d3d11.vertex_shader_data = shader_desc->vertex_shader.byte_code;
+    graphics_shader->d3d11.vertex_shader_data_size = shader_desc->vertex_shader.byte_code_size;
+
+    ID3D11Device_CreateVertexShader(graphics_device, shader_desc->vertex_shader.byte_code,
+                                    shader_desc->vertex_shader.byte_code_size,
+                                    NULL, &graphics_shader->d3d11.vertex_shader);
+
+    ID3D11Device_CreatePixelShader(graphics_device, shader_desc->pixel_shader.byte_code,
+                                    shader_desc->pixel_shader.byte_code_size,
+                                    NULL, &graphics_shader->d3d11.pixel_shader);
+
+    for (u32 attribute_index = 0; attribute_index < OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT; ++attribute_index)
+    {
+        OSGrahicsShaderAttributeDesc* attribute = shader_desc->attributes + attribute_index;
+        
+        if (attribute->semantic_name)
+        {
+            Win32GraphicsShaderAttribute* d3d11_attribute = graphics_shader->d3d11.attributes + attribute_index;
+            memory_size semantic_name_length = string_length(attribute->semantic_name);
+            
+            ASSERT(semantic_name_length < ARRAY_COUNT(d3d11_attribute->semantic_name));
+            memory_copy(d3d11_attribute->semantic_name, attribute->semantic_name, semantic_name_length);
+            d3d11_attribute->semantic_index = attribute->semantic_index;
+        }
+    }
+
+    return (uptr)graphics_shader;
+}
+
 uptr win32_graphics_init(uptr handle_pointer)
 {
-    // TODO: Do we need different way to allocate? Arena etc.
-    Win32Graphics* graphics = (Win32Graphics*)win32_memory_heap_allocate(sizeof(Win32Graphics), TRUE);
+    if (!graphics_state)
+    {
+        MemoryArena* arena = allocate_memory_arena(MEGABYTES(4));
+        graphics_state = PUSH_STRUCT(arena, Win32GraphicsState);
+        graphics_state->arena = arena;
+    }
+
+    ASSERT(graphics_state && graphics_state->arena);
+
+    Win32Graphics* graphics = PUSH_STRUCT(graphics_state->arena, Win32Graphics);
     HWND handle = (HWND)handle_pointer;
 
     graphics->handle = handle;
@@ -731,7 +823,8 @@ uptr win32_graphics_init(uptr handle_pointer)
     create_blend_state(graphics);
     create_rasterizer_state(graphics);
     create_depth_state(graphics);
- 
+
+    // TODO: ???
     graphics->vertex_buffer_data = win32_memory_heap_allocate(VERTEX_BUFFER_SIZE, TRUE);
     graphics->vertex_buffer_size = 0;
 
