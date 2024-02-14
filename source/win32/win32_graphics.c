@@ -27,6 +27,12 @@
 // IS IT A GOOD IDEA TO LEAVE THEM AS THEY ARE OR SHOULD THEY RETURN
 // SOMETHING FOR ERROR CHECKING/ASSERTING?
 
+typedef struct Win32GraphicsBuffer
+{
+    ID3D11Buffer* buffer;
+    struct Win32GraphicsBuffer* next;
+} Win32GraphicsBuffer;
+
 typedef enum Win32GraphicsShaderType
 {
     WIN32_GRAPHICS_SHADER_TYPE_VERTEX,
@@ -115,6 +121,7 @@ typedef struct Win32GraphicsState
 {
     MemoryArena* arena;
     _Win32GraphicsShader* shader_free_list;
+    Win32GraphicsBuffer* buffer_free_list;
 } Win32GraphicsState;
 
 // TODO: One input layout can be used with multiple vertex shaders that have same layout?
@@ -157,9 +164,14 @@ typedef struct Win32Graphics
     Win32GraphicsInputLayout* input_layout;
 } Win32Graphics;
 
-static Win32GraphicsState* graphics_state;
+static Win32GraphicsState* _graphics_state;
 static ID3D11Device* graphics_device;
 static ID3D11DeviceContext* graphics_context;
+
+static Win32GraphicsState* get_graphics_state(void)
+{
+    return _graphics_state;
+}
 
 static void create_device_and_context(Win32Graphics* graphics)
 {
@@ -756,9 +768,50 @@ void win32_graphics_use_input_layout(uptr graphics_pointer, uptr input_layout_po
     graphics->input_layout = input_layout;
 }
 
+uptr win32_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
+{
+    Win32GraphicsState* graphics_state = get_graphics_state();
+    Win32GraphicsBuffer* buffer = 0;
+
+    if (graphics_state->buffer_free_list)
+    {
+        buffer = graphics_state->buffer_free_list;
+        graphics_state->buffer_free_list = graphics_state->buffer_free_list->next;
+        STRUCT_ZERO(buffer, Win32GraphicsBuffer);
+    }
+    else
+    {
+        buffer = PUSH_STRUCT(graphics_state->arena, Win32GraphicsBuffer);
+    }
+
+    ASSERT(buffer);
+
+    D3D11_BUFFER_DESC desc =
+    {
+        .ByteWidth = (UINT)buffer_desc->size,
+        .Usage = buffer_desc->usage, // TODO: Check buffer_desc->usage does it match with D3D11 enum values?
+        .BindFlags = (buffer_desc->type == OS_GRAPHICS_BUFFER_TYPE_VERTEX_BUFFER) ? D3D11_BIND_VERTEX_BUFFER : D3D11_BIND_INDEX_BUFFER,
+        .CPUAccessFlags = (buffer_desc->usage == OS_GRAPHICS_BUFFER_USAGE_DYNAMIC) ? D3D11_CPU_ACCESS_WRITE : 0,
+    };
+
+    D3D11_SUBRESOURCE_DATA* data_pointer = 0;
+    D3D11_SUBRESOURCE_DATA data = { 0 };
+
+    if (buffer_desc->usage == OS_GRAPHICS_BUFFER_USAGE_IMMUTABLE)
+    {
+        data.pSysMem = buffer_desc->data;
+        data_pointer = &data;
+    }
+    
+    ID3D11Device_CreateBuffer(graphics_device, &desc, data_pointer, &buffer->buffer);
+
+    return (uptr)buffer;
+}
+
 uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
 {
     _Win32GraphicsShader* graphics_shader = 0;
+    Win32GraphicsState* graphics_state = get_graphics_state();
 
     if (graphics_state->shader_free_list)
     {
@@ -803,12 +856,14 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
 
 uptr win32_graphics_init(uptr handle_pointer)
 {
-    if (!graphics_state)
+    if (!_graphics_state)
     {
         MemoryArena* arena = allocate_memory_arena(MEGABYTES(4));
-        graphics_state = PUSH_STRUCT(arena, Win32GraphicsState);
-        graphics_state->arena = arena;
+        _graphics_state = PUSH_STRUCT(arena, Win32GraphicsState);
+        _graphics_state->arena = arena;
     }
+
+    Win32GraphicsState* graphics_state = get_graphics_state();
 
     ASSERT(graphics_state && graphics_state->arena);
 

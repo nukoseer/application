@@ -88,11 +88,32 @@ typedef struct OSGraphicsVertexState
     OSGraphicsVertexAttributeState attributes[OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT];
 } OSGraphicsVertexBufferLayoutState;
 
+typedef enum OSGraphicsBufferUsage
+{
+    OS_GRAPHICS_BUFFER_USAGE_DEFAULT,
+    
+    OS_GRAPHICS_BUFFER_USAGE_IMMUTABLE,
+    OS_GRAPHICS_BUFFER_USAGE_DYNAMIC,
+
+    OS_GRAPHICS_BUFFER_USAGE_COUNT,
+} OSGraphicsBufferUsage;
+
+typedef enum OSGraphicsBufferType
+{
+    OS_GRAPHICS_BUFFER_TYPE_DEFAULT_BUFFER,
+    
+    OS_GRAPHICS_BUFFER_TYPE_VERTEX_BUFFER,
+    OS_GRAPHICS_BUFFER_TYPE_INDEX_BUFFER,
+
+    OS_GRAPHICS_BUFFER_TYPE_COUNT,
+} OSGraphicsBufferType;
+
 typedef struct OSGraphicsBufferDesc
 {
+    OSGraphicsBufferUsage usage;
+    OSGraphicsBufferType type;
     memory_size size;
-    // TODO:
-    // usage, type, data etc.
+    void* data;
 } OSGraphicsBufferDesc;
 
 #define H_OS_GRAPHICS_TYPES_H
