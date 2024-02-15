@@ -7,6 +7,8 @@
 #define OS_GRAPHICS_MAX_SHADER_STAGE_COUNT         (2)
 
 typedef uptr OSGraphicsShader;
+typedef uptr OSGraphicsBuffer;
+typedef uptr OSGraphicsTexture;
 typedef uptr OSGraphicsInputLayout;
 typedef uptr OSGraphicsTexture2D;
 
@@ -88,15 +90,15 @@ typedef struct OSGraphicsVertexState
     OSGraphicsVertexAttributeState attributes[OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT];
 } OSGraphicsVertexBufferLayoutState;
 
-typedef enum OSGraphicsBufferUsage
+typedef enum OSGraphicsUsageType
 {
-    OS_GRAPHICS_BUFFER_USAGE_DEFAULT,
+    OS_GRAPHICS_USAGE_TYPE_DEFAULT,
     
-    OS_GRAPHICS_BUFFER_USAGE_IMMUTABLE,
-    OS_GRAPHICS_BUFFER_USAGE_DYNAMIC,
+    OS_GRAPHICS_USAGE_TYPE_IMMUTABLE,
+    OS_GRAPHICS_USAGE_TYPE_DYNAMIC,
 
-    OS_GRAPHICS_BUFFER_USAGE_COUNT,
-} OSGraphicsBufferUsage;
+    OS_GRAPHICS_USAGE_TYPE_COUNT,
+} OSGraphicsUsageType;
 
 typedef enum OSGraphicsBufferType
 {
@@ -110,11 +112,43 @@ typedef enum OSGraphicsBufferType
 
 typedef struct OSGraphicsBufferDesc
 {
-    OSGraphicsBufferUsage usage;
+    OSGraphicsUsageType usage;
     OSGraphicsBufferType type;
     memory_size size;
     void* data;
 } OSGraphicsBufferDesc;
+
+typedef enum OSGraphicsTextureType
+{
+    OS_GRAPHICS_TEXTURE_TYPE_NULL,
+
+    OS_GRAPHICS_TEXTURE_TYPE_2D,
+
+    OS_GRAPHICS_TEXTURE_TYPE_COUNT,
+} OSGraphicsTextureType;
+
+typedef enum OSGraphicsPixelFormat
+{
+    OS_GRAPHICS_PIXEL_FORMAT_NULL,
+
+    OS_GRAPHICS_PIXEL_FORMAT_R8G8B8A8,
+
+    OS_GRAPHICS_PIXEL_FORMAT_COUNT,
+} OSGraphicsPixelFormat;
+
+typedef struct OSGraphicsTextureDesc
+{
+    OSGraphicsTextureType type;
+    OSGraphicsUsageType usage;
+    OSGraphicsPixelFormat format;
+    // TODO: What we should do if we want to use a texture as a render target? This is a place holder.
+    b32 render_target;
+    i32 width;
+    i32 height;
+    // TODO: Consider sample count, mip maps, etc.
+    void* data;
+    memory_size size;
+} OSGraphicsTextureDesc;
 
 #define H_OS_GRAPHICS_TYPES_H
 #endif

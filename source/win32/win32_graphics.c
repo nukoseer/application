@@ -23,15 +23,70 @@
 
 #define VERTEX_BUFFER_SIZE MEGABYTES(1)
 
+#define PUSH_OR_GET_FROM_FREE_LIST(state, arena, name, element)         \
+    do {                                                                \
+        if ((state)->name##_free_list)                                  \
+        {                                                               \
+            element = (state)->name##_free_list;                        \
+            (state)->name##_free_list = (state)->name##_free_list->next; \
+            STRUCT_ZERO(element, sizeof(*(element)));                   \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            element = PUSH_SIZE(arena, sizeof(*(element)));             \
+        }                                                               \
+    } while(0)
+
 // TODO: MOST OF THE FUNCTIONS IN THIS FILE DO NOT RETURN ANYTHING.
 // IS IT A GOOD IDEA TO LEAVE THEM AS THEY ARE OR SHOULD THEY RETURN
 // SOMETHING FOR ERROR CHECKING/ASSERTING?
 
+typedef struct GraphicsBuffer
+{
+    memory_size size;
+    OSGraphicsBufferType type;
+    OSGraphicsUsageType usage;
+} GraphicsBuffer;
+
 typedef struct Win32GraphicsBuffer
 {
-    ID3D11Buffer* buffer;
+    GraphicsBuffer buffer;
+
+    // NOTE: D3D11 specific.
+    struct
+    {
+        ID3D11Buffer* buffer;  
+    } d3d11;
+    
     struct Win32GraphicsBuffer* next;
 } Win32GraphicsBuffer;
+
+typedef struct GraphicsTexture
+{
+    OSGraphicsTextureType type;
+    OSGraphicsUsageType usage;
+    OSGraphicsPixelFormat format;
+    b32 render_target;
+    i32 width;
+    i32 height;
+} GraphicsTexture;
+
+typedef struct Win32GraphicsTexture
+{
+    GraphicsTexture texture;
+
+    // NOTE: D3D11 specific.
+    struct
+    {
+        ID3D11Resource* resource;
+        ID3D11Texture2D* texture_2D;
+        ID3D11ShaderResourceView* shader_resource_view;
+        DXGI_FORMAT format;
+        PADDING(4);
+    } d3d11;
+
+    struct Win32GraphicsTexture* next;
+} Win32GraphicsTexture;
 
 typedef enum Win32GraphicsShaderType
 {
@@ -122,6 +177,7 @@ typedef struct Win32GraphicsState
     MemoryArena* arena;
     _Win32GraphicsShader* shader_free_list;
     Win32GraphicsBuffer* buffer_free_list;
+    Win32GraphicsTexture* texture_free_list;
 } Win32GraphicsState;
 
 // TODO: One input layout can be used with multiple vertex shaders that have same layout?
@@ -771,41 +827,91 @@ void win32_graphics_use_input_layout(uptr graphics_pointer, uptr input_layout_po
 uptr win32_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
 {
     Win32GraphicsState* graphics_state = get_graphics_state();
-    Win32GraphicsBuffer* buffer = 0;
+    Win32GraphicsBuffer* graphics_buffer = 0;
 
-    if (graphics_state->buffer_free_list)
-    {
-        buffer = graphics_state->buffer_free_list;
-        graphics_state->buffer_free_list = graphics_state->buffer_free_list->next;
-        STRUCT_ZERO(buffer, Win32GraphicsBuffer);
-    }
-    else
-    {
-        buffer = PUSH_STRUCT(graphics_state->arena, Win32GraphicsBuffer);
-    }
-
-    ASSERT(buffer);
+    PUSH_OR_GET_FROM_FREE_LIST(graphics_state, graphics_state->arena, buffer, graphics_buffer);
+    ASSERT(graphics_buffer);
 
     D3D11_BUFFER_DESC desc =
     {
         .ByteWidth = (UINT)buffer_desc->size,
         .Usage = buffer_desc->usage, // TODO: Check buffer_desc->usage does it match with D3D11 enum values?
         .BindFlags = (buffer_desc->type == OS_GRAPHICS_BUFFER_TYPE_VERTEX_BUFFER) ? D3D11_BIND_VERTEX_BUFFER : D3D11_BIND_INDEX_BUFFER,
-        .CPUAccessFlags = (buffer_desc->usage == OS_GRAPHICS_BUFFER_USAGE_DYNAMIC) ? D3D11_CPU_ACCESS_WRITE : 0,
+        .CPUAccessFlags = (buffer_desc->usage == OS_GRAPHICS_USAGE_TYPE_DYNAMIC) ? D3D11_CPU_ACCESS_WRITE : 0,
     };
 
     D3D11_SUBRESOURCE_DATA* data_pointer = 0;
     D3D11_SUBRESOURCE_DATA data = { 0 };
 
-    if (buffer_desc->usage == OS_GRAPHICS_BUFFER_USAGE_IMMUTABLE)
+    if (buffer_desc->usage == OS_GRAPHICS_USAGE_TYPE_IMMUTABLE)
     {
         data.pSysMem = buffer_desc->data;
         data_pointer = &data;
     }
     
-    ID3D11Device_CreateBuffer(graphics_device, &desc, data_pointer, &buffer->buffer);
+    ID3D11Device_CreateBuffer(graphics_device, &desc, data_pointer, &graphics_buffer->d3d11.buffer);
 
-    return (uptr)buffer;
+    return (uptr)graphics_buffer;
+}
+
+uptr win32_graphics_create_texture(OSGraphicsTextureDesc* texture_desc)
+{
+    Win32GraphicsTexture* graphics_texture = 0;
+    Win32GraphicsState* graphics_state = get_graphics_state();
+
+    PUSH_OR_GET_FROM_FREE_LIST(graphics_state, graphics_state->arena, texture, graphics_texture);
+    ASSERT(graphics_texture);
+
+    // TODO: Right now we only support one pixel format.
+    ASSERT(texture_desc->format == OS_GRAPHICS_PIXEL_FORMAT_R8G8B8A8);
+    ASSERT(texture_desc->type == OS_GRAPHICS_TEXTURE_TYPE_2D);
+
+    graphics_texture->texture.width = texture_desc->width;
+    graphics_texture->texture.height = texture_desc->height;
+    graphics_texture->texture.type = texture_desc->type;
+    graphics_texture->texture.usage = texture_desc->usage;
+    graphics_texture->texture.format = texture_desc->format;
+    graphics_texture->texture.render_target = texture_desc->render_target;
+
+    // TODO: Right now we only support one pixel format.    
+    graphics_texture->d3d11.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+    D3D11_SUBRESOURCE_DATA data =
+    {
+        .pSysMem = texture_desc->data,
+        // TODO: Right now this is fixed because we have only one pixel format.
+        .SysMemPitch = (u32)texture_desc->width * sizeof(u32),
+    };
+    
+    D3D11_TEXTURE2D_DESC desc =
+    {
+        .Width = (UINT)graphics_texture->texture.width,
+        .Height = (UINT)graphics_texture->texture.height,
+        .MipLevels = 1,
+        .ArraySize = 1,
+        .Format = graphics_texture->d3d11.format,
+        .SampleDesc = { 1, 0 },
+        .Usage = graphics_texture->texture.usage == OS_GRAPHICS_USAGE_TYPE_DYNAMIC ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_SHADER_RESOURCE,
+        .CPUAccessFlags = (graphics_texture->texture.usage == OS_GRAPHICS_USAGE_TYPE_DYNAMIC) ? D3D11_CPU_ACCESS_WRITE : 0,
+    };
+    
+    ID3D11Device_CreateTexture2D(graphics_device, &desc, &data, &graphics_texture->d3d11.texture_2D);
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC shader_resource_view_desc =
+    {
+        .Format = graphics_texture->d3d11.format,
+        .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+        .Texture2D.MipLevels = 1,
+    };
+    
+    ID3D11Device_CreateShaderResourceView(graphics_device,
+                                          (ID3D11Resource*)graphics_texture->d3d11.texture_2D, &shader_resource_view_desc,
+                                          &graphics_texture->d3d11.shader_resource_view);
+
+    graphics_texture->d3d11.resource = (ID3D11Resource*)graphics_texture->d3d11.texture_2D;
+    
+    return (uptr)graphics_texture;
 }
 
 uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
@@ -813,16 +919,8 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
     _Win32GraphicsShader* graphics_shader = 0;
     Win32GraphicsState* graphics_state = get_graphics_state();
 
-    if (graphics_state->shader_free_list)
-    {
-        graphics_shader = graphics_state->shader_free_list;
-        graphics_state->shader_free_list = graphics_state->shader_free_list->next;
-        STRUCT_ZERO(graphics_shader, Win32GraphicsShader);
-    }
-    else
-    {
-        graphics_shader = PUSH_STRUCT(graphics_state->arena, _Win32GraphicsShader);
-    }
+    PUSH_OR_GET_FROM_FREE_LIST(graphics_state, graphics_state->arena, shader, graphics_shader);
+    ASSERT(graphics_shader);
 
     // TODO: Maybe deep-copy?
     graphics_shader->d3d11.vertex_shader_data = shader_desc->vertex_shader.byte_code;
