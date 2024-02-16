@@ -138,25 +138,34 @@ typedef struct Win32GraphicsShaderStage
     ID3D11Buffer* constant_buffers[OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT];
 } Win32GraphicsShaderStage;
 
+// TODO: If GraphicsXXX structs are only for validation maybe we can remove them?
 typedef struct GraphicsUniformBlock
 {
     memory_size size;
 } GraphicsUniformBlock;
 
+typedef struct GraphicsShaderTexture
+{
+    OSGraphicsTextureType texture_type;
+} GraphicsShaderTexture;
+
 typedef struct GraphicsShaderStage
 {
     GraphicsUniformBlock uniform_blocks[OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT];
+    GraphicsShaderTexture textures[OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT];
+    u32 uniform_block_count;
+    u32 texture_count;
 } GraphicsShaderStage;
 
 typedef struct GraphicsShader
 {
-    GraphicsShaderStage shader;
+    GraphicsShaderStage stage[OS_GRAPHICS_MAX_SHADER_STAGE_COUNT];
 } GraphicsShader;
 
 typedef struct _Win32GraphicsShader
 {
     // NOTE: Common.
-    GraphicsShaderStage shader;
+    GraphicsShader shader;
     
     // NOTE: D3D11 specific.
     struct
@@ -922,6 +931,41 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
     PUSH_OR_GET_FROM_FREE_LIST(graphics_state, graphics_state->arena, shader, graphics_shader);
     ASSERT(graphics_shader);
 
+    for (u32 stage_index = 0; stage_index < OS_GRAPHICS_MAX_SHADER_STAGE_COUNT; ++stage_index)
+    {
+        OSGraphicsShaderStageDesc* stage_desc = ((stage_index == OS_GRAPHICS_VERTEX_SHADER_STAGE) ?
+                                                 &shader_desc->vertex_shader : &shader_desc->pixel_shader);
+        GraphicsShaderStage* stage = graphics_shader->shader.stage + stage_index;
+
+        ASSERT(stage->uniform_block_count == 0);        
+        for (u32 uniform_block_index = 0; uniform_block_index < OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT; ++uniform_block_index)
+        {
+            OSGraphicsShaderUniformBlockDesc* uniform_block_desc = stage_desc->uniform_blocks + uniform_block_index;
+
+            if (uniform_block_desc->size == 0)
+            {
+                break;
+            }
+
+            stage->uniform_blocks[uniform_block_index].size = uniform_block_desc->size;
+            ++stage->uniform_block_count;
+        }
+
+        ASSERT(stage->texture_count == 0);        
+        for (u32 texture_index = 0; texture_index < OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT; ++texture_index)
+        {
+            OSGraphicsShaderTextureDesc* texture_desc = stage_desc->textures + texture_index;
+
+            if (texture_desc->used == 0)
+            {
+                break;
+            }
+
+            stage->textures[texture_index].texture_type = texture_desc->texture_type;
+            ++stage->texture_count;
+        }
+    }
+    
     // TODO: Maybe deep-copy?
     graphics_shader->d3d11.vertex_shader_data = shader_desc->vertex_shader.byte_code;
     graphics_shader->d3d11.vertex_shader_data_size = shader_desc->vertex_shader.byte_code_size;
@@ -936,7 +980,7 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
 
     for (u32 attribute_index = 0; attribute_index < OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT; ++attribute_index)
     {
-        OSGrahicsShaderAttributeDesc* attribute = shader_desc->attributes + attribute_index;
+        OSGraphicsShaderAttributeDesc* attribute = shader_desc->attributes + attribute_index;
         
         if (attribute->semantic_name)
         {
