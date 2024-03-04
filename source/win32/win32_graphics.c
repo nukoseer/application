@@ -15,13 +15,9 @@
 #include "memory_utils.h"
 #include "maths.h"
 
-#include "os_graphics_types.h"
-
 #include "win32_memory.h"
 #include "win32_window.h"
 #include "win32_graphics.h"
-
-#define VERTEX_BUFFER_SIZE MEGABYTES(1)
 
 #define PUSH_OR_GET_FROM_FREE_LIST(state, arena, name, element)         \
     do {                                                                \
@@ -88,6 +84,29 @@ typedef struct Win32GraphicsTexture
     struct Win32GraphicsTexture* next;
 } Win32GraphicsTexture;
 
+typedef struct GraphicsSampler
+{
+    OSGraphicsFilterType min_filter;
+    OSGraphicsFilterType mag_filter;
+    OSGraphicsFilterType mipmap_filter;
+    OSGraphicsWrapType wrap_u;
+    OSGraphicsWrapType wrap_v;
+    OSGraphicsWrapType wrap_w;
+} GraphicsSampler;
+
+typedef struct Win32GraphicsSampler
+{
+    GraphicsSampler sampler;
+
+    // NOTE: D3D11 specific.
+    struct
+    {
+        ID3D11SamplerState* sampler_state;
+    } d3d11;
+
+    struct Win32GraphicsSampler* next;
+} Win32GraphicsSampler;
+
 typedef enum Win32GraphicsShaderType
 {
     WIN32_GRAPHICS_SHADER_TYPE_VERTEX,
@@ -95,37 +114,6 @@ typedef enum Win32GraphicsShaderType
 
     WIN32_GRAPHICS_SHADER_TYPE_COUNT,
 } Win32GraphicsShaderType;
-
-typedef struct Win32GraphicsVertexShader
-{
-    ID3D11VertexShader* shader;
-    ID3D11Buffer* buffer;
-} Win32GraphicsVertexShader;
-
-typedef struct Win32GraphicsPixelShader
-{
-    ID3D11PixelShader* shader;
-    // ID3D11ShaderResourceView* texture_view[2];
-} Win32GraphicsPixelShader;
-
-typedef struct Win32GraphicsShader
-{
-    Win32GraphicsShaderType type;
-    PADDING(4);
-    union
-    {
-        Win32GraphicsVertexShader vertex_shader;
-        Win32GraphicsPixelShader pixel_shader;   
-    };
-} Win32GraphicsShader;
-
-typedef struct Win32GraphicsTexture2D
-{
-    ID3D11Texture2D* texture;
-    ID3D11ShaderResourceView* view;
-    i32 width;
-    i32 height;
-} Win32GraphicsTexture2D;
 
 typedef struct Win32GraphicsShaderAttribute
 {
@@ -159,7 +147,7 @@ typedef struct GraphicsShaderStage
 
 typedef struct GraphicsShader
 {
-    GraphicsShaderStage stage[OS_GRAPHICS_MAX_SHADER_STAGE_COUNT];
+    GraphicsShaderStage stages[OS_GRAPHICS_MAX_SHADER_STAGE_COUNT];
 } GraphicsShader;
 
 typedef struct _Win32GraphicsShader
@@ -181,25 +169,39 @@ typedef struct _Win32GraphicsShader
     struct _Win32GraphicsShader* next;
 } _Win32GraphicsShader;
 
+typedef struct Win32GraphicsPipeline
+{
+    _Win32GraphicsShader* shader;
+
+    // NOTE: D3D11 specific.
+    struct
+    {
+        UINT vertex_buffer_strides[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
+        ID3D11RenderTargetView* render_target_view;
+        ID3D11DepthStencilView* depth_stencil_view;
+        ID3D11RasterizerState* rasterizer_state;
+        ID3D11DepthStencilState* depth_stencil_state;
+        ID3D11BlendState* blend_state;
+        ID3D11InputLayout* input_layout;
+        D3D_PRIMITIVE_TOPOLOGY primitive_topology;
+        PADDING(4);
+    } d3d11;
+
+    struct Win32GraphicsPipeline* next;
+} Win32GraphicsPipeline;
+
 typedef struct Win32GraphicsState
 {
     MemoryArena* arena;
+
+    Win32GraphicsPipeline* current_pipeline;
+
+    Win32GraphicsPipeline* pipeline_free_list;
     _Win32GraphicsShader* shader_free_list;
     Win32GraphicsBuffer* buffer_free_list;
     Win32GraphicsTexture* texture_free_list;
+    Win32GraphicsSampler* sampler_free_list;
 } Win32GraphicsState;
-
-// TODO: One input layout can be used with multiple vertex shaders that have same layout?
-// Should we associate input layout and vertex shader or input layout and vertex buffer or
-// it is enough to create an input layout and use it with particular vertex shader when it is needed. 
-typedef struct Win32GraphicsInputLayout
-{
-    ID3D11InputLayout* layout;
-    D3D11_INPUT_ELEMENT_DESC descs[16];
-    u32 desc_count;
-    // TODO: stride belongs here?
-    u32 stride;
-} Win32GraphicsInputLayout;
 
 // TODO: We should check the alignment and padding of this struct.
 typedef struct Win32Graphics
@@ -207,26 +209,11 @@ typedef struct Win32Graphics
     HWND handle;
     ID3D11Device* device;
     ID3D11DeviceContext* context;
-    ID3D11Buffer* screen_buffer;
-    ID3D11ShaderResourceView* texture_views[16];
-    u32 texture_count;
-    PADDING(4);
-    ID3D11SamplerState* sampler_state;
-    ID3D11BlendState* blend_state;
-    ID3D11RasterizerState* rasterizer_state;
-    ID3D11DepthStencilState* depth_state;
     ID3D11RenderTargetView* render_target_view;
     ID3D11DepthStencilView* depth_stencil_view;
     IDXGISwapChain1* swap_chain;
     i32 swap_chain_width;
     i32 swap_chain_height;
-    // TODO: User should pass vertex_buffer_data?
-    void* vertex_buffer_data;
-    u32 vertex_buffer_size;
-    FLOAT clear_color[4];
-    PADDING(4);
-    Win32GraphicsShader* shaders[WIN32_GRAPHICS_SHADER_TYPE_COUNT];
-    Win32GraphicsInputLayout* input_layout;
 } Win32Graphics;
 
 static Win32GraphicsState* _graphics_state;
@@ -236,6 +223,145 @@ static ID3D11DeviceContext* graphics_context;
 static Win32GraphicsState* get_graphics_state(void)
 {
     return _graphics_state;
+}
+
+static D3D11_FILTER get_d3d11_filter(OSGraphicsFilterType min, OSGraphicsFilterType mag, OSGraphicsFilterType mipmap)
+{
+    // NOTE: 
+    // D3D11_FILTER_MIN_MAG_MIP_POINT = 0,
+    // D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR = 0x1,
+    // D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT = 0x4,
+    // D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR = 0x5,
+    // D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT = 0x10,
+    // D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR = 0x11,
+    // D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT = 0x14,
+    // D3D11_FILTER_MIN_MAG_MIP_LINEAR = 0x15,
+
+    u32 filter = 0;
+    
+    if (mipmap == OS_GRAPHICS_FILTER_TYPE_LINEAR)
+    {
+        filter |= 0x01;
+    }
+    
+    if (mag == OS_GRAPHICS_FILTER_TYPE_LINEAR)
+    {
+        filter |= 0x04;
+    }
+    
+    if (min == OS_GRAPHICS_FILTER_TYPE_LINEAR)
+    {
+        filter |= 0x10;
+    }
+
+    return (D3D11_FILTER)filter;
+}
+
+static D3D11_TEXTURE_ADDRESS_MODE get_d3d11_texture_address(OSGraphicsWrapType wrap)
+{
+    u32 texture_address_mode = 0;
+
+    switch (wrap)
+    {
+        case OS_GRAPHICS_WRAP_TYPE_REPEAT:
+        {
+            texture_address_mode = D3D11_TEXTURE_ADDRESS_WRAP;
+        }
+        break;
+        
+        case OS_GRAPHICS_WRAP_TYPE_CLAMP_TO_EDGE:
+        {
+            texture_address_mode = D3D11_TEXTURE_ADDRESS_CLAMP;
+        }
+        break;
+        
+        case OS_GRAPHICS_WRAP_TYPE_CLAMP_TO_BORDER:
+        {
+            texture_address_mode = D3D11_TEXTURE_ADDRESS_BORDER;
+        }
+        break;
+
+        case OS_GRAPHICS_WRAP_TYPE_MIRRORED_REPEAT:
+        {
+            texture_address_mode = D3D11_TEXTURE_ADDRESS_MIRROR;
+        }
+        break;
+
+        case OS_GRAPHICS_WRAP_TYPE_COUNT:
+        default:
+        {
+            ASSERT(!"Invalid wrap type!");
+        }
+        break;
+    }
+
+    return (D3D11_TEXTURE_ADDRESS_MODE)texture_address_mode;
+}
+
+static D3D_PRIMITIVE_TOPOLOGY get_d3d11_primitive_topology(OSGraphicsPrimitiveType primitive_type)
+{
+    D3D_PRIMITIVE_TOPOLOGY primitive_topology = 0;
+    
+    switch (primitive_type)
+    {
+        case OS_GRAPHICS_PRIMITIVE_TYPE_LINES:
+        {
+            primitive_topology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+        }
+        break;
+
+        case OS_GRAPHICS_PRIMITIVE_TYPE_TRIANGLES:
+        {
+            primitive_topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        }
+        break;
+
+        case OS_GRAPHICS_PRIMITIVE_TYPE_NULL:
+        case OS_GRAPHICS_PRIMITIVE_TYPE_COUNT:
+        default:
+        {
+            ASSERT(!"Invalid primitive type!");
+        }
+        break;
+    };
+
+    return primitive_topology;
+}
+
+static DXGI_FORMAT get_d3d11_vertex_format(OSGraphicsVertexFormatType vertex_format)
+{
+    DXGI_FORMAT format = 0;
+    
+    switch (vertex_format)
+    {
+        case OS_GRAPHICS_VERTEX_FORMAT_TYPE_FLOAT2:
+        {
+            format = DXGI_FORMAT_R32G32_FLOAT;
+        }
+        break;
+
+        case OS_GRAPHICS_VERTEX_FORMAT_TYPE_FLOAT3:
+        {
+            format = DXGI_FORMAT_R32G32B32_FLOAT;
+        }
+        break;
+
+        case OS_GRAPHICS_VERTEX_FORMAT_TYPE_FLOAT4:
+        {
+            format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        }
+        break;
+
+        case OS_GRAPHICS_VERTEX_FORMAT_TYPE_NULL:
+        case OS_GRAPHICS_VERTEX_FORMAT_TYPE_COUNT:
+        default:
+        {
+            ASSERT(!"Invalid vertex format type!");
+        }
+        break;
+    }
+
+    return format;
 }
 
 static void create_device_and_context(Win32Graphics* graphics)
@@ -289,8 +415,8 @@ static void create_swap_chain(Win32Graphics* graphics)
     HWND handle = graphics->handle;
     IDXGIFactory2* factory = 0;
     DXGI_SWAP_CHAIN_DESC1 desc = { 0 };
-    D3D11_BUFFER_DESC screen_desc = { 0 };
-    ID3D11Buffer** screen_buffer = &graphics->screen_buffer;
+    // D3D11_BUFFER_DESC screen_desc = { 0 };
+    // ID3D11Buffer** screen_buffer = &graphics->screen_buffer;
     HRESULT hresult = 0;
     i32 x, y, width, height = 0;
 
@@ -299,14 +425,14 @@ static void create_swap_chain(Win32Graphics* graphics)
     graphics->swap_chain_width = width;
     graphics->swap_chain_height = height;
 
-    screen_desc = (D3D11_BUFFER_DESC)
-    {
-        .ByteWidth = 4 * sizeof(f32), // TODO: D3D11 says it must be multiple of 16?
-        .Usage = D3D11_USAGE_DYNAMIC,
-        .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-    };
-    ID3D11Device_CreateBuffer(device, &screen_desc, 0, screen_buffer);
+    // screen_desc = (D3D11_BUFFER_DESC)
+    // {
+    //     .ByteWidth = 4 * sizeof(f32), // TODO: D3D11 says it must be multiple of 16?
+    //     .Usage = D3D11_USAGE_DYNAMIC,
+    //     .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+    //     .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+    // };
+    // ID3D11Device_CreateBuffer(device, &screen_desc, 0, screen_buffer);
 
     // NOTE: Create DXGI 1.2 factory for creating swap chain.
     hresult = CreateDXGIFactory(&IID_IDXGIFactory2, (void**)&factory);
@@ -352,140 +478,6 @@ static void create_swap_chain(Win32Graphics* graphics)
     IDXGIFactory_Release(factory);
 }
 
-// TODO: Creating vertex buffer should be coupled with vertex shader?
-// Maybe it is okay to have 1(?) vertex buffer per vertex shader but
-// probably we also need independent way to create buffer.
-static void create_vertex_buffer(Win32GraphicsVertexShader* vertex_shader)
-{
-    D3D11_BUFFER_DESC desc =
-    {
-        .ByteWidth = MEGABYTES(10), // NOTE: Max 10 megabytes?
-        .Usage = D3D11_USAGE_DYNAMIC,
-        .BindFlags = D3D11_BIND_VERTEX_BUFFER,
-        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-    };
-    // D3D11_SUBRESOURCE_DATA initial_data = { .pSysMem = vertex_data };
-
-    // ID3D11Device_CreateBuffer(device, &desc, &initial_data, vertex_buffer);
-    ID3D11Device_CreateBuffer(graphics_device, &desc, 0, &vertex_shader->buffer);
-}
-
-static void set_vertex_input_layout(Win32GraphicsInputLayout* input_layout, const char* name, u32 offset, u32 format)
-{
-    DXGI_FORMAT dxgi_format = 0;
-
-    switch (format)
-    {
-        case 1:
-        {
-            dxgi_format = DXGI_FORMAT_R32_FLOAT;
-        }
-        break;
-        case 2:
-        {
-            dxgi_format = DXGI_FORMAT_R32G32_FLOAT;
-        }
-        break;
-        case 3:
-        {
-            dxgi_format = DXGI_FORMAT_R32G32B32_FLOAT;
-        }
-        break;
-        case 4:
-        {
-            dxgi_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        }
-        break;
-    }
-
-    input_layout->descs[input_layout->desc_count++] = (D3D11_INPUT_ELEMENT_DESC){ name, 0, dxgi_format, 0, offset, D3D11_INPUT_PER_VERTEX_DATA, 0 };
-}
-
-static void create_sampler_state(Win32Graphics* graphics)
-{
-    ID3D11Device* device = graphics->device;
-    ID3D11SamplerState** sampler_state = &graphics->sampler_state;
-
-    // NOTE: Sampler state.
-    {
-        D3D11_SAMPLER_DESC desc =
-        {
-            .Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
-            .AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
-            .AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
-            .AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
-        };
-
-        ID3D11Device_CreateSamplerState(device, &desc, sampler_state);
-    }
-}
-
-static void create_blend_state(Win32Graphics* graphics)
-{
-    ID3D11Device* device = graphics->device;
-    ID3D11BlendState** blend_state = &graphics->blend_state;
-
-    // NOTE: Blend state.
-    {
-        // NOTE: Enable alpha blending.
-        D3D11_BLEND_DESC desc =
-        {
-            .RenderTarget[0] =
-            {
-                .BlendEnable = TRUE,
-                .SrcBlend = D3D11_BLEND_SRC_ALPHA,
-                .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
-                .BlendOp = D3D11_BLEND_OP_ADD,
-                .SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA,
-                .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
-                .BlendOpAlpha = D3D11_BLEND_OP_ADD,
-                .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL,
-            },
-        };
-        ID3D11Device_CreateBlendState(device, &desc, blend_state);
-    }
-}
-
-static void create_rasterizer_state(Win32Graphics* graphics)
-{
-    ID3D11Device* device = graphics->device;
-    ID3D11RasterizerState** rasterizer_state = &graphics->rasterizer_state;
-
-    // NOTE: Rasterizer state.
-    {
-        // NOTE: Disable culling.
-        D3D11_RASTERIZER_DESC desc =
-        {
-            .FillMode = D3D11_FILL_SOLID,
-            .CullMode = D3D11_CULL_NONE,
-        };
-        ID3D11Device_CreateRasterizerState(device, &desc, rasterizer_state);
-    }
-}
-
-static void create_depth_state(Win32Graphics* graphics)
-{
-    ID3D11Device* device = graphics->device;
-    ID3D11DepthStencilState** depth_state = &graphics->depth_state;
-
-    // NOTE: Depth state.
-    {
-        // NOTE: Disable depth & stencil test.
-        D3D11_DEPTH_STENCIL_DESC desc =
-        {
-            .DepthEnable = FALSE,
-            .DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL,
-            .DepthFunc = D3D11_COMPARISON_LESS,
-            .StencilEnable = FALSE,
-            .StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK,
-            .StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK,
-            // .FrontFace = ...
-            // .BackFace = ...
-        };
-        ID3D11Device_CreateDepthStencilState(device, &desc, depth_state);
-    }
-}
-
 static void resize_swap_chain(Win32Graphics* graphics)
 {
     i32 x, y, width, height = 0;
@@ -501,7 +493,8 @@ static void resize_swap_chain(Win32Graphics* graphics)
         if (graphics->render_target_view)
         {
             // NOTE: Release old swap chain buffers.
-            ID3D11DeviceContext_ClearState(graphics->context);
+            // TODO: Do we need to clear state?
+            // ID3D11DeviceContext_ClearState(graphics->context);
             ID3D11RenderTargetView_Release(graphics->render_target_view);
             ID3D11DepthStencilView_Release(graphics->depth_stencil_view);
             graphics->render_target_view = NULL;
@@ -550,18 +543,15 @@ static void resize_swap_chain(Win32Graphics* graphics)
     }
 }
 
-static void clear_vertex_buffer_data(Win32Graphics* graphics)
-{
-    // TODO: Not sure to do this?
-    graphics->vertex_buffer_size = 0;
-}
-
 static void clear_screen(Win32Graphics* graphics)
 {
-    ID3D11DeviceContext_ClearRenderTargetView(graphics->context, graphics->render_target_view, graphics->clear_color);
+    FLOAT color[] = { 0.392f, 0.584f, 0.929f, 1.0f };
+    
+    ID3D11DeviceContext_ClearRenderTargetView(graphics->context, graphics->render_target_view, color);
     ID3D11DeviceContext_ClearDepthStencilView(graphics->context, graphics->depth_stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
+#if 0
 static void draw(Win32Graphics* graphics)
 {
     // NOTE: Can render only if window size is non-zero - we must have backbuffer & RenderTarget view created.
@@ -643,197 +633,9 @@ static void draw(Win32Graphics* graphics)
         // clear_vertex_buffer_data(graphics);
     }
 }
+#endif
 
-static void add_vertex_data(Win32Graphics* graphics, const u8* vertex_buffer_data, u32 vertex_buffer_size)
-{
-    ASSERT(graphics->vertex_buffer_size + vertex_buffer_size < VERTEX_BUFFER_SIZE);
-    
-    memcpy((u8*)graphics->vertex_buffer_data + graphics->vertex_buffer_size, vertex_buffer_data, vertex_buffer_size);
-    graphics->vertex_buffer_size += vertex_buffer_size;
-}
-
-uptr win32_graphics_create_input_layout(const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
-                                        const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
-{
-    Win32GraphicsInputLayout* input_layout = win32_memory_heap_allocate(sizeof(Win32GraphicsInputLayout), TRUE);
-    u32 i = 0;
-
-    for (i = 0; i < layout_count; ++i)
-    {
-        set_vertex_input_layout(input_layout, names[i], offsets[i], formats[i]);
-    }
-
-    // TODO: what to do with stride?
-    input_layout->stride = stride;
-
-    ID3D11Device_CreateInputLayout(graphics_device, input_layout->descs, input_layout->desc_count,
-                                   vertex_shader_buffer, vertex_shader_buffer_size, &input_layout->layout);
-
-    return (uptr)input_layout;
-}
-
-void win32_graphics_set_vertex_buffer_data(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-
-    memcpy(graphics->vertex_buffer_data, vertex_buffer_data, vertex_buffer_size);
-    graphics->vertex_buffer_size = vertex_buffer_size;
-}
-
-void win32_graphics_add_vertex_buffer_data(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-
-    add_vertex_data(graphics, vertex_buffer_data, vertex_buffer_size);
-}
-
-void win32_graphics_clear(uptr graphics_pointer, RGBA color)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-
-    graphics->clear_color[0] = (color.r + 0.5f) / 255.0f;
-    graphics->clear_color[1] = (color.g + 0.5f) / 255.0f;
-    graphics->clear_color[2] = (color.b + 0.5f) / 255.0f;
-    graphics->clear_color[3] = (color.a + 0.5f) / 255.0f;
-}
-
-void win32_graphics_draw(uptr graphics_pointer)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-
-    // NOTE: Resize the swap chain if size changed.
-    resize_swap_chain(graphics);
-
-    // NOTE: Draw everything.
-    draw(graphics);
-}
-
-// TODO: We should be able to create (constant?) buffer.
-// void win32_graphics_create_const_buffer(uptr graphics_pointer, u8* buffer, u32 buffer_size)
-// {
-//     Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-//     ID3D11Device* device = graphics->device;
-//     ID3D11Buffer** const_buffer = &graphics->vertex_buffer;
-//     D3D11_BUFFER_DESC desc =
-//     {
-//         .ByteWidth = buffer_size,
-//         .Usage = D3D11_USAGE_DYNAMIC,
-//         .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-//         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-//     };
-
-//     ID3D11Device_CreateBuffer(device, &desc, buffer, const_buffer);
-// }
-
-// TODO: We should think about D3D11_USAGE_IMMUTABLE but probably it
-// is okay for textures.
-uptr win32_graphics_create_texture_2D(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    ID3D11Device* device = graphics->device;
-    // TODO: Maybe we need an internal arena to manage this kind of allocations
-    // instead of allocating from heap everytime
-    Win32GraphicsTexture2D* texture = win32_memory_heap_allocate(sizeof(Win32GraphicsTexture2D), TRUE);
-    D3D11_TEXTURE2D_DESC desc =
-    {
-        .Width = (UINT)width,
-        .Height = (UINT)height,
-        .MipLevels = 1,
-        .ArraySize = 1,
-        .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-        .SampleDesc = { 1, 0 },
-        .Usage = D3D11_USAGE_IMMUTABLE,
-        .BindFlags = D3D11_BIND_SHADER_RESOURCE,
-    };
-    D3D11_SUBRESOURCE_DATA data =
-    {
-        .pSysMem = texture_buffer,
-        .SysMemPitch = (u32)width * sizeof(u32),
-    };
-
-    ID3D11Device_CreateTexture2D(device, &desc, &data, &texture->texture);
-    ID3D11Device_CreateShaderResourceView(device, (ID3D11Resource*)texture->texture, NULL, &texture->view);
-    // TODO: Is it okay to release texture source immediately after
-    //  creating shader resource view or we will need it?
-    // ID3D11Texture2D_Release(texture);
-
-    return (uptr)texture;
-}
-
-void win32_graphics_use_texture_2Ds(uptr graphics_pointer, uptr* texture_2Ds, u32 texture_count)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-
-    if (texture_2Ds == 0 || texture_count == 0)
-    {
-        graphics->texture_count = 0;
-    }
-    else
-    {
-        ASSERT(texture_count < ARRAY_COUNT(graphics->texture_views));
-
-        for (u32 i = 0; i < texture_count; ++i)
-        {
-            graphics->texture_views[graphics->texture_count++] = ((Win32GraphicsTexture2D*)texture_2Ds[i])->view;
-        }
-    }
-}
-
-uptr win32_graphics_create_vertex_shader(const u8* shader_buffer, u32 shader_buffer_size)
-{
-    Win32GraphicsShader* shader = win32_memory_heap_allocate(sizeof(Win32GraphicsShader), TRUE);
-
-    shader->type = WIN32_GRAPHICS_SHADER_TYPE_VERTEX;
-    shader->vertex_shader.shader = 0; 
-
-    // NOTE: Alternative to hlsl compilation at runtime is to precompile shaders offline
-    // it improves startup time - no need to parse hlsl files at runtime!
-    // and it allows to remove runtime dependency on d3dcompiler dll file
-    // a) save shader source code into "shader.hlsl" file
-    // b) run hlsl compiler to compile shader, these run compilation with optimizations and without debug info:
-    // fxc.exe /nologo /T vs_5_0 /E vs /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_vertex_shader.h /Vn d3d11_vertex_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
-    // fxc.exe /nologo /T ps_5_0 /E ps /O3 /WX /Zpc /Ges /Fh ../source/win32/d3d11_pixel_shader.h /Vn d3d11_pixel_shader /Qstrip_reflect /Qstrip_debug /Qstrip_priv ../source/win32/shader.hlsl
-    // You can also use "/Fo d3d11_*shader.bin" argument to save compiled shader as binary file to store with your assets
-    // then provide binary data for Create*Shader functions below without need to include shader bytes in C.
-
-    ID3D11Device_CreateVertexShader(graphics_device, shader_buffer, shader_buffer_size,
-                                    NULL, &shader->vertex_shader.shader);
-    create_vertex_buffer(&shader->vertex_shader);
-
-    return (uptr)shader;
-}
-
-uptr win32_graphics_create_pixel_shader(const u8* shader_buffer, u32 shader_buffer_size)
-{
-    Win32GraphicsShader* shader = win32_memory_heap_allocate(sizeof(Win32GraphicsShader), TRUE);
-    
-    shader->type = WIN32_GRAPHICS_SHADER_TYPE_PIXEL;
-    shader->pixel_shader.shader = 0; 
-    
-    ID3D11Device_CreatePixelShader(graphics_device, shader_buffer, shader_buffer_size,
-                                   NULL, &shader->pixel_shader.shader);
-
-    return (uptr)shader;
-}
-
-void win32_graphics_use_shader(uptr graphics_pointer, uptr shader_pointer)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    Win32GraphicsShader* shader = (Win32GraphicsShader*)shader_pointer;
-
-    ASSERT(shader->type < WIN32_GRAPHICS_SHADER_TYPE_COUNT);
-    graphics->shaders[shader->type] = shader;
-}
-
-void win32_graphics_use_input_layout(uptr graphics_pointer, uptr input_layout_pointer)
-{
-    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
-    Win32GraphicsInputLayout* input_layout = (Win32GraphicsInputLayout*)input_layout_pointer;
-    
-    graphics->input_layout = input_layout;
-}
-
-uptr win32_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
+OSGraphicsBuffer win32_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
 {
     Win32GraphicsState* graphics_state = get_graphics_state();
     Win32GraphicsBuffer* graphics_buffer = 0;
@@ -852,6 +654,7 @@ uptr win32_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
     D3D11_SUBRESOURCE_DATA* data_pointer = 0;
     D3D11_SUBRESOURCE_DATA data = { 0 };
 
+    // TODO: Questionable check?
     if (buffer_desc->usage == OS_GRAPHICS_USAGE_TYPE_IMMUTABLE)
     {
         data.pSysMem = buffer_desc->data;
@@ -863,7 +666,29 @@ uptr win32_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
     return (uptr)graphics_buffer;
 }
 
-uptr win32_graphics_create_texture(OSGraphicsTextureDesc* texture_desc)
+OSGraphicsSampler win32_graphics_create_sampler(OSGraphicsSamplerDesc* sampler_desc)
+{
+    Win32GraphicsSampler* graphics_sampler = 0;
+    Win32GraphicsState* graphics_state = get_graphics_state();
+
+    PUSH_OR_GET_FROM_FREE_LIST(graphics_state, graphics_state->arena, sampler, graphics_sampler);
+    ASSERT(graphics_sampler);
+
+    D3D11_SAMPLER_DESC desc =
+    {
+        .Filter = get_d3d11_filter(sampler_desc->min_filter, sampler_desc->mag_filter, sampler_desc->mipmap_filter),
+        .AddressU = get_d3d11_texture_address(sampler_desc->wrap_u),
+        .AddressV = get_d3d11_texture_address(sampler_desc->wrap_v),
+        .AddressW = get_d3d11_texture_address(sampler_desc->wrap_w),
+    };
+
+    ID3D11Device_CreateSamplerState(graphics_device, &desc, &graphics_sampler->d3d11.sampler_state);
+    ASSERT(graphics_sampler->d3d11.sampler_state);
+    
+    return (uptr)graphics_sampler;
+}
+
+OSGraphicsTexture win32_graphics_create_texture(OSGraphicsTextureDesc* texture_desc)
 {
     Win32GraphicsTexture* graphics_texture = 0;
     Win32GraphicsState* graphics_state = get_graphics_state();
@@ -906,6 +731,7 @@ uptr win32_graphics_create_texture(OSGraphicsTextureDesc* texture_desc)
     };
     
     ID3D11Device_CreateTexture2D(graphics_device, &desc, &data, &graphics_texture->d3d11.texture_2D);
+    ASSERT(graphics_texture->d3d11.texture_2D);
 
     D3D11_SHADER_RESOURCE_VIEW_DESC shader_resource_view_desc =
     {
@@ -917,13 +743,14 @@ uptr win32_graphics_create_texture(OSGraphicsTextureDesc* texture_desc)
     ID3D11Device_CreateShaderResourceView(graphics_device,
                                           (ID3D11Resource*)graphics_texture->d3d11.texture_2D, &shader_resource_view_desc,
                                           &graphics_texture->d3d11.shader_resource_view);
-
+    ASSERT(graphics_texture->d3d11.shader_resource_view);
+    
     graphics_texture->d3d11.resource = (ID3D11Resource*)graphics_texture->d3d11.texture_2D;
     
     return (uptr)graphics_texture;
 }
 
-uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
+OSGraphicsShader win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
 {
     _Win32GraphicsShader* graphics_shader = 0;
     Win32GraphicsState* graphics_state = get_graphics_state();
@@ -935,7 +762,7 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
     {
         OSGraphicsShaderStageDesc* stage_desc = ((stage_index == OS_GRAPHICS_VERTEX_SHADER_STAGE) ?
                                                  &shader_desc->vertex_shader : &shader_desc->pixel_shader);
-        GraphicsShaderStage* stage = graphics_shader->shader.stage + stage_index;
+        GraphicsShaderStage* stage = graphics_shader->shader.stages + stage_index;
 
         ASSERT(stage->uniform_block_count == 0);        
         for (u32 uniform_block_index = 0; uniform_block_index < OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT; ++uniform_block_index)
@@ -973,10 +800,12 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
     ID3D11Device_CreateVertexShader(graphics_device, shader_desc->vertex_shader.byte_code,
                                     shader_desc->vertex_shader.byte_code_size,
                                     NULL, &graphics_shader->d3d11.vertex_shader);
+    ASSERT(graphics_shader->d3d11.vertex_shader);
 
     ID3D11Device_CreatePixelShader(graphics_device, shader_desc->pixel_shader.byte_code,
-                                    shader_desc->pixel_shader.byte_code_size,
-                                    NULL, &graphics_shader->d3d11.pixel_shader);
+                                   shader_desc->pixel_shader.byte_code_size,
+                                   NULL, &graphics_shader->d3d11.pixel_shader);
+    ASSERT(graphics_shader->d3d11.pixel_shader);
 
     for (u32 attribute_index = 0; attribute_index < OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT; ++attribute_index)
     {
@@ -991,9 +820,274 @@ uptr win32_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
             memory_copy(d3d11_attribute->semantic_name, attribute->semantic_name, semantic_name_length);
             d3d11_attribute->semantic_index = attribute->semantic_index;
         }
+        else
+        {
+            break;
+        }
+    }
+ 
+    for (u32 stage_index = 0; stage_index < OS_GRAPHICS_MAX_SHADER_STAGE_COUNT; ++stage_index)
+    {
+        GraphicsShaderStage* stage = graphics_shader->shader.stages + stage_index;
+        Win32GraphicsShaderStage* d3d11_stage = graphics_shader->d3d11.stages + stage_index;
+        
+        for (u32 constant_buffer_index = 0; constant_buffer_index < stage->uniform_block_count; ++constant_buffer_index)
+        {
+            GraphicsUniformBlock* uniform_block = stage->uniform_blocks + constant_buffer_index;
+            ASSERT(d3d11_stage->constant_buffers[constant_buffer_index] == 0);
+            ASSERT(uniform_block->size != 0);
+
+            if (uniform_block->size)
+            {
+                D3D11_BUFFER_DESC constant_buffer_desc =
+                {
+                    .ByteWidth = ALIGN_16(uniform_block->size),
+                    .Usage = D3D11_USAGE_DEFAULT,
+                    .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+                };
+                ID3D11Device_CreateBuffer(graphics_device, &constant_buffer_desc, 0, &d3d11_stage->constant_buffers[constant_buffer_index]);   
+            }
+        }
     }
 
     return (uptr)graphics_shader;
+}
+
+OSGraphicsPipeline win32_graphics_create_pipeline(OSGraphicsPipelineDesc* pipeline_desc)
+{
+    Win32GraphicsPipeline* graphics_pipeline = 0;
+    Win32GraphicsState* graphics_state = get_graphics_state();
+    
+    PUSH_OR_GET_FROM_FREE_LIST(graphics_state, graphics_state->arena, pipeline, graphics_pipeline);
+
+    graphics_pipeline->shader = (_Win32GraphicsShader*)pipeline_desc->shader;
+    graphics_pipeline->d3d11.primitive_topology = get_d3d11_primitive_topology(pipeline_desc->primitive_type);
+
+    D3D11_INPUT_ELEMENT_DESC input_elements[OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT];
+    u32 attribute_index = 0;
+
+    for (attribute_index = 0; attribute_index < OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT; ++attribute_index)
+    {
+        OSGraphicsVertexAttributeState* vertex_attribute_state = pipeline_desc->vertex_layout.attributes + attribute_index;
+
+        if (vertex_attribute_state->format == OS_GRAPHICS_VERTEX_FORMAT_TYPE_NULL)
+        {
+            break;
+        }
+
+        ASSERT(vertex_attribute_state->buffer_index < OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT);
+        // OSGraphicsVertexBufferLayoutState* vertex_buffer_layout_state = pipeline_desc->vertex_buffer_layouts + vertex_attribute_state->buffer_index;
+        D3D11_INPUT_ELEMENT_DESC* input_element = input_elements + attribute_index;
+        *input_element = (D3D11_INPUT_ELEMENT_DESC)
+        {
+            .SemanticName = graphics_pipeline->shader->d3d11.attributes[attribute_index].semantic_name,
+            .SemanticIndex = (UINT)graphics_pipeline->shader->d3d11.attributes[attribute_index].semantic_index,
+            .Format = get_d3d11_vertex_format(vertex_attribute_state->format),
+            .InputSlot = vertex_attribute_state->buffer_index,
+            .AlignedByteOffset = vertex_attribute_state->offset,
+            .InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA, // TODO: Probably we should parameterize this for instanced rendering?
+        };
+    }
+
+    for (u32 layout_index = 0; layout_index < OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT; ++layout_index)
+    {
+        OSGraphicsVertexBufferLayoutState* vertex_buffer_layout_state = pipeline_desc->vertex_layout.vertex_buffer_layouts + layout_index;
+
+        graphics_pipeline->d3d11.vertex_buffer_strides[layout_index] = vertex_buffer_layout_state->stride;
+    }
+
+    ID3D11Device_CreateInputLayout(graphics_device, input_elements, (UINT)attribute_index,
+                                   graphics_pipeline->shader->d3d11.vertex_shader_data, graphics_pipeline->shader->d3d11.vertex_shader_data_size,
+                                   &graphics_pipeline->d3d11.input_layout);
+    ASSERT(graphics_pipeline->d3d11.input_layout);
+
+    // NOTE: Create rasterizer state.
+    {
+        // NOTE: Disable culling.
+        D3D11_RASTERIZER_DESC rasterizer_desc =
+        {
+            .FillMode = D3D11_FILL_SOLID,
+            .CullMode = D3D11_CULL_NONE,
+        };
+        ID3D11Device_CreateRasterizerState(graphics_device, &rasterizer_desc, &graphics_pipeline->d3d11.rasterizer_state);
+        ASSERT(graphics_pipeline->d3d11.rasterizer_state);
+    }
+
+    // NOTE: Create depth stencil state.
+    {
+        // NOTE: Disable depth & stencil test.
+        D3D11_DEPTH_STENCIL_DESC depth_stencil_desc =
+        {
+            .DepthEnable = FALSE,
+            .DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL,
+            .DepthFunc = D3D11_COMPARISON_LESS,
+            .StencilEnable = FALSE,
+            .StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK,
+            .StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK,
+            // .FrontFace = ...
+            // .BackFace = ...
+        };
+        ID3D11Device_CreateDepthStencilState(graphics_device, &depth_stencil_desc, &graphics_pipeline->d3d11.depth_stencil_state);
+        ASSERT(graphics_pipeline->d3d11.depth_stencil_state);
+    }
+
+    // NOTE: Blend state.
+    {
+        // NOTE: Enable alpha blending.
+        D3D11_BLEND_DESC blend_desc =
+        {
+            .RenderTarget[0] =
+            {
+                .BlendEnable = TRUE,
+                .SrcBlend = D3D11_BLEND_SRC_ALPHA,
+                .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+                .BlendOp = D3D11_BLEND_OP_ADD,
+                .SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA,
+                .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+                .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+                .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL,
+            },
+        };
+        ID3D11Device_CreateBlendState(graphics_device, &blend_desc, &graphics_pipeline->d3d11.blend_state);
+        ASSERT(graphics_pipeline->d3d11.blend_state);
+    }
+
+    return (uptr)graphics_pipeline;
+}
+
+void win32_graphics_apply_pipeline(OSGraphicsPipeline pipeline)
+{
+    Win32GraphicsPipeline* graphics_pipeline = (Win32GraphicsPipeline*)pipeline;
+    Win32GraphicsState* graphics_state = get_graphics_state();
+
+    graphics_state->current_pipeline = graphics_pipeline;
+
+    ID3D11DeviceContext_RSSetState(graphics_context, graphics_pipeline->d3d11.rasterizer_state);
+    ID3D11DeviceContext_OMSetDepthStencilState(graphics_context, graphics_pipeline->d3d11.depth_stencil_state, 0);
+    ID3D11DeviceContext_OMSetBlendState(graphics_context, graphics_pipeline->d3d11.blend_state, NULL, ~0U);
+    ID3D11DeviceContext_IASetPrimitiveTopology(graphics_context, graphics_pipeline->d3d11.primitive_topology);
+    ID3D11DeviceContext_IASetInputLayout(graphics_context, graphics_pipeline->d3d11.input_layout);
+    ID3D11DeviceContext_VSSetShader(graphics_context, graphics_pipeline->shader->d3d11.vertex_shader, NULL, 0);
+    ID3D11DeviceContext_VSSetConstantBuffers(graphics_context, 0, OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT, graphics_pipeline->shader->d3d11.stages[OS_GRAPHICS_VERTEX_SHADER_STAGE].constant_buffers);
+    ID3D11DeviceContext_PSSetShader(graphics_context, graphics_pipeline->shader->d3d11.pixel_shader, NULL, 0);
+    ID3D11DeviceContext_PSSetConstantBuffers(graphics_context, 0, OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT, graphics_pipeline->shader->d3d11.stages[OS_GRAPHICS_PIXEL_SHADER_STAGE].constant_buffers);
+}
+
+void win32_graphics_apply_bindings(OSGraphicsBindings* bindings)
+{
+    Win32GraphicsState* graphics_state = get_graphics_state();
+    // Win32GraphicsBuffer* index_buffer = (Win32GraphicsBuffer*)bindings->index_buffer;
+    Win32GraphicsBuffer* vertex_buffer = 0;
+    Win32GraphicsTexture* texture = 0;
+    Win32GraphicsSampler* sampler = 0;
+
+    // ID3D11Buffer* d3d11_index_buffer = index_buffer ? index_buffer->d3d11.buffer : 0;
+    ID3D11Buffer* d3d11_vertex_buffers[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT] = { 0 };
+    UINT d3d11_vertex_buffer_offsets[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT] = { 0 };
+    ID3D11ShaderResourceView* d3d11_vertex_shader_srvs[OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT] = { 0 };
+    ID3D11ShaderResourceView* d3d11_pixel_shader_srvs[OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT] = { 0 };
+    ID3D11SamplerState* d3d11_vertex_shader_samplers[OS_GRAPHICS_MAX_SHADER_STAGE_SAMPLER_COUNT] = { 0 };
+    ID3D11SamplerState* d3d11_pixel_shader_samplers[OS_GRAPHICS_MAX_SHADER_STAGE_SAMPLER_COUNT] = { 0 };
+    
+    for (u32 i = 0; i < ARRAY_COUNT(bindings->vertex_buffers); ++i)
+    {
+        vertex_buffer = (Win32GraphicsBuffer*)bindings->vertex_buffers[i];
+
+        if (vertex_buffer && vertex_buffer->d3d11.buffer)
+        {
+            d3d11_vertex_buffers[i] = vertex_buffer->d3d11.buffer;
+            d3d11_vertex_buffer_offsets[i] = (UINT)bindings->vertex_buffer_offsets[i];
+        }
+    }
+
+    for (u32 i = 0; i < ARRAY_COUNT(bindings->vertex_shader.textures); ++i)
+    {
+        texture = (Win32GraphicsTexture*)bindings->vertex_shader.textures[i];
+
+        if (texture && texture->d3d11.shader_resource_view)
+        {
+            d3d11_vertex_shader_srvs[i] = texture->d3d11.shader_resource_view;
+        }
+    }
+
+    for (u32 i = 0; i < ARRAY_COUNT(bindings->pixel_shader.textures); ++i)
+    {
+        texture = (Win32GraphicsTexture*)bindings->pixel_shader.textures[i];
+
+        if (texture && texture->d3d11.shader_resource_view)
+        {
+            d3d11_pixel_shader_srvs[i] = texture->d3d11.shader_resource_view;
+        }
+    }
+
+    for (u32 i = 0; i < ARRAY_COUNT(bindings->vertex_shader.samplers); ++i)
+    {
+        sampler = (Win32GraphicsSampler*)bindings->vertex_shader.samplers[i];
+
+        if (sampler && sampler->d3d11.sampler_state)
+        {
+            d3d11_vertex_shader_samplers[i] = sampler->d3d11.sampler_state;
+        }
+    }
+
+    for (u32 i = 0; i < ARRAY_COUNT(bindings->pixel_shader.samplers); ++i)
+    {
+        sampler = (Win32GraphicsSampler*)bindings->pixel_shader.samplers[i];
+
+        if (sampler && sampler->d3d11.sampler_state)
+        {
+            d3d11_pixel_shader_samplers[i] = sampler->d3d11.sampler_state;
+        }
+    }
+    
+    Win32GraphicsPipeline* current_pipeline = graphics_state->current_pipeline;
+    ASSERT(current_pipeline);
+    
+    ID3D11DeviceContext_IASetVertexBuffers(graphics_context, 0, OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT, d3d11_vertex_buffers, current_pipeline->d3d11.vertex_buffer_strides, d3d11_vertex_buffer_offsets);
+    // ID3D11DeviceContext_IASetIndexBuffer(graphics_context, d3d11_ib, bnd->pip->d3d11.index_format, (UINT)bnd->ib_offset);
+    ID3D11DeviceContext_VSSetShaderResources(graphics_context, 0, OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT, d3d11_vertex_shader_srvs);
+    ID3D11DeviceContext_PSSetShaderResources(graphics_context, 0, OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT, d3d11_pixel_shader_srvs);
+    ID3D11DeviceContext_VSSetSamplers(graphics_context, 0, OS_GRAPHICS_MAX_SHADER_STAGE_SAMPLER_COUNT, d3d11_vertex_shader_samplers);
+    ID3D11DeviceContext_PSSetSamplers(graphics_context, 0, OS_GRAPHICS_MAX_SHADER_STAGE_SAMPLER_COUNT, d3d11_pixel_shader_samplers);
+}
+
+void win32_graphics_apply_uniforms(u32 shader_stage_index, u32 uniform_index, const void* data, memory_size size)
+{
+    Win32GraphicsState* graphics_state = get_graphics_state();
+    ASSERT(graphics_state->current_pipeline);
+    ASSERT(size == graphics_state->current_pipeline->shader->shader.stages[shader_stage_index].uniform_blocks[uniform_index].size);
+    
+    ID3D11Buffer* buffer = graphics_state->current_pipeline->shader->d3d11.stages[shader_stage_index].constant_buffers[uniform_index];
+    ASSERT(buffer);
+
+    ID3D11DeviceContext_UpdateSubresource(graphics_context, (ID3D11Resource*)buffer, 0, 0, data, 0, 0);
+}
+
+void win32_graphics_draw(uptr graphics_pointer, u32 index, u32 count)
+{
+    Win32Graphics* graphics = (Win32Graphics*)graphics_pointer;
+    
+    resize_swap_chain(graphics);
+
+    if (graphics->render_target_view)
+    {
+        clear_screen(graphics);
+
+        D3D11_VIEWPORT viewport = (D3D11_VIEWPORT)
+        {
+            .TopLeftX = 0,
+            .TopLeftY = 0,
+            .Width = (FLOAT)graphics->swap_chain_width,
+            .Height = (FLOAT)graphics->swap_chain_height,
+            .MinDepth = 0,
+            .MaxDepth = 1,
+        };
+        ID3D11DeviceContext_RSSetViewports(graphics_context, 1, &viewport);
+        ID3D11DeviceContext_OMSetRenderTargets(graphics_context, 1, &graphics->render_target_view, graphics->depth_stencil_view);
+        
+        ID3D11DeviceContext_Draw(graphics_context, (UINT)count, (UINT)index);
+        IDXGISwapChain1_Present(graphics->swap_chain, 0, 0);
+    }
 }
 
 uptr win32_graphics_init(uptr handle_pointer)
@@ -1016,14 +1110,6 @@ uptr win32_graphics_init(uptr handle_pointer)
 
     create_device_and_context(graphics);
     create_swap_chain(graphics);
-    create_sampler_state(graphics);
-    create_blend_state(graphics);
-    create_rasterizer_state(graphics);
-    create_depth_state(graphics);
-
-    // TODO: ???
-    graphics->vertex_buffer_data = win32_memory_heap_allocate(VERTEX_BUFFER_SIZE, TRUE);
-    graphics->vertex_buffer_size = 0;
 
     return (uptr)graphics;
 }

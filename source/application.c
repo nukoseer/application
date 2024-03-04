@@ -19,9 +19,9 @@ static f32 vertices[] =
     560.0f, 120.0f,     0.0f,  0.0f,       0.0f,   255.0f, 0.0f,   255.0f,
     80.0f,  120.0f,     50.0f, 0.0f,       0.0f,   0.0f,    255.0f, 255.0f,
     
-    320.0f, 120.0f,     25.0f, 50.0f,      255.0f, 0.0f,   0.0f,   255.0f,
-    80.0f,  420.0f,     0.0f,  0.0f,       0.0f,   255.0f, 0.0f,   255.0f,
-    560.0f, 420.0f,     50.0f, 0.0f,       0.0f,   0.0f,    255.0f, 255.0f,
+    // 320.0f, 120.0f,     25.0f, 50.0f,      255.0f, 0.0f,   0.0f,   255.0f,
+    // 80.0f,  420.0f,     0.0f,  0.0f,       0.0f,   255.0f, 0.0f,   255.0f,
+    // 560.0f, 420.0f,     50.0f, 0.0f,       0.0f,   0.0f,    255.0f, 255.0f,
 };
 
 // static f32 vertices[] =
@@ -30,58 +30,16 @@ static f32 vertices[] =
 //      +0.75f, -0.50f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
 //      -0.75f, -0.50f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
 
-//      -0.00f, -0.50f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
-//      -0.75f, +0.75f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
-//      +0.75f, +0.75f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
+//      // -0.00f, -0.50f,     25.0f, 50.0f,    1.0f, 0.0f, 0.0f, 1.0f,
+//      // -0.75f, +0.75f,     0.0f,  0.0f,     0.0f, 1.0f, 0.0f, 1.0f,
+//      // +0.75f, +0.75f,     50.0f,  0.0f,    0.0f, 0.0f, 1.0f, 1.0f,
 // };
-
-// TODO: Is it a good idea to have a default shader? We store
-// everything about graphics in Win32Graphics struct but probably it
-// is not good idea. If we want to create different shaders how we
-// should do it?  If we create different shaders, we can't have
-// standart way to draw vertices because we won't know data layout of
-// vertex shader, so we must also write special draw functions for
-// every shader with different data layout?  It means user should
-// write draw functions instead of having standart functions in
-// os/win32 layer.  This shows to me that maybe it is better to leave
-// it like as it is (just standart basic shader) because our purpose
-// is not to make so sophistacated renderer. If we can handle simple
-// 2D graphics it should be enough for us.
-
-// TODO: Our default shader? Not sure about TEXCOORD, uv.
-static void graphics_init(OSWindow os_window, MemoryArena* arena)
-{
-    TemporaryMemory shader_file_memory = begin_temporary_memory(arena);
-    const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
-    const char* input_layout_names[] = { "POSITION", "TEXCOORD", "COLOR" };
-    struct Vertex { f32 position[2]; f32 uv[2]; f32 color[4]; };
-    u32 input_layout_offsets[] = { OFFSETOF(struct Vertex, position), OFFSETOF(struct Vertex, uv), OFFSETOF(struct Vertex, color) };
-    u32 input_layout_formats[] = { 2, 2, 4 };
-    OSIOFileContent vertex_shader_file = os_io_file_read_by_name(shader_file_memory.arena, shader_file_names[0]);
-    OSIOFileContent pixel_shader_file = os_io_file_read_by_name(shader_file_memory.arena, shader_file_names[1]);
-
-    OSGraphicsShader vertex_shader = os_graphics_create_vertex_shader(vertex_shader_file.data, (u32)vertex_shader_file.size);
-    OSGraphicsShader pixel_shader = os_graphics_create_pixel_shader(pixel_shader_file.data, (u32)pixel_shader_file.size);
-
-    OSGraphicsInputLayout input_layout = os_graphics_create_input_layout(vertex_shader_file.data,
-                                                                         (u32)vertex_shader_file.size,
-                                                                         input_layout_names,
-                                                                         input_layout_offsets,
-                                                                         input_layout_formats,
-                                                                         sizeof(struct Vertex), ARRAY_COUNT(input_layout_names));
-
-    os_graphics_use_shader(os_window, vertex_shader);
-    os_graphics_use_shader(os_window, pixel_shader);
-    os_graphics_use_input_layout(os_window, input_layout);
-
-    end_temporary_memory(shader_file_memory);
-}
 
 // TODO: Probably we should get rid of the function tables in os_xx.c source files.
 static void application(void)
 {
     OSWindow os_window = 0;
-    Random random = { 0 };
+    // Random random = { 0 };
     i32 x = 0;
     i32 y = 0;
     i32 width = 0;
@@ -90,16 +48,81 @@ static void application(void)
 
     os_init();
     os_window = os_window_open("Application", 60, 60, 640, 480, FALSE);
-
-    graphics_init(os_window, frame_arena);
-    
     os_window_get_position_and_size(os_window, &x, &y, &width, &height);
 
-    OSIOFile default_console = os_io_console_init();
-    os_log_init(default_console); 
-    os_log_set_level(OS_LOG_LEVEL_TRACE);
+    TemporaryMemory shader_file_memory = begin_temporary_memory(frame_arena);
+    const char* shader_file_names[] = { "d3d11_vertex_shader.o", "d3d11_pixel_shader.o" };
+    OSIOFileContent vertex_shader_file = os_io_file_read_by_name(shader_file_memory.arena, shader_file_names[0]);
+    OSIOFileContent pixel_shader_file = os_io_file_read_by_name(shader_file_memory.arena, shader_file_names[1]);
 
-    os_graphics_set_vertex_buffer_data(os_window, vertices, sizeof(vertices) / 2);
+    OSGraphicsShader shader = os_graphics_create_shader(&(OSGraphicsShaderDesc) {
+            .attributes = { [0].semantic_name="POSITION", [1].semantic_name="TEXCOORD", [2].semantic_name="COLOR" },
+            .vertex_shader = {
+                .byte_code = (const char*)vertex_shader_file.data,
+                .byte_code_size = vertex_shader_file.size,
+                .uniform_blocks[0].uniforms = {
+                    [0] = { .layout_type = OS_GRAPHICS_UNIFORM_LAYOUT_TYPE_FLOAT4, .array_count = 1 },
+                },
+                .uniform_blocks[0].size = 4 * sizeof(f32),
+            },
+            .pixel_shader = { .byte_code = (const char*)pixel_shader_file.data, .byte_code_size = pixel_shader_file.size },
+        });
+
+    OSGraphicsBuffer vertex_buffer = os_graphics_create_buffer(&(OSGraphicsBufferDesc) {
+            .type = OS_GRAPHICS_BUFFER_TYPE_VERTEX_BUFFER,
+            .usage = OS_GRAPHICS_USAGE_TYPE_IMMUTABLE,
+            .data = vertices,
+            .size = sizeof(vertices),
+        });
+
+    OSGraphicsPipeline pipeline = os_graphics_create_pipeline(&(OSGraphicsPipelineDesc) {
+            .shader = shader,
+            .vertex_layout = {
+                .attributes = {
+                    [0] = { .offset = 0,                                     .format = OS_GRAPHICS_VERTEX_FORMAT_TYPE_FLOAT2 },
+                    [1] = { .offset = 2 * sizeof(f32),                       .format = OS_GRAPHICS_VERTEX_FORMAT_TYPE_FLOAT2 },
+                    [2] = { .offset = (2 * sizeof(f32)) + (2 * sizeof(f32)), .format = OS_GRAPHICS_VERTEX_FORMAT_TYPE_FLOAT4 },
+                },
+                .vertex_buffer_layouts = {
+                    [0].stride = (2 * sizeof(f32)) + (2 * sizeof(f32)) + (4 * sizeof(f32)),
+                },
+            },
+            .primitive_type = OS_GRAPHICS_PRIMITIVE_TYPE_TRIANGLES,
+        });
+
+    u32 texture_buffer[] =
+    {
+        0x80000000, 0xFFFFFFFF,
+        0xFFFFFFFF, 0x80000000,
+    };
+
+    OSGraphicsTexture texture = os_graphics_create_texture(&(OSGraphicsTextureDesc) {
+            .type = OS_GRAPHICS_TEXTURE_TYPE_2D,
+            .usage = OS_GRAPHICS_USAGE_TYPE_DEFAULT,
+            .format = OS_GRAPHICS_PIXEL_FORMAT_R8G8B8A8,
+            .width = 2,
+            .height = 2,
+            .data = texture_buffer,
+            .size = sizeof(texture_buffer),
+        });
+
+    OSGraphicsSampler sampler = os_graphics_create_sampler(&(OSGraphicsSamplerDesc) { 0 });
+
+    OSGraphicsBindings bindings =
+    {
+        .pixel_shader = { .textures[0] = texture, .samplers[0] = sampler },
+        .vertex_buffers[0] = vertex_buffer,
+    };
+
+    f32 size[] = { (f32)width, (f32)height, 0.0f, 0.0f };
+
+    end_temporary_memory(shader_file_memory);
+
+    // OSIOFile default_console = os_io_console_init();
+    // os_log_init(default_console); 
+    // os_log_set_level(OS_LOG_LEVEL_TRACE);
+
+    // os_graphics_set_vertex_buffer_data(os_window, vertices, sizeof(vertices) / 2);
     // os_graphics_draw_rectangle(os_window, 160, 120, 320, 240, RGBA(255.0f, 0.0f, 0.0f, 255.0f));
     // os_graphics_draw_triangle(os_window,
     //                           V2(320.0f, 120.0f), V2(80.0f, 420.0f), V2(560.0f, 420.0f),
@@ -108,30 +131,10 @@ static void application(void)
     // os_graphics_draw_circle_section(os_window, width / 2, height / 2, 60, 90.0f, 270.0f, 18, RGBA(200.0f, 66.0f, 115.0f, 255.0f));
     // os_graphics_draw_pixel(os_window, width / 2, height / 2, RGBA(255.0f, 255.0f, 255.0f, 255.0f));
     
-    random = random_init(44);
-    OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random));
-    OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random));
-
-    {
-        u32 texture_buffer0[] =
-        {
-            0x80000000, 0xFFFFFFFF,
-            0xFFFFFFFF, 0x80000000,
-        };
-        
-        // u32 texture_buffer1[] =
-        // {
-        //     0xFFFFFFFF, 0xFFFFFFFF,
-        //     0xFFFFFFFF, 0xFFFFFFFF,
-        // };
-
-        // TODO: Maybe, we should not associate textures with windows,
-        // they are not directly related with windows but shaders?
-        OSGraphicsTexture2D texture0 = os_graphics_create_texture_2D(os_window, texture_buffer0, 2, 2);
-        os_graphics_use_texture_2Ds(os_window, &texture0, 1);
-        // os_graphics_create_texture(os_window, texture_buffer1, 2, 2);
-    }
-
+    // random = random_init(44);
+    // OS_LOG_DEBUG("random_unilateral: %f", (f64)random_unilateral(random));
+    // OS_LOG_DEBUG("random_bilateral: %f", (f64)random_bilateral(random));
+    
     f32 default_refresh_rate = 60.0f; // os_window_get_default_refresh_rate();
     f32 target_seconds_per_frame = 1.0f / default_refresh_rate;
     u64 last_tick = os_time_get_tick();
@@ -139,6 +142,10 @@ static void application(void)
     {
         TemporaryMemory frame_memory = begin_temporary_memory(frame_arena);
         OSEventList event_list = os_window_get_events(frame_memory.arena);
+
+        os_graphics_apply_pipeline(pipeline);
+        os_graphics_apply_bindings(&bindings);
+        os_graphics_apply_uniforms(OS_GRAPHICS_VERTEX_SHADER_STAGE, 0, size, sizeof(size));
 
         // TODO: Still not sure how to handle input events.
         FOREACH(event_list.first, OSEvent, event)
@@ -154,9 +161,7 @@ static void application(void)
             }
         }
 
-        // os_window_get_position(os_window, &x, &y, &width, &height);
-        os_graphics_clear(os_window, RGBA(100.0f, 149.0f, 237.0f, 255.0f));
-        os_graphics_draw(os_window);
+        os_graphics_draw(os_window, 0, 3);
 
         {
             u64 tick = os_time_get_tick();

@@ -37,6 +37,9 @@
 #define DEFER_LOOP(begin, end) for (u32 UNIQUE(_i_) = ((begin), 0); UNIQUE(_i_) == 0; (++UNIQUE(_i_), (end)))
 #define DEFER(x) DEFER_LOOP(0, x)
 
+#define ALIGN_POW2(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
+#define ALIGN_16(value) (((value) + 15) & ~15)
+
 inline u32 string_length(const char* str)
 {
     u32 length = 0;

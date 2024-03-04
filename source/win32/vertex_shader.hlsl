@@ -22,9 +22,13 @@ cbuffer cbuffer0 : register(b0)
 VS_OUTPUT vs(VS_INPUT input)
 {
     VS_OUTPUT output;
-    output.pos = float4((2.0f * u_screen.xy * input.pos) - 1.0f, 0.0f, 1.0f);
+    output.pos = float4((2.0f * (1.0f / u_screen.xy) * input.pos) - 1.0f, 0.0f, 1.0f);
     output.uv = input.uv;
     output.color = clamp(1.0f / 255.0f * input.color, 0.0f, 1.0f);
+
+    // output.pos = float4(input.pos, 0.0f, 1.0f);
+    // output.uv = input.uv;
+    // output.color = input.color;
     
     return output;
 }

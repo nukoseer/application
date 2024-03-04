@@ -5,13 +5,26 @@
 #define OS_GRAPHICS_MAX_UNIFORM_MEMBER_COUNT       (16)
 #define OS_GRAPHICS_MAX_SHADER_STAGE_UNIFORM_COUNT (4)
 #define OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT (12)
+#define OS_GRAPHICS_MAX_SHADER_STAGE_SAMPLER_COUNT (8)
 #define OS_GRAPHICS_MAX_SHADER_STAGE_COUNT         (2)
 
 typedef uptr OSGraphicsShader;
 typedef uptr OSGraphicsBuffer;
 typedef uptr OSGraphicsTexture;
+typedef uptr OSGraphicsSampler;
+typedef uptr OSGraphicsPipeline;
 typedef uptr OSGraphicsInputLayout;
 typedef uptr OSGraphicsTexture2D;
+
+typedef enum OSGraphicsPrimitiveType
+{
+    OS_GRAPHICS_PRIMITIVE_TYPE_NULL,
+    
+    OS_GRAPHICS_PRIMITIVE_TYPE_LINES,
+    OS_GRAPHICS_PRIMITIVE_TYPE_TRIANGLES,
+
+    OS_GRAPHICS_PRIMITIVE_TYPE_COUNT,
+} OSGraphicsPrimitiveType;
 
 typedef enum OSGraphicsVertexFormatType
 {
@@ -46,11 +59,7 @@ typedef enum OSGraphicsBufferType
 
 typedef enum OSGraphicsTextureType
 {
-    OS_GRAPHICS_TEXTURE_TYPE_NULL,
-
     OS_GRAPHICS_TEXTURE_TYPE_2D,
-
-    OS_GRAPHICS_TEXTURE_TYPE_COUNT,
 } OSGraphicsTextureType;
 
 typedef enum OSGraphicsPixelFormat
@@ -90,7 +99,7 @@ typedef struct OSGraphicsShaderUniformDesc
 {
     const char* name;
     OSGraphicsUniformLayoutType layout_type;
-    u32 count;
+    u32 array_count;
 } OSGraphicsShaderUniformDesc;
 
 typedef struct OSGraphicsShaderUniformBlockDesc
@@ -129,16 +138,16 @@ typedef struct OSGraphicsVertexAttributeState
     OSGraphicsVertexFormatType format;
 } OSGraphicsVertexAttributeState;
 
-typedef struct OSGraphicsVertexBufferState
+typedef struct OSGraphicsVertexBufferLayoutState
 {
     u32 stride;
-} OSGraphicsVertexBufferState;
-
-typedef struct OSGraphicsVertexState
-{
-    OSGraphicsVertexBufferState vertex_buffers[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
-    OSGraphicsVertexAttributeState attributes[OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT];
 } OSGraphicsVertexBufferLayoutState;
+
+typedef struct OSGraphicsVertexLayoutState
+{
+    OSGraphicsVertexBufferLayoutState vertex_buffer_layouts[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
+    OSGraphicsVertexAttributeState attributes[OS_GRAPHICS_MAX_VERTEX_ATTRIBUTE_COUNT];
+} OSGraphicsVertexLayoutState;
 
 typedef struct OSGraphicsBufferDesc
 {
@@ -147,6 +156,35 @@ typedef struct OSGraphicsBufferDesc
     memory_size size;
     void* data;
 } OSGraphicsBufferDesc;
+
+typedef enum OSGraphicsFilterType
+{
+    OS_GRAPHICS_FILTER_TYPE_NONE,
+    OS_GRAPHICS_FILTER_TYPE_NEAREST,
+    OS_GRAPHICS_FILTER_TYPE_LINEAR,
+
+    OS_GRAPHICS_FILTER_TYPE_COUNT,
+} OSGraphicsFilterType;
+
+typedef enum OSGraphicsWrapType
+{
+    OS_GRAPHICS_WRAP_TYPE_REPEAT,
+    OS_GRAPHICS_WRAP_TYPE_CLAMP_TO_EDGE,
+    OS_GRAPHICS_WRAP_TYPE_CLAMP_TO_BORDER,
+    OS_GRAPHICS_WRAP_TYPE_MIRRORED_REPEAT,
+    
+    OS_GRAPHICS_WRAP_TYPE_COUNT,
+} OSGraphicsWrapType;
+
+typedef struct OSGraphicsSamplerDesc
+{
+    OSGraphicsFilterType min_filter;
+    OSGraphicsFilterType mag_filter;
+    OSGraphicsFilterType mipmap_filter;
+    OSGraphicsWrapType wrap_u;
+    OSGraphicsWrapType wrap_v;
+    OSGraphicsWrapType wrap_w;
+} OSGraphicsSamplerDesc;
 
 typedef struct OSGraphicsTextureDesc
 {
@@ -162,22 +200,31 @@ typedef struct OSGraphicsTextureDesc
     memory_size size;
 } OSGraphicsTextureDesc;
 
-// TODO: Implement functions for applying bindings.
-// typedef struct OSGraphicsStageBindings
-// {
-//     OSGraphicsTexture textures[OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT];
-// }
+typedef struct OSGraphicsPipelineDesc
+{
+    OSGraphicsShader shader;
+    OSGraphicsVertexLayoutState vertex_layout;
+    OSGraphicsPrimitiveType primitive_type;
+    PADDING(4);
+    // TODO: Depth, stencil things?
+} OSGraphicsPipelineDesc;
 
-// typedef struct OSGraphicsBindings
-// {
-//     OSGraphicsBuffer vertex_buffers[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
-//     u32 vertex_buffer_offsets[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
-//     OSGraphicsBuffer index_buffer;
-//     u32 index_buffer_offset;
-//     OSGraphicsStageBindings vertex_shader;
-//     OSGraphicsStageBindings pixel_shader;
-    
-// } OSGraphicsBindings;
+typedef struct OSGraphicsStageBindings
+{
+    OSGraphicsTexture textures[OS_GRAPHICS_MAX_SHADER_STAGE_TEXTURE_COUNT];
+    OSGraphicsSampler samplers[OS_GRAPHICS_MAX_SHADER_STAGE_SAMPLER_COUNT];
+} OSGraphicsStageBindings;
+
+typedef struct OSGraphicsBindings
+{
+    OSGraphicsStageBindings vertex_shader;
+    OSGraphicsStageBindings pixel_shader;
+    OSGraphicsBuffer vertex_buffers[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
+    OSGraphicsBuffer index_buffer;
+    u32 vertex_buffer_offsets[OS_GRAPHICS_MAX_VERTEX_BUFFER_COUNT];
+    u32 index_buffer_offset;
+    PADDING(4);
+} OSGraphicsBindings;
 
 #define H_OS_GRAPHICS_TYPES_H
 #endif

@@ -6,31 +6,26 @@
 #include "os_window.h"
 #include "os_graphics.h"
 
-typedef void OSGraphicsUseShader(uptr graphics_pointer, OSGraphicsShader shader);
-typedef void OSGraphicsUseInputLayout(uptr graphics_pointer, OSGraphicsInputLayout input_layout);
-typedef void OSGraphicsSetVertexBufferData(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size);
-typedef void OSGraphicsAddVertexBufferData(uptr graphics_pointer, const void* vertex_buffer_data, u32 vertex_buffer_size);
-typedef OSGraphicsInputLayout OSGraphicsCreateInputLayout(const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
-                                                          const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count);
-typedef OSGraphicsTexture2D OSGraphicsCreateTexture2D(uptr graphics_pointer, const u32* texture_buffer, i32 width, i32 height);
-typedef void OSGraphicsUseTexture2Ds(uptr graphics_pointer, uptr* texture_2Ds, u32 texture_count);
-typedef OSGraphicsShader OSGraphicsCreateVertexShader(const u8* shader_buffer, u32 shader_buffer_size);
-typedef OSGraphicsShader OSGraphicsCreatePixelShader(const u8* shader_buffer, u32 shader_buffer_size);
-typedef void OSGraphicsClear(uptr graphics_pointer, RGBA color);
-typedef void OSGraphicsDraw(uptr graphics_pointer);
+typedef OSGraphicsBuffer   OSGraphicsCreateBuffer(OSGraphicsBufferDesc* buffer_desc);
+typedef OSGraphicsSampler  OSGraphicsCreateSampler(OSGraphicsSamplerDesc* sampler_desc);
+typedef OSGraphicsTexture  OSGraphicsCreateTexture(OSGraphicsTextureDesc* texture_desc);
+typedef OSGraphicsShader   OSGraphicsCreateShader(OSGraphicsShaderDesc* shader_desc);
+typedef OSGraphicsPipeline OSGraphicsCreatePipeline(OSGraphicsPipelineDesc* pipeline_desc);
+typedef void               OSGraphicsApplyPipeline(OSGraphicsPipeline pipeline);
+typedef void               OSGraphicsApplyBindings(OSGraphicsBindings* bindings);
+typedef void               OSGraphicsApplyUniforms(u32 shader_stage_index, u32 uniform_index, const void* data, memory_size size);
+typedef void               OSGraphicsDraw(uptr graphics_pointer, u32 index, u32 count);
 
 typedef struct OSGraphicsTable
 {
-    OSGraphicsUseShader* use_shader;
-    OSGraphicsUseInputLayout* use_input_layout;
-    OSGraphicsSetVertexBufferData* set_vertex_buffer_data;
-    OSGraphicsAddVertexBufferData* add_vertex_buffer_data;
-    OSGraphicsCreateInputLayout* create_input_layout;
-    OSGraphicsCreateTexture2D* create_texture_2D;
-    OSGraphicsUseTexture2Ds* use_texture_2Ds;
-    OSGraphicsCreateVertexShader* create_vertex_shader;
-    OSGraphicsCreatePixelShader* create_pixel_shader;
-    OSGraphicsClear* clear;
+    OSGraphicsCreateBuffer* create_buffer;
+    OSGraphicsCreateSampler* create_sampler;
+    OSGraphicsCreateTexture* create_texture;
+    OSGraphicsCreateShader* create_shader;
+    OSGraphicsCreatePipeline* create_pipeline;
+    OSGraphicsApplyPipeline* apply_pipeline;
+    OSGraphicsApplyBindings* apply_bindings;
+    OSGraphicsApplyUniforms* apply_uniforms;
     OSGraphicsDraw* draw;
 } OSGraphicsTable;
 
@@ -40,16 +35,14 @@ typedef struct OSGraphicsTable
 
 static OSGraphicsTable os_graphics_table =
 {
-    .use_shader = &win32_graphics_use_shader,
-    .use_input_layout = &win32_graphics_use_input_layout,
-    .set_vertex_buffer_data = &win32_graphics_set_vertex_buffer_data,
-    .add_vertex_buffer_data = &win32_graphics_add_vertex_buffer_data,
-    .create_input_layout = &win32_graphics_create_input_layout,
-    .create_texture_2D = &win32_graphics_create_texture_2D,
-    .use_texture_2Ds = &win32_graphics_use_texture_2Ds,
-    .create_vertex_shader = &win32_graphics_create_vertex_shader,
-    .create_pixel_shader = &win32_graphics_create_pixel_shader,
-    .clear = &win32_graphics_clear,
+    .create_buffer = &win32_graphics_create_buffer,
+    .create_sampler = &win32_graphics_create_sampler,
+    .create_texture = &win32_graphics_create_texture,
+    .create_shader = &win32_graphics_create_shader,
+    .create_pipeline = &win32_graphics_create_pipeline,
+    .apply_pipeline = &win32_graphics_apply_pipeline,
+    .apply_bindings = &win32_graphics_apply_bindings,
+    .apply_uniforms = &win32_graphics_apply_uniforms,
     .draw = &win32_graphics_draw,
 };
 
@@ -66,119 +59,7 @@ static uptr get_graphics_from_window(OSWindow os_window)
     return graphics;
 }
 
-void os_graphics_use_shader(OSWindow os_window, OSGraphicsShader shader)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.use_shader);
-        os_graphics_table.use_shader(graphics, shader);
-    }
-}
-
-void os_graphics_use_input_layout(OSWindow os_window, OSGraphicsInputLayout input_layout)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.use_input_layout);
-        os_graphics_table.use_input_layout(graphics, input_layout);
-    }
-}
-
-void os_graphics_set_vertex_buffer_data(OSWindow os_window, const void* vertex_buffer_data, u32 vertex_buffer_size)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.set_vertex_buffer_data);
-        os_graphics_table.set_vertex_buffer_data(graphics, vertex_buffer_data, vertex_buffer_size);
-    }
-}
-
-void os_graphics_add_vertex_buffer_data(OSWindow os_window, const void* vertex_buffer_data, u32 vertex_buffer_size)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.add_vertex_buffer_data);
-        os_graphics_table.add_vertex_buffer_data(graphics, vertex_buffer_data, vertex_buffer_size);
-    }
-}
-
-// TODO: So many parameters?
-OSGraphicsInputLayout os_graphics_create_input_layout(const u8* vertex_shader_buffer, u32 vertex_shader_buffer_size,
-                                                      const char** names, const u32* offsets, const u32* formats, u32 stride, u32 layout_count)
-{
-    OSGraphicsInputLayout os_input_layout = 0;
-    
-    ASSERT(os_graphics_table.create_input_layout);
-    os_input_layout = os_graphics_table.create_input_layout(vertex_shader_buffer, vertex_shader_buffer_size,
-                                                      names, offsets, formats, stride, layout_count);
-
-    return os_input_layout;
-}
-
-OSGraphicsTexture2D os_graphics_create_texture_2D(OSWindow os_window, const u32* texture_buffer, i32 width, i32 height)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-    OSGraphicsTexture2D texture = 0;
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.create_texture_2D);
-        texture = os_graphics_table.create_texture_2D(graphics, texture_buffer, width, height);
-    }
-    
-    return texture;
-}
-
-void os_graphics_use_texture_2Ds(OSWindow os_window, OSGraphicsTexture2D* texture_2Ds, u32 texture_count)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.use_texture_2Ds);
-        os_graphics_table.use_texture_2Ds(graphics, texture_2Ds, texture_count);
-    }
-}
-
-OSGraphicsShader os_graphics_create_vertex_shader(const u8* shader_buffer, u32 shader_buffer_size)
-{
-    OSGraphicsShader os_graphics_shader = 0;
-    
-    ASSERT(os_graphics_table.create_vertex_shader);
-    os_graphics_shader = os_graphics_table.create_vertex_shader(shader_buffer, shader_buffer_size);
-
-    return os_graphics_shader;
-}
-
-OSGraphicsShader os_graphics_create_pixel_shader(const u8* shader_buffer, u32 shader_buffer_size)
-{
-    OSGraphicsShader os_graphics_shader = 0;
-
-    ASSERT(os_graphics_table.create_pixel_shader);
-    os_graphics_shader = os_graphics_table.create_pixel_shader(shader_buffer, shader_buffer_size);
-
-    return os_graphics_shader;
-}
-
-void os_graphics_clear(OSWindow os_window, RGBA color)
-{
-    uptr graphics = get_graphics_from_window(os_window);
-
-    if (graphics)
-    {
-        ASSERT(os_graphics_table.clear);
-        os_graphics_table.clear(graphics, color);
-    }
-}
-
+#if 0
 void os_graphics_draw_rectangle(OSWindow os_window, i32 x, i32 y, i32 width, i32 height, RGBA color)
 {
     uptr graphics = get_graphics_from_window(os_window);
@@ -197,7 +78,7 @@ void os_graphics_draw_rectangle(OSWindow os_window, i32 x, i32 y, i32 width, i32
             xf + wf, yf + hf, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
         };
 
-        os_graphics_add_vertex_buffer_data(os_window, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
+        // os_graphics_add_vertex_buffer_data(os_window, (const u8*)rectangle_buffer, sizeof(rectangle_buffer));
     }
 }
 
@@ -214,7 +95,7 @@ void os_graphics_draw_triangle(OSWindow os_window, V2 v1, V2 v2, V2 v3, RGBA col
             v3.x, v3.y, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
         };
         
-        os_graphics_add_vertex_buffer_data(os_window, (const u8*)triangle_buffer, sizeof(triangle_buffer));
+        // os_graphics_add_vertex_buffer_data(os_window, (const u8*)triangle_buffer, sizeof(triangle_buffer));
     }
 }
 
@@ -267,7 +148,7 @@ void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 cente
             circle_buffer[5] = (f32)color.g;
             circle_buffer[6] = (f32)color.b;
             circle_buffer[7] = (f32)color.a;
-            os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
+            // os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
 
             circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * angle) * radius;
             circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * angle) * radius;
@@ -277,7 +158,7 @@ void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 cente
             circle_buffer[5] = (f32)color.g;
             circle_buffer[6] = (f32)color.b;
             circle_buffer[7] = (f32)color.a;
-            os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
+            // os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
 
             circle_buffer[0] = (f32)center_x + cos_f32(DEG_2_RAD * (angle + steps)) * radius;
             circle_buffer[1] = (f32)center_y + sin_f32(DEG_2_RAD * (angle + steps)) * radius;
@@ -287,7 +168,7 @@ void os_graphics_draw_circle_section(OSWindow os_window, i32 center_x, i32 cente
             circle_buffer[5] = (f32)color.g;
             circle_buffer[6] = (f32)color.b;
             circle_buffer[7] = (f32)color.a;
-            os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
+            // os_graphics_add_vertex_buffer_data(os_window, (u8*)circle_buffer, sizeof(circle_buffer));
 
             angle += steps;
         }
@@ -322,17 +203,86 @@ void os_graphics_draw_pixel(OSWindow os_window, i32 x, i32 y, RGBA color)
             xf + 1.0f, yf + 1.0f, -1.0f, -1.0f, color.r, color.g, color.b, color.a,
         };
 
-        os_graphics_add_vertex_buffer_data(os_window, (const u8*)pixel_buffer, sizeof(pixel_buffer));
+        // os_graphics_add_vertex_buffer_data(os_window, (const u8*)pixel_buffer, sizeof(pixel_buffer));
     }
 }
+#endif
 
-void os_graphics_draw(OSWindow os_window)
+OSGraphicsBuffer os_graphics_create_buffer(OSGraphicsBufferDesc* buffer_desc)
+{
+    OSGraphicsBuffer os_graphics_buffer = 0;
+
+    ASSERT(os_graphics_table.create_buffer);
+    os_graphics_buffer = os_graphics_table.create_buffer(buffer_desc);
+
+    return os_graphics_buffer;
+}
+
+OSGraphicsSampler os_graphics_create_sampler(OSGraphicsSamplerDesc* sampler_desc)
+{
+    OSGraphicsSampler os_graphics_sampler = 0;
+
+    ASSERT(os_graphics_table.create_sampler);
+    os_graphics_sampler = os_graphics_table.create_sampler(sampler_desc);
+
+    return os_graphics_sampler;
+}
+
+OSGraphicsTexture os_graphics_create_texture(OSGraphicsTextureDesc* texture_desc)
+{
+    OSGraphicsTexture os_graphics_texture = 0;
+
+    ASSERT(os_graphics_table.create_texture);
+    os_graphics_texture = os_graphics_table.create_texture(texture_desc);
+
+    return os_graphics_texture;
+}
+
+OSGraphicsShader os_graphics_create_shader(OSGraphicsShaderDesc* shader_desc)
+{
+    OSGraphicsShader os_graphics_shader = 0;
+
+    ASSERT(os_graphics_table.create_shader);
+    os_graphics_shader = os_graphics_table.create_shader(shader_desc);
+
+    return os_graphics_shader;
+}
+
+OSGraphicsPipeline os_graphics_create_pipeline(OSGraphicsPipelineDesc* pipeline_desc)
+{
+    OSGraphicsPipeline os_graphics_pipeline = 0;
+
+    ASSERT(os_graphics_table.create_pipeline);
+    os_graphics_pipeline = os_graphics_table.create_pipeline(pipeline_desc);
+
+    return os_graphics_pipeline;    
+}
+
+void os_graphics_apply_pipeline(OSGraphicsPipeline pipeline)
+{
+    ASSERT(os_graphics_table.apply_pipeline);
+    os_graphics_table.apply_pipeline(pipeline);
+}
+
+void os_graphics_apply_bindings(OSGraphicsBindings* bindings)
+{
+    ASSERT(os_graphics_table.apply_bindings);
+    os_graphics_table.apply_bindings(bindings);
+}
+
+void os_graphics_apply_uniforms(u32 shader_stage_index, u32 uniform_index, const void* data, memory_size size)
+{
+    ASSERT(os_graphics_table.apply_uniforms);
+    os_graphics_table.apply_uniforms(shader_stage_index, uniform_index, data, size);
+}
+
+void os_graphics_draw(OSWindow os_window, u32 index, u32 count)
 {
     uptr graphics = get_graphics_from_window(os_window);
 
     if (graphics)
     {
         ASSERT(os_graphics_table.draw);
-        os_graphics_table.draw(graphics);
+        os_graphics_table.draw(graphics, index, count);
     }
 }
